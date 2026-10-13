@@ -4,7 +4,7 @@ O [SECURITY.md em inglês](../../../SECURITY.md) é a referência. Não há vers
 
 ## Reporte privado
 
-Contato privado, repositório GitHub canônico e responsáveis por resposta ainda não foram configurados. O mantenedor deverá definir e verificar esse canal antes de aceitar relatórios sensíveis ou publicar releases. Não há endereço nem prazo de resposta inventado.
+Contato privado e responsáveis por resposta ainda não foram configurados. O repositório canônico é [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub); a disponibilidade do reporte privado de vulnerabilidades não foi verificada. O mantenedor deverá definir e verificar esse canal antes de aceitar relatórios sensíveis ou publicar releases. Não há endereço nem prazo de resposta inventado.
 
 Quando o reporte privado do GitHub estiver habilitado no repositório oficial, use **Security → Report a vulnerability**. Caso contrário, solicite um canal privado ao mantenedor sem expor detalhes técnicos. Até a verificação do canal, mantenha informações sensíveis localmente. Não publique exploit, credenciais, binários, capturas completas ou dados identificáveis em issues/PRs.
 

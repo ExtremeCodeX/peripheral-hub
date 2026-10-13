@@ -8,9 +8,9 @@ Ainda não há aplicação, SDK, DRA, schemas ou CI funcionais. São úteis cont
 
 A stack prevista é Rust estável/Cargo, Node.js compatível com as futuras dependências, pnpm e Tauri 2 + React/TypeScript/Vite. Windows 10/11 é prioritário; preserve a portabilidade para Linux/macOS. Versões e dependências específicas de plataforma serão registradas com os workspaces reais. Manifests e lockfiles estão vazios; não há `pnpm dev`, `cargo run` ou comando DRA funcional.
 
-O checkout atual não tem Git inicializado. Quando houver repositório canônico, faça fork, clone e crie uma branch focada; não invente URLs ou responsáveis. Mantenha lockfiles reais, sem dependências instaladas ou produtos de build no Git.
+O repositório canônico informado pelo mantenedor é [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub), com branch padrão `main`. Faça fork, clone e crie uma branch focada. O checkout local agora possui histórico Git e remoto `origin`; a auditoria documental original ocorreu antes dessa configuração. Mantenha lockfiles reais, sem dependências instaladas ou produtos de build no Git.
 
-Apache-2.0 é proposta pendente, e `LICENSE` está vazio. Confirme o licenciamento antes de integrar código substancial ou distribuir oficialmente. Contato privado de segurança e política de conduta/aplicação também precisam ser definidos. Mantenha interações respeitosas e construtivas, sem expor dados pessoais.
+O repositório existente inclui o texto Apache-2.0 em `LICENSE`, que deve ser preservado. A confirmação explícita exigida pelo documento mestre continua pendente antes de distribuição oficial. Contato privado de segurança e política de conduta/aplicação também precisam ser definidos. Mantenha interações respeitosas e construtivas, sem expor dados pessoais.
 
 ## Dispositivos e funcionalidades
 

@@ -73,6 +73,6 @@ See the bilingual [device contribution guide](docs/en/contributors/adding-a-devi
 
 ## License and governance
 
-Apache-2.0 is **proposed, pending maintainer confirmation**. The existing `LICENSE` file is empty and does not grant a license. Do not represent the project as already Apache-2.0 licensed or publish an official release before that decision.
+The existing GitHub repository includes the Apache-2.0 text in [LICENSE](LICENSE), preserved from its initial commit. The master specification still requires explicit maintainer confirmation before treating that choice as definitive for official publication; that confirmation remains pending.
 
 Maintainer identities, security contact details, community conduct enforcement, and repository ownership assignments remain pending; see the status ledger. No maintainer accounts or contact addresses are invented in this documentation.

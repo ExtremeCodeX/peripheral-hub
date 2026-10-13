@@ -8,7 +8,7 @@ Thank you for helping build a transparent, community-maintained peripheral platf
 
 This stage delivers documentation and organization only. All application manifests, source placeholders, schemas, and workflows remain empty. Documentation review, translations, architectural discussion, and authorized local research are useful now. Driver/feature development below is a workflow for subsequent implementation stages, not an assertion that an SDK or tooling is available.
 
-The proposed Apache-2.0 license is not confirmed; `LICENSE` is empty. Ask the maintainer to resolve licensing before integrating substantial code or making an official distribution. A published security contact and community conduct/enforcement policy are also pending. Be respectful, constructive, and mindful of personal information in every interaction.
+The existing repository includes Apache-2.0 text in `LICENSE`. Preserve it; explicit maintainer confirmation required by the master specification remains pending before official distribution. A published security contact and community conduct/enforcement policy are also pending. Be respectful, constructive, and mindful of personal information in every interaction.
 
 ## Development environment
 
@@ -16,7 +16,7 @@ The intended toolchain is stable Rust with Cargo, Node.js compatible with the ev
 
 Versions are not pinned yet: `rust-toolchain.toml`, `package.json`, and lockfiles are empty. Do not assume a working `cargo run`, `pnpm dev`, or DRA command. When workspaces are implemented, maintainers must select versions, add only actual Cargo members, generate real lockfiles, and publish tested setup/run instructions. Commit `Cargo.lock` and `pnpm-lock.yaml` for reproducibility; do not commit dependency trees or build output.
 
-The current checkout has no Git metadata. Once a canonical repository is established, fork it, clone your fork, and create a focused branch. Never fabricate a repository URL or maintainer identity in instructions.
+The canonical repository supplied by the maintainer is [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub), with default branch `main`. Fork it, clone your fork, and create a focused branch. The local checkout now contains Git history and an `origin` remote; the original documentary audit predated that setup.
 
 ## Adding a device
 
@@ -62,7 +62,7 @@ Inspect artifacts locally. Do not upload proprietary samples or captures to an A
 
 ## Pull requests
 
-When the remote repository and Git history exist:
+For the existing repository:
 
 1. Keep a branch and PR focused on one contribution. Inspect the diff, stage only intended files, and exclude private research, credentials, generated output, and third-party binaries.
 2. Explain the problem, scope, architectural impact, and acceptance criteria. Link a real issue if one exists.

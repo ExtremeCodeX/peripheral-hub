@@ -73,6 +73,6 @@ Consulte [como adicionar dispositivos](docs/pt-BR/contributors/adding-a-device.m
 
 ## Licença e governança
 
-Apache-2.0 é uma **proposta pendente de confirmação do mantenedor**. O `LICENSE` existente está vazio e não concede uma licença. Não apresente o projeto como já licenciado nem publique uma release oficial antes dessa decisão.
+O repositório GitHub existente contém o texto Apache-2.0 em [LICENSE](LICENSE), preservado do commit inicial. O documento mestre ainda exige confirmação explícita do mantenedor antes de tratar essa escolha como definitiva para publicação oficial; essa confirmação permanece pendente.
 
 Identidades dos responsáveis, contato de segurança, aplicação do código de conduta e atribuições de propriedade do repositório também estão pendentes e registradas no status técnico.

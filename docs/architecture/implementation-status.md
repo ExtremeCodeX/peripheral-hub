@@ -12,7 +12,7 @@ The current user requests the first **documentary and organizational foundation 
 - Read-only recursive inventory: **55 files and 92 directories**. The master specification was the only nonempty file. All other 54 files were empty; existing organization was preserved.
 - Master specification SHA-256: `ee537731a3aa19adca1bf5d81ec2fe05b9be7bc12b88a730ee0bbdb5e43ac2af`.
 - Rust/Node manifests and lockfiles, Tauri configs, schema files, source placeholders, workflows, templates, CODEOWNERS, and LICENSE had no content.
-- The checkout is not a Git repository. No canonical remote, commit baseline, or Git diff is available.
+- At the original audit, the checkout was not a Git repository. No canonical remote, commit baseline, or Git diff was available then. See the subsequent publication session below for the current Git state.
 - Python 3.13.15 is available for local documentary checks. `rustc`, `cargo`, `node`, `pnpm`, `opencode`, and `tshark` were not found on PATH. No REA/USBPcap installation or hardware access was verified; no hardware operations were attempted.
 
 ## Foundation delivery
@@ -80,4 +80,28 @@ The master document's phases 1–7 and minimum software checklist remain unfulfi
 
 ## Translation and public guide coverage
 
-READMEs, contribution/security priorities, device contribution, and availability guidance have pt-BR coverage. Architecture, ADRs, protocol/research procedures, and skills remain English technical references. Detailed installation, usage, profiles, compatible-device catalog, and troubleshooting manuals wait for real functionality; no empty guide is presented as complete. `CODE_OF_CONDUCT.md`, `CHANGELOG.md`, and `LICENSE` remain pre-existing empty files with explicit governance/license follow-up above.
+READMEs, contribution/security priorities, device contribution, and availability guidance have pt-BR coverage. Architecture, ADRs, protocol/research procedures, and skills remain English technical references. Detailed installation, usage, profiles, compatible-device catalog, and troubleshooting manuals wait for real functionality; no empty guide is presented as complete. `CODE_OF_CONDUCT.md` and `CHANGELOG.md` remain empty files. The subsequent Git inspection found an existing Apache-2.0 `LICENSE`, preserved from the remote initial commit; explicit confirmation required by the master remains pending.
+
+## Subsequent session: requested GitHub publication
+
+The user explicitly authorized publication to `https://github.com/ExtremeCodeX/peripheral-hub`. The current local checkout now has branch `main`, remote `origin` pointing to that repository, and two commits: `34e3001` (remote initial commit) and `3855f4b` (`chore: initialize project structure`, containing the documentary foundation). The working tree was clean before publication preparation. Git history now permits a real diff review; previous no-Git observations above are historical evidence.
+
+Remote `main` and HEAD were verified at `34e300146c1fbd85d4bbb43c2cbe595df9e33b73`. The remote initial commit contains a 201-line Apache-2.0 `LICENSE`. It is present locally and unchanged in `3855f4b`; it must not be replaced with the empty placeholder from the original documentary baseline. Public references were corrected for the real repository and existing license while retaining the master's explicit confirmation requirement.
+
+### Publication checks and blocker
+
+| Command / action | Actual outcome |
+| --- | --- |
+| `gh auth status` and `gh repo view ExtremeCodeX/peripheral-hub --json nameWithOwner,defaultBranchRef,isEmpty,url,viewerPermission` | Failed: `gh` was not on PATH |
+| `git status --short`, `git remote -v`, `git log --oneline -10`, `git diff --stat` | Passed; clean local tree, expected origin and two-commit history |
+| `git ls-remote https://github.com/ExtremeCodeX/peripheral-hub.git HEAD refs/heads/main refs/heads/master` | Passed; remote HEAD/main at the initial commit |
+| `git fetch origin` | Passed; public repository readable |
+| `git show --stat --oneline origin/main`, `git show origin/main:LICENSE`, `git show --stat --oneline 3855f4b`, `git diff --stat origin/main..HEAD` | Passed; preserved initial license and reviewed documentary/scaffold change inventory |
+| `git diff --check origin/main..HEAD` | Passed; no diff whitespace errors |
+| GitHub CLI setup | Official `cli/cli` release metadata inspected; Linux amd64 v2.102.0 archive downloaded under `/tmp/opencode/`, SHA-256 verified as `bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386`, then extracted outside the project |
+| `/tmp/opencode/gh_2.102.0_linux_amd64/bin/gh auth status` | Failed: no logged-in GitHub host |
+| `GIT_TERMINAL_PROMPT=0 git push --dry-run origin main` | Failed: could not read Username for `https://github.com`; terminal prompts disabled. No remote update occurred |
+| `python3 /tmp/opencode/check_peripheral_docs.py` (publication preparation) | Passed: 125 relative links, seven skill structures, Markdown whitespace, unchanged master, 92 non-Git directories, preserved remote LICENSE, 24 ignored and 13 retained sample paths. Git metadata excluded from documentary inventory |
+| `git diff --check` and `git diff` (publication preparation) | Passed; reviewed only the ten intended documentary corrections and the publication blocker record |
+
+**Publication is blocked (bloqueado) on GitHub authentication.** No token was requested in chat or stored in the repository, no force push was attempted, and no runtime/software functionality was added. The user must authenticate locally before an authorized push can proceed. CLI downloads/temporary tooling are not project deliverables. The missing private security channel and explicit license confirmation remain separate governance follow-ups, not claims of completed setup.

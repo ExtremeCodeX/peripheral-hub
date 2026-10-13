@@ -38,4 +38,4 @@ Siga manualmente identificação → evidências → implementação → valida�
 
 ## Revisão
 
-Prepare uma proposta de PR focada com artefatos sanitizados, origem, verificações/resultados exatos e lacunas por capacidade. Siga o [guia de contribuição](contributing.md). Licença, canal privado de segurança, repositório Git canônico, responsáveis e CI ativa dependem do mantenedor. Agentes só publicam mediante autorização explícita.
+Prepare uma proposta de PR focada com artefatos sanitizados, origem, verificações/resultados exatos e lacunas por capacidade. Siga o [guia de contribuição](contributing.md) para o repositório canônico existente. Confirmação explícita da licença, canal privado de segurança, responsáveis e CI ativa dependem do mantenedor. Agentes só publicam mediante autorização explícita.

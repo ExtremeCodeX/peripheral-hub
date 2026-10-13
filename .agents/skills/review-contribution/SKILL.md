@@ -12,7 +12,7 @@ Requested review scope, actual change set/base when Git is available, contributi
 
 ## Tools
 
-Read [CONTRIBUTING.md](../../../CONTRIBUTING.md), [SECURITY.md](../../../SECURITY.md), [AGENTS.md](../../../AGENTS.md), and the [status ledger](../../../docs/architecture/implementation-status.md). Inspect files/diffs, real tests/validators, and artifact provenance. Use Git only if initialized; no Git metadata currently exists.
+Read [CONTRIBUTING.md](../../../CONTRIBUTING.md), [SECURITY.md](../../../SECURITY.md), [AGENTS.md](../../../AGENTS.md), and the [status ledger](../../../docs/architecture/implementation-status.md). Inspect files/diffs, real tests/validators, and artifact provenance. Verify the current Git state rather than relying on the original pre-Git documentary audit; the canonical repository now has history and an `origin` remote.
 
 ## Procedure
 

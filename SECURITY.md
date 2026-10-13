@@ -6,7 +6,7 @@
 
 There are no published supported versions or runnable components yet. This policy defines expected handling for the planned application, drivers, research tooling, dependencies, and repository materials; it does not claim existing security controls have been implemented.
 
-A maintainer-verified private reporting contact and canonical GitHub repository **have not been configured**. Before accepting sensitive reports or publishing releases, maintainers must provide and test a private channel and establish response ownership. No response-time commitment or email address is invented here.
+A maintainer-verified private reporting contact **has not been configured**. The canonical repository is [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub); availability of private vulnerability reporting has not been verified. Before accepting sensitive reports or publishing releases, maintainers must provide and test a private channel and establish response ownership. No response-time commitment or email address is invented here.
 
 Once GitHub private vulnerability reporting is enabled on the canonical repository, use **Security → Report a vulnerability**. Otherwise, request a private reporting channel from the maintainer without disclosing technical details publicly. Do not post exploit instructions, credentials, full captures, vendor binaries, or identifiable device data in issues or PRs. Until a channel is verified, keep sensitive details local.
 

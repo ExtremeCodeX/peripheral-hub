@@ -49,4 +49,4 @@ Follow the same identity → evidence → implementation → validation → revi
 
 ## Review handoff
 
-Prepare a focused PR proposal with sanitized artifacts, provenance, exact checks/results, and capability-level gaps. Follow [CONTRIBUTING.md](../../../CONTRIBUTING.md). License, private reporting contact, canonical Git repository, ownership, and active CI still need maintainer setup. Agents publish only with explicit authorization.
+Prepare a focused PR proposal with sanitized artifacts, provenance, exact checks/results, and capability-level gaps. Follow [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the existing canonical repository. Explicit license confirmation, private reporting contact, ownership, and active CI still need maintainer action. Agents publish only with explicit authorization.
