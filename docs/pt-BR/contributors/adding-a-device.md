@@ -2,7 +2,7 @@
 
 [English](../../en/contributors/adding-a-device.md)
 
-**Etapa atual:** SDK, DRA, validador de manifestos e scaffold de drivers não estão implementados. Este guia prepara uma contribuição baseada em evidências; código depende de ferramentas/contratos reais e autorização de escopo.
+**Etapa atual:** [SDK 1.0, Registry e Core](../../architecture/sdk.md) estão implementados. DRA, transportes físicos, validadores de manifestos e scaffold continuam pendentes. Este guia prepara uma contribuição baseada em evidências; drivers físicos dependem de escopo posterior autorizado e backends/validadores reais.
 
 ## Identidade e objetivo limitado
 

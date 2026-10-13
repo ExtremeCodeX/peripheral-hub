@@ -1,6 +1,6 @@
 # Device lifecycle and identity
 
-**Status: design requirements only.** No enumeration backend or lifecycle implementation exists yet.
+**Status: identity, matching, and caller-supplied inventory are implemented in Phase 1.** No enumeration backend, open connection management, or hotplug monitor exists. See the [SDK reference](sdk.md).
 
 ## Required stages
 
@@ -12,7 +12,7 @@
 6. **Operate:** validate parameters and capability support, respect sequencing/ACKs/timeouts, and report actual success or error. Unsupported operations use `NotSupported`.
 7. **Disconnect/close:** release handles and update state/events; outstanding operations must fail truthfully. A reconnect requires identity and capability re-evaluation, not reuse of a stale handle.
 
-These are conceptual stages, not a finalized state-machine API. Hotplug, duplicate devices, composite interfaces, dongles, and revision changes need meaningful tests when implemented.
+These are conceptual runtime stages. Phase 1 tests identity, duplicate devices/endpoints, composite interfaces, ambiguity, invalid descriptors, and atomic snapshot replacement; the SDK exposes driver lifecycle contracts only. Real hotplug, connection recovery, dongles, and hardware revision behavior need later implementations and tests.
 
 ## Identity invariants
 

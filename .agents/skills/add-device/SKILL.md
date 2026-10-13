@@ -14,7 +14,7 @@ compatibility: opencode
 
 ## Tools
 
-Use repository inspection and the contributor guides. DRA, SDK, schema validators, and scaffold tools are conditional on implementation; none is currently runnable. Optional REA and USBPcap/Wireshark/TShark require verified installation and appropriate authorization. Read [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and the [device guide](../../../docs/en/contributors/adding-a-device.md).
+Use repository inspection and the contributor guides. [SDK 1.0](../../../docs/architecture/sdk.md), Registry and Core are implemented and checked with `cargo check --workspace` / `cargo test --workspace`. DRA, physical backends, manifest validators and scaffold tools are unimplemented. Optional REA and USBPcap/Wireshark/TShark require verified installation and appropriate authorization. Read [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and the [device guide](../../../docs/en/contributors/adding-a-device.md).
 
 ## Procedure
 
@@ -28,7 +28,7 @@ Use repository inspection and the contributor guides. DRA, SDK, schema validator
 
 ## Artifacts
 
-A sanitized identity/evidence summary, capability matrix, unresolved questions, and eventually `devices/<manufacturer>/<model>/{manifest.toml,protocol.md,validation.md,tests/,fixtures/}`. Native drivers add Cargo/source files only when implemented. In this foundation stage, deliver documentation and blockers only.
+A sanitized identity/evidence summary, capability matrix, unresolved questions, and eventually `devices/<manufacturer>/<model>/{manifest.toml,protocol.md,validation.md,tests/,fixtures/}`. Native drivers add Cargo/source files only when implemented. Current Phase 1 does not authorize adding physical drivers; report that prerequisite rather than claiming support.
 
 ## Stop conditions
 

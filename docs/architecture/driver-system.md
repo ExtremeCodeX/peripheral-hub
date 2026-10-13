@@ -1,6 +1,6 @@
 # Driver system
 
-**Status: architecture only; no SDK, interpreter, or driver is implemented.**
+**Status: SDK 1.0, explicit factory Registry, and conservative matching are implemented.** No declarative interpreter, production native driver, or physical transport exists. See the [SDK reference](sdk.md).
 
 ## Two reviewed support paths
 
@@ -10,7 +10,7 @@
 
 ## SDK and registry requirements
 
-Drivers must implement the future SDK's identity, opening/closing, capability/state, and supported-command contracts. Match VID/PID together with interface, usage, additional identifiers, and firmware restrictions; ambiguous candidates cannot be silently selected. Distinguish model identity from the physical instance.
+Drivers implement SDK 1.0 `DriverFactory`/`DeviceDriver` metadata, construction, opening/closing, capability/state, and typed-command contracts. Registry matching requires VID/PID plus interface/usage evidence and supports exact product/firmware restrictions; ambiguous candidates return an error. Model identity, physical instance and endpoint identities are distinct.
 
 Expose granular capability limits and explicit `NotSupported` behavior. Respect response framing, ACKs, sequencing, timeouts, disconnects, and permission errors. Do not return success when no packet was sent or a transport operation failed. Fake/in-memory transport is a software-test mechanism and must remain visibly separate from physical device behavior.
 

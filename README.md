@@ -6,7 +6,7 @@
 
 ## Project status
 
-Peripheral Hub is in its **documentation and organizational foundation stage**. The repository contains a planned directory structure, contributor guidance, architectural rules, and AI skill procedures. Application source files, package manifests, schemas, and CI files are still empty placeholders. There is no runnable desktop application, daemon, Device Research Assistant (DRA), or validated hardware driver yet.
+Peripheral Hub has an implemented **Phase 1 Rust foundation**: a Cargo workspace with a versioned Device SDK, explicit Device Registry, and transport-independent in-memory Core. Typed contracts, semantic validation, interface matching, error handling, structured log events, and unit tests are available. Desktop/daemon/DRA manifests, device drivers, interchange schemas, and CI remain placeholders. There is no runnable user application or validated hardware driver yet.
 
 **No device compatibility or physical functionality is currently claimed.** The existing `devices/manufacturer/device-model/` directory is a structural placeholder, not a supported product. The project specification is [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md); the [status ledger](docs/architecture/implementation-status.md) distinguishes delivered documentation from future software milestones.
 
@@ -42,7 +42,7 @@ These are roadmap items, not currently available features. Firmware flashing, bo
 | Interchange validation | Typed models, semantic checks, and JSON Schema |
 | Research | Rust DRA; optional REA, USBPcap, Wireshark/TShark |
 
-Windows 10/11 is the first target. Linux and macOS are future targets with separated transport backends, not platforms currently tested or supported. Python may be used for justified laboratory utilities, never as an application runtime.
+Windows 10/11 is the first product target. The Phase 1 libraries were checked/tested on a Linux laboratory host; this does not establish Linux desktop or hardware support. Windows/macOS builds and future OS backends remain unvalidated. Python may be used for justified laboratory utilities, never as an application runtime.
 
 ## Architectural direction
 
@@ -59,9 +59,17 @@ The frontend must not access USB/HID directly. Drivers declare granular capabili
 
 ## Getting started at this stage
 
-Start with [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and the status ledger. Documentation contributions and authorized, local protocol research can begin now.
+Install Rust with rustup and an OS-native linker. `rust-toolchain.toml` pins stable Rust **1.99.0**, rustfmt, and Clippy. From the repository root:
 
-There are **no working installation, application launch, build, or test commands yet**: the Cargo and pnpm manifests and lockfiles have no content. The contributor guide records future validation gates without presenting them as runnable instructions. Rust/Node versions, platform prerequisites, and exact daemon/desktop/DRA commands must be documented when real workspaces exist.
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo check --workspace
+cargo test --workspace
+cargo build --workspace --locked
+```
+
+See [SDK contracts and setup](docs/architecture/sdk.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [AGENTS.md](AGENTS.md). The generated `Cargo.lock` is retained. There is no application launch/installation command, and pnpm manifests remain empty. HID discovery, daemon/IPC and simulators belong to the next separately authorized phase.
 
 ## Community contributions
 

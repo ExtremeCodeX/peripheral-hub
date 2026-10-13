@@ -106,6 +106,10 @@ htmlcov/
 Thumbs.db
 Desktop.ini
 
+# Local OpenCode data
+.opencode/cache/
+.opencode/logs/
+
 # Reviewed fixtures should be synthetic/sanitized textual JSON or hex text.
 # Do not blanket-ignore fixtures/, devices/, schemas/, .agents/, or lockfiles.
 # Never force-add raw captures or proprietary artifacts to bypass these rules.

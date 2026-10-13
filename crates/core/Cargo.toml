@@ -1,0 +1,20 @@
+[package]
+name = "peripheral-hub-core"
+description = "Transport-independent device inventory and registry orchestration"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+peripheral-hub-device-sdk.workspace = true
+peripheral-hub-device-registry.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tracing-subscriber.workspace = true
+
+[lints]
+workspace = true
