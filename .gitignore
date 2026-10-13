@@ -1,0 +1,111 @@
+# Rust: retain Cargo.toml and Cargo.lock for reproducible application builds.
+target/
+**/*.rs.bk
+
+# Node.js / pnpm / Vite: retain manifests and pnpm-lock.yaml.
+node_modules/
+.pnpm-store/
+.npm/
+dist/
+.vite/
+.cache/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Tauri generated schemas / bundles; preserve source and capabilities.
+**/src-tauri/gen/
+**/src-tauri/target/
+*.msi
+*.msix
+*.appx
+*.dmg
+*.AppImage
+
+# Python is limited to optional laboratory tooling.
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+*.egg-info/
+build/
+.coverage
+.coverage.*
+htmlcov/
+
+# Private research: raw binaries, captures, sessions and unsanitized exports.
+/local-data/
+/research-data/
+*.exe
+*.dll
+*.sys
+*.pcap
+*.pcapng
+*.cap
+*.dmp
+*.dump
+*.bin
+*.hex
+*.elf
+
+# Reverse-engineering databases and transient tool artifacts.
+*.i64
+*.idb
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+*.gpr
+*.rep/
+*.bndb
+*.rzdb
+*.r2db
+*.ghidra/
+
+# Local application state and logs.
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.tmp
+*.bak
+
+# Credentials, local environment overrides and signing material.
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+/config/development/*.local.*
+
+# Editor / OS state, not shared project settings.
+.idea/
+.vscode/*.local.json
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Reviewed fixtures should be synthetic/sanitized textual JSON or hex text.
+# Do not blanket-ignore fixtures/, devices/, schemas/, .agents/, or lockfiles.
+# Never force-add raw captures or proprietary artifacts to bypass these rules.
