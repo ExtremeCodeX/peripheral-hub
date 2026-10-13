@@ -14,4 +14,4 @@ When real releases exist, this guide must be expanded with tested installation, 
 
 If you are looking for device support now, record the model, OS, firmware if known, and desired capabilities without publishing a serial, private path, executable, or raw capture. See [adding a device](../contributors/adding-a-device.md). GitHub templates and security reporting contacts are not yet configured; never submit sensitive evidence to a public issue.
 
-Consult the [README](../../../README.md) and [implementation status](../../architecture/implementation-status.md) for actual progress. There is no application failure/build result to troubleshoot before implementation exists.
+Consult the [README](../../../README.md) and [implementation status](../../architecture/implementation-status.md) for actual progress. Phase 1 Rust libraries can be built/tested using the [SDK guide](../../architecture/sdk.md), but there is no user application to launch or diagnose yet.

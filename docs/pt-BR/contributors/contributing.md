@@ -4,9 +4,9 @@ O [CONTRIBUTING.md em inglês](../../../CONTRIBUTING.md) é a referência. Esta 
 
 ## Escopo e ambiente
 
-Ainda não há aplicação, SDK, DRA, schemas ou CI funcionais. São úteis contribuições de documentação, tradução, discussão arquitetural e pesquisa local autorizada. Os fluxos de drivers e funcionalidades descritos abaixo dependem de uma etapa futura de implementação.
+A Fase 1 implementa SDK Rust, Registry e Core em memória, com verificações de workspace e testes unitários funcionais. Leia os [contratos do SDK](../../architecture/sdk.md). Aplicação, backend HID, daemon, DRA, validadores de manifestos, schemas e CI continuam pendentes. Esta execução termina antes da Fase 2, que precisa de revisão e autorização posterior.
 
-A stack prevista é Rust estável/Cargo, Node.js compatível com as futuras dependências, pnpm e Tauri 2 + React/TypeScript/Vite. Windows 10/11 é prioritário; preserve a portabilidade para Linux/macOS. Versões e dependências específicas de plataforma serão registradas com os workspaces reais. Manifests e lockfiles estão vazios; não há `pnpm dev`, `cargo run` ou comando DRA funcional.
+A stack prevista é Rust estável/Cargo, Node.js compatível com as futuras dependências, pnpm e Tauri 2 + React/TypeScript/Vite. Rust 1.99.0 está fixado com rustfmt/Clippy, edition 2024 e `Cargo.lock` gerado. Instale rustup e linker nativo conforme a referência do SDK. Somente três crates de biblioteca implementadas são membros do workspace. Manifests pnpm continuam vazios; não há `pnpm dev`, `cargo run` ou comando DRA funcional. Windows 10/11 é prioritário; preserve a portabilidade para Linux/macOS sem afirmar suporte físico validado.
 
 O repositório canônico informado pelo mantenedor é [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub), com branch padrão `main`. Faça fork, clone e crie uma branch focada. O checkout local agora possui histórico Git e remoto `origin`; a auditoria documental original ocorreu antes dessa configuração. Mantenha lockfiles reais, sem dependências instaladas ou produtos de build no Git.
 
@@ -14,7 +14,7 @@ O repositório existente inclui o texto Apache-2.0 em `LICENSE`, que deve ser pr
 
 ## Dispositivos e funcionalidades
 
-Para hardware, siga [como adicionar um dispositivo](adding-a-device.md): identidade e interfaces → evidências autorizadas → driver quando o SDK existir → testes → documentação e revisão. VID/PID não bastam. Binários e capturas brutos ficam localmente em diretório ignorado; somente evidências necessárias, autorizadas e sanitizadas entram na contribuição.
+Para hardware, siga [como adicionar um dispositivo](adding-a-device.md): identidade e interfaces → evidências autorizadas → driver quando transporte/validadores e escopo estiverem disponíveis → testes → documentação e revisão. VID/PID não bastam. Binários e capturas brutos ficam localmente em diretório ignorado; somente evidências necessárias, autorizadas e sanitizadas entram na contribuição.
 
 Para funcionalidades, defina escopo e critérios verificáveis, identifique a camada responsável e registre decisões relevantes em ADRs. Preserve frontend → Tauri restrito → IPC tipado/versionado → daemon na sessão do usuário → SDK/drivers → transporte. DRA é independente; REA é opcional. Sem Electron, runtime Python, plugins nativos arbitrários, daemon elevado ou listener público.
 
@@ -22,18 +22,17 @@ Use erros e capacidades explícitos; operações ausentes retornam `NotSupported
 
 ## Verificações
 
-Nesta etapa, revise conteúdo, links relativos, frontmatter das skills, consistência de traduções e afirmações de status. Não execute manifests vazios como testes.
-
-**Quando existirem workspaces e ferramentas reais**, a ordem será:
+Nas bibliotecas Rust implementadas, execute na raiz os comandos abaixo. Revise também conteúdo, links relativos, frontmatter, traduções e afirmações de status. Não execute manifests vazios dos demais componentes como testes.
 
 ```sh
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
+cargo check --workspace
 cargo test --workspace
-pnpm install --frozen-lockfile
+cargo build --workspace --locked
 ```
 
-Depois, execute somente scripts lint/test/build realmente definidos e validadores implementados de schema/semântica. São verificações futuras, não instruções funcionais atuais. Registre resultados e bloqueios exatos. Testes significativos devem cobrir contratos, ambiguidades, limites, dados inválidos, desconexão, timeout, permissão, `NotSupported`, IPC, perfis e sanitização DRA. Hardware é opt-in, fora da CI automática, com SO/firmware/capacidade registrados.
+Frontend futuro requer `pnpm install --frozen-lockfile` e somente scripts definidos; validação de manifestos/schemas requer validadores reais. Esses componentes ainda são placeholders. Registre resultados e bloqueios exatos. Testes significativos devem cobrir contratos, ambiguidades, limites, dados inválidos, desconexão, timeout, permissão e `NotSupported`; IPC, perfis e sanitização DRA serão testados quando implementados. Hardware é opt-in, fora da CI automática, com SO/firmware/capacidade registrados.
 
 ## IA e pull requests
 

@@ -2,7 +2,7 @@
 
 ## Scope and truthfulness
 
-- Read [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md) in full, inspect existing files and nested instructions, and check [implementation status](docs/architecture/implementation-status.md) before work. Respect the current user's scope: the foundation stage authorizes documentation and organization only, not software implementation.
+- Read [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md) in full, inspect existing files and nested instructions, and check [implementation status](docs/architecture/implementation-status.md) before work. Respect the current user's scope: this execution authorizes Phase 1 (Rust foundation/SDK/Core/Registry) only. Phase 2 needs a later user review; do not implement HID backends, daemon, or IPC now.
 - Preserve existing directories and user changes. Inspect before editing; no destructive Git cleanup, fabricated implementations, invented packets, or fabricated test results.
 - Record actual changes, commands, failures, and blockers in the status ledger. Never equate directory scaffolding, simulated tests, or static analysis with working software or hardware compatibility.
 
@@ -14,7 +14,7 @@
 - Native drivers are reviewed, explicitly registered Rust crates compiled into the build, not arbitrary runtime DLLs. Declarative drivers permit only modeled operations with size, type, timeout, and rate limits; untrusted manifests cannot become arbitrary commands.
 - Distinguish device model and physical instance. Match interfaces/usage and additional evidence, not VID/PID alone. Unsupported operations return `NotSupported`; transport failures must not become success.
 - Use typed errors/DTOs, explicit contract/schema versions, SQLite migrations, versioned JSON profiles, and TOML typed plus semantic validation. Tokio only where useful. Add Cargo members only for implemented crates.
-- Follow surrounding conventions; future Rust uses rustfmt/Clippy and frontend uses strict TypeScript with configured linting. Document public contracts and architectural changes with ADRs. English is the technical reference; maintain priority public guides in pt-BR.
+- Rust uses edition 2024 and stable 1.99.0 pinned in `rust-toolchain.toml`, workspace rustfmt/Clippy, documented public APIs and forbidden unsafe code. Future frontend uses strict TypeScript with configured linting. Document public contracts and architectural changes with ADRs. English is the technical reference; maintain priority public guides in pt-BR.
 
 ## Security and evidence
 
@@ -29,14 +29,14 @@ Load the matching `.agents/skills/<name>/SKILL.md` and its relevant references b
 
 ## Validation order and commands
 
-**Current baseline:** manifests, schemas, sources, and CI are empty; no application build/test/start command is available. Do not run placeholder workspaces or claim CI passes. Documentation-only work needs relative-link, frontmatter, consistency, and diff checks, not invented software tests.
+**Current implementation:** the Cargo workspace contains `peripheral-hub-device-sdk`, `peripheral-hub-device-registry`, and `peripheral-hub-core` only. See [SDK reference](docs/architecture/sdk.md). Other manifests/schemas/CI remain placeholders; there is no runnable desktop, daemon, or DRA. Do not run empty frontend/application packages or claim CI passes.
 
-When real workspaces exist, inspect package names/scripts first, then validate in this order:
+Inspect package names/scripts first, then validate in this order:
 
 1. Formatting: `cargo fmt --all --check`.
 2. Rust static checks: `cargo clippy --workspace --all-targets -- -D warnings` (document justified target restrictions).
-3. Unit/integration tests: `cargo test --workspace`; include fake-transport and error-path tests, SDK matching, IPC, profiles, and DRA sanitization.
-4. Frontend: `pnpm install --frozen-lockfile`, then only lint/test/build scripts actually defined in `package.json`.
+3. Compilation and tests: `cargo check --workspace`, `cargo test --workspace`; Phase 1 covers contract-test doubles, error paths, SDK matching, inventory and logging. IPC, profiles, DRA and physical transports require later phases.
+4. Frontend (only when implemented/in scope): `pnpm install --frozen-lockfile`, then only lint/test/build scripts actually defined in `package.json`.
 5. Implemented schema/semantic validators; invalid inputs must fail. Hardware tests are explicit opt-in and never automatic CI work.
 
 Record which checks ran, exact results, and unavailable prerequisites. No push, PR creation, releases, proprietary binary execution, or external data sharing without explicit authorization. Apache-2.0 remains proposed until confirmed.

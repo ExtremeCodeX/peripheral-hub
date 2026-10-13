@@ -1,6 +1,6 @@
 # Peripheral Hub AI skills
 
-These repository-local procedures follow [AGENTS.md](../../AGENTS.md), the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md), and the [status ledger](../../docs/architecture/implementation-status.md). They are documentation, not implemented DRA commands or autonomous hardware tools. Current user scope takes precedence: the foundation stage permits documentation and organization only.
+These repository-local procedures follow [AGENTS.md](../../AGENTS.md), the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md), and the [status ledger](../../docs/architecture/implementation-status.md). They are procedures, not autonomous hardware tools. Current user scope authorizes Phase 1 Rust foundation/SDK/Core/Registry only; Phase 2 requires later review.
 
 ## Choosing a skill
 
@@ -20,7 +20,7 @@ The device workflow is identification → evidence → implementation → valida
 
 Each `.agents/skills/<name>/SKILL.md` begins with YAML `name`, `description`, and `compatibility`. Read it and any linked references before acting. OpenCode's documented skill location is preserved; see [official skills guidance](https://opencode.ai/docs/skills/). Restart OpenCode after changing skills/configuration so a new session loads them.
 
-Tools mentioned in a procedure are conditional: verify availability, actual commands, manifests, and authorization first. DRA, driver scaffold/validation tools, schemas, SDK, and CI are currently absent as working implementations. Do not turn planned command examples in the master document into claimed executable instructions. REA is optional; no MCP server is configured by this foundation.
+The [SDK reference](../../docs/architecture/sdk.md) documents actual Phase 1 APIs. Rust checks are real: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo check --workspace`, and `cargo test --workspace`. DRA, physical backends, scaffold/manifest-validation tools, interchange schemas, frontend, and CI are still unimplemented. Verify tools/scope before acting and do not turn planned master CLI examples into claimed commands. REA remains optional; no MCP server is configured.
 
 ## Evidence and handoff
 

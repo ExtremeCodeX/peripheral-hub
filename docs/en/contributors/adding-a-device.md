@@ -2,7 +2,7 @@
 
 [Português brasileiro](../../pt-BR/contributors/adding-a-device.md)
 
-**Current stage:** no SDK, DRA, manifest validator, or driver scaffold is implemented. This guide prepares an evidence-backed contribution; implementation steps wait for real tools/contracts and authorization.
+**Current stage:** [SDK 1.0, Registry, and Core](../../architecture/sdk.md) are implemented. DRA, physical transports, manifest validators, and scaffold utilities are not. This guide prepares an evidence-backed contribution; actual hardware drivers need later authorized scope and implemented backends/validators.
 
 ## Start with identity and a limited goal
 

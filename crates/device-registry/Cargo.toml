@@ -1,0 +1,15 @@
+[package]
+name = "peripheral-hub-device-registry"
+description = "Explicit evidence-based driver registration and matching"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+peripheral-hub-device-sdk.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true

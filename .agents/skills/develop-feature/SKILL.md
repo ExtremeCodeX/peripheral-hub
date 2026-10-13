@@ -12,7 +12,7 @@ User-authorized scope, acceptance criteria, current implementation status, affec
 
 ## Tools
 
-Read [AGENTS.md](../../../AGENTS.md), [architecture overview](../../../docs/architecture/overview.md), [IPC design](../../../docs/architecture/ipc.md), and existing ADRs. Inspect actual manifests/scripts before choosing Rust/Cargo or pnpm commands. Current application workspaces are empty; implementation requires a later authorized stage.
+Read [AGENTS.md](../../../AGENTS.md), [architecture overview](../../../docs/architecture/overview.md), [SDK reference](../../../docs/architecture/sdk.md), [IPC design](../../../docs/architecture/ipc.md), and existing ADRs. Phase 1 has three real Cargo packages: `peripheral-hub-device-sdk`, `peripheral-hub-device-registry`, `peripheral-hub-core`. Run root `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo check --workspace`, and `cargo test --workspace`. Application/pnpm/IPC manifests remain placeholders; later layers need separate authorization.
 
 ## Procedure
 
@@ -27,7 +27,7 @@ Read [AGENTS.md](../../../AGENTS.md), [architecture overview](../../../docs/arch
 
 ## Artifacts
 
-Implemented code/tests when authorized, public contract documentation, relevant ADRs, translation updates, check results, and a precise status update. In the foundation stage, only the documentary design and prerequisite record are deliverables.
+Implemented code/tests within the authorized phase, public contract documentation, relevant ADRs, translation updates, check results, and a precise status update. Documentation-only requests still produce no application code.
 
 ## Stop conditions
 

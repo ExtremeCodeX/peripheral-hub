@@ -6,7 +6,7 @@
 
 ## Estado do projeto
 
-O Peripheral Hub está na **etapa de fundação documental e organizacional**. Há uma estrutura de diretórios planejada, orientações de contribuição, regras arquiteturais e procedimentos de skills de IA. Os arquivos de código, manifests, schemas e CI continuam como placeholders vazios. Ainda não existem aplicativo desktop, daemon, Device Research Assistant (DRA) ou driver validado executáveis.
+O Peripheral Hub possui a **fundação Rust da Fase 1 implementada**: workspace Cargo com Device SDK versionado, Device Registry explícito e Core independente de transporte, em memória. Contratos tipados, validação semântica, matching de interfaces, erros, eventos de logging estruturado e testes unitários estão disponíveis. Manifests desktop/daemon/DRA, drivers, schemas de intercâmbio e CI continuam como placeholders. Ainda não há aplicação de usuário executável ou driver de hardware validado.
 
 **Nenhuma compatibilidade física ou funcionalidade de hardware é declarada.** `devices/manufacturer/device-model/` é apenas um placeholder estrutural. A referência do projeto é [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md); o [registro de status](docs/architecture/implementation-status.md) diferencia a documentação entregue dos marcos futuros de software.
 
@@ -42,7 +42,7 @@ São itens do roadmap, não recursos disponíveis. Gravação de firmware, bootl
 | Validação | Modelos tipados, regras semânticas e JSON Schema |
 | Pesquisa | DRA em Rust; REA, USBPcap e Wireshark/TShark opcionais |
 
-Windows 10/11 é a prioridade. Linux e macOS são alvos futuros com backends separados, sem suporte ou testes declarados nesta etapa. Python é permitido somente para ferramentas auxiliares justificadas de laboratório.
+Windows 10/11 é a prioridade do produto. As bibliotecas da Fase 1 foram verificadas/testadas em um host Linux de laboratório; isso não estabelece suporte desktop ou físico no Linux. Builds Windows/macOS e backends futuros continuam sem validação. Python é permitido somente para ferramentas auxiliares justificadas de laboratório.
 
 ## Arquitetura planejada
 
@@ -59,9 +59,17 @@ O frontend não acessará USB/HID diretamente. Operações não suportadas devem
 
 ## Como começar
 
-Leia o [guia de contribuição](docs/pt-BR/contributors/contributing.md), o [AGENTS.md](AGENTS.md) e o registro de status. Já é possível contribuir com documentação e pesquisa local autorizada de protocolos.
+Instale Rust via rustup e um linker nativo do sistema. `rust-toolchain.toml` fixa Rust estável **1.99.0**, rustfmt e Clippy. Na raiz do repositório:
 
-**Ainda não há comandos funcionais de instalação, execução, build ou testes**: manifests e lockfiles Cargo/pnpm estão vazios. Versões dos runtimes, dependências de plataforma e comandos exatos do daemon, desktop e DRA serão documentados quando houver workspaces reais. Os comandos futuros de validação estão identificados como tal no guia de contribuição.
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo check --workspace
+cargo test --workspace
+cargo build --workspace --locked
+```
+
+Consulte os [contratos e setup do SDK](docs/architecture/sdk.md), o [guia de contribuição](docs/pt-BR/contributors/contributing.md) e o [AGENTS.md](AGENTS.md). O `Cargo.lock` gerado é preservado. Ainda não há comando de instalação/inicialização da aplicação e os manifests pnpm seguem vazios. Descoberta HID, daemon/IPC e simuladores dependem da próxima fase, autorizada separadamente.
 
 ## Participação comunitária
 

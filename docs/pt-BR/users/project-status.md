@@ -14,4 +14,4 @@ Quando existirem releases reais, este guia deverá conter instalação testada, 
 
 Para solicitar suporte a um dispositivo, registre modelo, SO, firmware quando conhecido e capacidades desejadas, sem publicar serial, caminho privado, executável ou captura bruta. Consulte [como adicionar um dispositivo](../contributors/adding-a-device.md). Templates GitHub e contato privado de segurança ainda não estão configurados; não envie evidências sensíveis a issues públicas.
 
-O [README](../../../README.pt-BR.md) e o [status técnico](../../architecture/implementation-status.md) mostram o progresso real. Ainda não há aplicação/build implementado para diagnosticar.
+O [README](../../../README.pt-BR.md) e o [status técnico](../../architecture/implementation-status.md) mostram o progresso real. As bibliotecas Rust da Fase 1 possuem build/testes conforme o [guia do SDK](../../architecture/sdk.md), mas ainda não há aplicação de usuário para inicializar ou diagnosticar.

@@ -12,11 +12,11 @@ Authorized implementation scope, sanitized protocol evidence, identity/interface
 
 ## Tools
 
-Read [AGENTS.md](../../../AGENTS.md), [driver architecture](../../../docs/architecture/driver-system.md), and the [protocol format](../../../docs/protocols/specification-format.md). Inspect actual Cargo members and validators. Rust/Cargo, fake transport, schema/semantic checks, and scaffold tools are conditional on implementation; none is currently an available project command.
+Read [AGENTS.md](../../../AGENTS.md), [SDK 1.0](../../../docs/architecture/sdk.md), [driver architecture](../../../docs/architecture/driver-system.md), and the [protocol format](../../../docs/protocols/specification-format.md). SDK/Registry/Core checks are available with `cargo check --workspace` and `cargo test --workspace` after formatting/Clippy. `DriverFactory`/`DeviceDriver` contracts exist; physical backends, declarative interpreter, manifest validators and scaffold tools do not. Contract-test doubles are private unit-test helpers, not a runtime simulator.
 
 ## Procedure
 
-1. Confirm implementation authorization and SDK readiness. In the foundation stage, document the design and blockers only. Do not create a Cargo manifest without source or invent a compatible SDK.
+1. Confirm implementation authorization and SDK/backend/validator readiness. Current scope is Phase 1 contracts only; physical drivers need a later authorized stage. Do not create a Cargo manifest without source or invent missing backends/manifest APIs.
 2. Choose declarative support only for safe operations already modeled by the bounded interpreter. Use compiled, explicitly registered Rust for complex framing, sequencing, or state. Never load arbitrary runtime DLLs.
 3. Specify identity using VID/PID plus interfaces, usage, revision evidence, and ambiguity handling. Separate model ID from physical instance ID.
 4. Implement only evidenced capabilities. Define byte/type/range limits, timeouts, rate limits, lifecycle, ACK/response handling, and explicit errors. Unknown or absent operations return `NotSupported`; transport failure must not return success.

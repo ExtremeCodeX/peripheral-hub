@@ -6,7 +6,7 @@ Thank you for helping build a transparent, community-maintained peripheral platf
 
 ## What contributors can do now
 
-This stage delivers documentation and organization only. All application manifests, source placeholders, schemas, and workflows remain empty. Documentation review, translations, architectural discussion, and authorized local research are useful now. Driver/feature development below is a workflow for subsequent implementation stages, not an assertion that an SDK or tooling is available.
+Phase 1 implements the Rust SDK, Registry and in-memory Core, with working workspace checks and unit tests. Read the [SDK reference](docs/architecture/sdk.md) for actual contracts. Application/HID/daemon/DRA implementations, manifest validators, schemas and CI remain future work. This execution stops before Phase 2; contributors must agree on the next scope before implementing those layers.
 
 The existing repository includes Apache-2.0 text in `LICENSE`. Preserve it; explicit maintainer confirmation required by the master specification remains pending before official distribution. A published security contact and community conduct/enforcement policy are also pending. Be respectful, constructive, and mindful of personal information in every interaction.
 
@@ -14,7 +14,7 @@ The existing repository includes Apache-2.0 text in `LICENSE`. Preserve it; expl
 
 The intended toolchain is stable Rust with Cargo, Node.js compatible with the eventual frontend dependencies, and pnpm. Windows 10/11 is the initial target; Linux/macOS portability must be preserved. Desktop system prerequisites should be taken from [Tauri 2 documentation](https://v2.tauri.app/start/prerequisites/) and recorded for the implemented target.
 
-Versions are not pinned yet: `rust-toolchain.toml`, `package.json`, and lockfiles are empty. Do not assume a working `cargo run`, `pnpm dev`, or DRA command. When workspaces are implemented, maintainers must select versions, add only actual Cargo members, generate real lockfiles, and publish tested setup/run instructions. Commit `Cargo.lock` and `pnpm-lock.yaml` for reproducibility; do not commit dependency trees or build output.
+Rust is pinned to stable 1.99.0 with rustfmt/Clippy, edition 2024, and a generated `Cargo.lock`. Install rustup plus a native linker; see the SDK reference for prerequisites. Only the three implemented library crates are workspace members. `package.json` and pnpm lockfile/workspace are still empty; there is no `cargo run`, `pnpm dev`, or DRA command. Add Cargo members only with real source. Preserve real lockfiles; do not commit dependency trees or build output.
 
 The canonical repository supplied by the maintainer is [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub), with default branch `main`. Fork it, clone your fork, and create a focused branch. The local checkout now contains Git history and an `origin` remote; the original documentary audit predated that setup.
 
@@ -39,18 +39,17 @@ For frontend work, cover loading, empty, disconnected, denied, failed, simulated
 
 ## Tests and review gates
 
-No application checks can run against the current empty manifests. For documentation changes, inspect content, relative links, frontmatter, scope, translations, and status claims.
-
-**Future gates, conditional on actual workspaces and tools:**
+For the implemented Rust libraries, run the following gates from the root. For documentation changes, also inspect content, relative links, frontmatter, scope, translations, and status claims.
 
 ```sh
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
+cargo check --workspace
 cargo test --workspace
-pnpm install --frozen-lockfile
+cargo build --workspace --locked
 ```
 
-Then run the lint, test, and build scripts actually defined in the frontend manifests, plus implemented schema and semantic validators. These commands are not current setup instructions. Report failures and unavailable tools honestly.
+Future frontend work must run `pnpm install --frozen-lockfile` and only defined lint/test/build scripts; future manifest/schema validation needs real validators. Those commands are unavailable for the current placeholders. Report failures and unavailable tools honestly.
 
 Meaningful tests should cover typed contracts, ambiguous driver matching, lengths/limits, invalid inputs, `NotSupported`, disconnects, timeouts, IPC authorization, profile migrations, and DRA correlation/sanitization. Frontend tests must distinguish simulated and physical states. Hardware tests are opt-in, outside automatic CI, with exact OS/device/firmware/capability evidence.
 
