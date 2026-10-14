@@ -2,7 +2,7 @@
 
 ## Scope and truthfulness
 
-- Read [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md) in full, inspect existing files and nested instructions, and check [implementation status](docs/architecture/implementation-status.md) before work. Respect the current user's scope: this execution authorizes Phase 1 (Rust foundation/SDK/Core/Registry) only. Phase 2 needs a later user review; do not implement HID backends, daemon, or IPC now.
+- Read [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md) in full, inspect existing files and nested instructions, and check [implementation status](docs/architecture/implementation-status.md) before work. This execution authorizes Phase 2 (real HID discovery/transport, daemon, protected IPC, connection management, simulation) only. Preserve SDK 1.0/Core/Registry contracts; do not advance to Phase 3 desktop work.
 - Preserve existing directories and user changes. Inspect before editing; no destructive Git cleanup, fabricated implementations, invented packets, or fabricated test results.
 - Record actual changes, commands, failures, and blockers in the status ledger. Never equate directory scaffolding, simulated tests, or static analysis with working software or hardware compatibility.
 
@@ -29,13 +29,13 @@ Load the matching `.agents/skills/<name>/SKILL.md` and its relevant references b
 
 ## Validation order and commands
 
-**Current implementation:** the Cargo workspace contains `peripheral-hub-device-sdk`, `peripheral-hub-device-registry`, and `peripheral-hub-core` only. See [SDK reference](docs/architecture/sdk.md). Other manifests/schemas/CI remain placeholders; there is no runnable desktop, daemon, or DRA. Do not run empty frontend/application packages or claim CI passes.
+**Current implementation:** six Cargo members: SDK, Registry, Core, `peripheral-hub-transport-hid`, `peripheral-hub-ipc`, and `peripheral-hub-daemon`. See [SDK reference](docs/architecture/sdk.md) and [daemon/transport guide](docs/architecture/daemon.md). The daemon has a diagnostic CLI and explicit `--simulate` mode; physical drivers, desktop, DRA, profiles, schemas and CI remain unimplemented. Do not run empty frontend packages or claim CI/hardware compatibility passes.
 
 Inspect package names/scripts first, then validate in this order:
 
 1. Formatting: `cargo fmt --all --check`.
 2. Rust static checks: `cargo clippy --workspace --all-targets -- -D warnings` (document justified target restrictions).
-3. Compilation and tests: `cargo check --workspace`, `cargo test --workspace`; Phase 1 covers contract-test doubles, error paths, SDK matching, inventory and logging. IPC, profiles, DRA and physical transports require later phases.
+3. Compilation and tests: `cargo check --workspace`, `cargo test --workspace`; tests cover contracts, matching, inventory/logging, bounded HID I/O, local IPC, simulated lifecycle, errors and deadlines. Hardware I/O and Windows runtime checks are opt-in, separate from software/static evidence. Profiles/DRA/frontend need later phases.
 4. Frontend (only when implemented/in scope): `pnpm install --frozen-lockfile`, then only lint/test/build scripts actually defined in `package.json`.
 5. Implemented schema/semantic validators; invalid inputs must fail. Hardware tests are explicit opt-in and never automatic CI work.
 

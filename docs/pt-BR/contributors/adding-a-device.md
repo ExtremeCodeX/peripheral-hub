@@ -2,7 +2,7 @@
 
 [English](../../en/contributors/adding-a-device.md)
 
-**Etapa atual:** [SDK 1.0, Registry e Core](../../architecture/sdk.md) estão implementados. DRA, transportes físicos, validadores de manifestos e scaffold continuam pendentes. Este guia prepara uma contribuição baseada em evidências; drivers físicos dependem de escopo posterior autorizado e backends/validadores reais.
+**Etapa atual:** [SDK 1.0, Registry e Core](../../architecture/sdk.md) são preservados; a [Fase 2](../users/daemon.md) implementa descoberta/transporte HID real, IPC protegido, daemon e simulação explícita. DRA, validadores de manifestos, scaffold e drivers físicos continuam pendentes. Um driver real exige escopo autorizado, política/protocolo comprovados e validação física por capacidade; enumeração bem-sucedida não basta.
 
 ## Identidade e objetivo limitado
 

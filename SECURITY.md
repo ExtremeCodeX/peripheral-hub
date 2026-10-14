@@ -4,7 +4,7 @@
 
 ## Current status and reporting
 
-There are no published supported versions or runnable components yet. This policy defines expected handling for the planned application, drivers, research tooling, dependencies, and repository materials; it does not claim existing security controls have been implemented.
+There are no published supported releases yet. Phase 2 provides a runnable Rust daemon/diagnostic client and implements bounded local IPC, same-user authorization and reviewed HID policy boundaries. Linux software/runtime checks and Windows static checks are separate from a security audit or hardware/Windows runtime validation; see [implementation evidence](docs/architecture/implementation-status.md). Future desktop/drivers/research tooling remain governed by this policy.
 
 A maintainer-verified private reporting contact **has not been configured**. The canonical repository is [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub); availability of private vulnerability reporting has not been verified. Before accepting sensitive reports or publishing releases, maintainers must provide and test a private channel and establish response ownership. No response-time commitment or email address is invented here.
 

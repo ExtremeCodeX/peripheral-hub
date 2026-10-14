@@ -1,6 +1,6 @@
 # Device lifecycle and identity
 
-**Status: identity, matching, and caller-supplied inventory are implemented in Phase 1.** No enumeration backend, open connection management, or hotplug monitor exists. See the [SDK reference](sdk.md).
+**Status: Phase 1 identity/matching/inventory preserved; Phase 2 adds real enumeration, polling and managed driver connections.** See [SDK](sdk.md) and [daemon](daemon.md). There is no physical driver support claim or platform-native hotplug event subscription.
 
 ## Required stages
 
@@ -12,7 +12,7 @@
 6. **Operate:** validate parameters and capability support, respect sequencing/ACKs/timeouts, and report actual success or error. Unsupported operations use `NotSupported`.
 7. **Disconnect/close:** release handles and update state/events; outstanding operations must fail truthfully. A reconnect requires identity and capability re-evaluation, not reuse of a stale handle.
 
-These are conceptual runtime stages. Phase 1 tests identity, duplicate devices/endpoints, composite interfaces, ambiguity, invalid descriptors, and atomic snapshot replacement; the SDK exposes driver lifecycle contracts only. Real hotplug, connection recovery, dongles, and hardware revision behavior need later implementations and tests.
+The daemon executes these stages with conservative matching and explicit opening. Simulated integration tests cover polling, state, disconnects/reconnects and faults. Physical HID enumeration was observed separately, without opening/report writes; physical lifecycle/I/O, parent grouping, dongles and firmware behavior remain unvalidated. Polling can miss transitions shorter than its interval.
 
 ## Identity invariants
 

@@ -2,11 +2,11 @@
 
 [English](../../en/users/project-status.md)
 
-Ainda não existe aplicação instalável ou executável do Peripheral Hub. Controle desktop, perfis, macros, displays, daemon, descoberta de dispositivos e DRA são planejados. Nenhuma compatibilidade física ou de sistema operacional foi validada.
+O Peripheral Hub possui daemon/CLI Rust da Fase 2 executáveis, enumeração/transporte HID real implementado e simulação explícita. Ainda não há GUI desktop instalável, driver físico, perfis, macros, displays ou DRA. Evidências de execução/software no Linux e checagens estáticas Windows não validam controle físico nem runtime Windows. Consulte o [guia do daemon](daemon.md).
 
 ## Instalação e uso
 
-Não há instalador suportado, comando de inicialização ou formato de perfil utilizável nesta etapa. Arquivos vazios de pacotes/configurações/schemas são placeholders. Não utilize o diretório de fabricante/modelo como driver nem trate exemplos futuros de CLI como comandos disponíveis.
+Não há instalador desktop ou formato de perfil. O comando real do daemon é `cargo run -p peripheral-hub-daemon -- serve --simulate`; consulte com `health` e `list` em outro terminal. Sem `--simulate`, há descoberta real, mas nenhum driver de controle físico registrado. Arquivos restantes de desktop/DRA/configurações/schemas são placeholders, não pacotes funcionais ou entradas de compatibilidade.
 
 Quando existirem releases reais, este guia deverá conter instalação testada, inicialização separada de desktop/daemon, importação/exportação de perfis, diagnóstico e matriz de compatibilidade comprovada. Windows 10/11 é a prioridade pretendida, não uma garantia atual.
 
@@ -14,4 +14,4 @@ Quando existirem releases reais, este guia deverá conter instalação testada, 
 
 Para solicitar suporte a um dispositivo, registre modelo, SO, firmware quando conhecido e capacidades desejadas, sem publicar serial, caminho privado, executável ou captura bruta. Consulte [como adicionar um dispositivo](../contributors/adding-a-device.md). Templates GitHub e contato privado de segurança ainda não estão configurados; não envie evidências sensíveis a issues públicas.
 
-O [README](../../../README.pt-BR.md) e o [status técnico](../../architecture/implementation-status.md) mostram o progresso real. As bibliotecas Rust da Fase 1 possuem build/testes conforme o [guia do SDK](../../architecture/sdk.md), mas ainda não há aplicação de usuário para inicializar ou diagnosticar.
+O [README](../../../README.pt-BR.md) e o [status técnico](../../architecture/implementation-status.md) mostram o progresso real. Bibliotecas e daemon possuem build/testes; consulte o [guia do daemon](daemon.md) para diagnóstico. Ainda não há GUI desktop para inicializar.

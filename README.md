@@ -6,7 +6,7 @@
 
 ## Project status
 
-Peripheral Hub has an implemented **Phase 1 Rust foundation**: a Cargo workspace with a versioned Device SDK, explicit Device Registry, and transport-independent in-memory Core. Typed contracts, semantic validation, interface matching, error handling, structured log events, and unit tests are available. Desktop/daemon/DRA manifests, device drivers, interchange schemas, and CI remain placeholders. There is no runnable user application or validated hardware driver yet.
+Peripheral Hub has an implemented **Rust foundation and Phase 2 daemon**: SDK 1.0, Registry, Core, real `hidapi` discovery/report transport, versioned local IPC, connection management and explicit software simulation. The Rust daemon and diagnostic client run independently of a GUI. Desktop, physical device drivers, profiles, DRA, interchange schemas and CI remain unimplemented; no physical control capability is validated.
 
 **No device compatibility or physical functionality is currently claimed.** The existing `devices/manufacturer/device-model/` directory is a structural placeholder, not a supported product. The project specification is [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md); the [status ledger](docs/architecture/implementation-status.md) distinguishes delivered documentation from future software milestones.
 
@@ -69,7 +69,15 @@ cargo test --workspace
 cargo build --workspace --locked
 ```
 
-See [SDK contracts and setup](docs/architecture/sdk.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [AGENTS.md](AGENTS.md). The generated `Cargo.lock` is retained. There is no application launch/installation command, and pnpm manifests remain empty. HID discovery, daemon/IPC and simulators belong to the next separately authorized phase.
+Run the explicit software-only backend in one terminal and query it from another:
+
+```sh
+cargo run -p peripheral-hub-daemon -- serve --simulate
+cargo run -p peripheral-hub-daemon -- health
+cargo run -p peripheral-hub-daemon -- list
+```
+
+For non-destructive physical HID inventory, use `cargo run -p peripheral-hub-daemon -- enumerate`; physical daemon mode is `serve` without `--simulate`. Unknown devices are never automatically opened or written. See [daemon and transport guide](docs/architecture/daemon.md), [SDK contracts](docs/architecture/sdk.md), and [CONTRIBUTING.md](CONTRIBUTING.md). Linux daemon tests and Windows cross-target static checks are recorded separately; Windows runtime/hardware control is unvalidated. pnpm manifests remain empty and no desktop installer exists.
 
 ## Community contributions
 

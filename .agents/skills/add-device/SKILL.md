@@ -14,7 +14,7 @@ compatibility: opencode
 
 ## Tools
 
-Use repository inspection and the contributor guides. [SDK 1.0](../../../docs/architecture/sdk.md), Registry and Core are implemented and checked with `cargo check --workspace` / `cargo test --workspace`. DRA, physical backends, manifest validators and scaffold tools are unimplemented. Optional REA and USBPcap/Wireshark/TShark require verified installation and appropriate authorization. Read [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and the [device guide](../../../docs/en/contributors/adding-a-device.md).
+Use repository inspection and guides. [SDK 1.0](../../../docs/architecture/sdk.md), Registry and Core are preserved; [Phase 2](../../../docs/architecture/daemon.md) supplies real non-destructive `cargo run -p peripheral-hub-daemon -- enumerate` and explicit `serve --simulate` diagnostics. DRA, proprietary physical drivers, manifest validators and scaffold tools remain absent. REA/capture tools require verified installation/authorization. Read [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and [device guide](../../../docs/en/contributors/adding-a-device.md).
 
 ## Procedure
 
@@ -28,7 +28,7 @@ Use repository inspection and the contributor guides. [SDK 1.0](../../../docs/ar
 
 ## Artifacts
 
-A sanitized identity/evidence summary, capability matrix, unresolved questions, and eventually `devices/<manufacturer>/<model>/{manifest.toml,protocol.md,validation.md,tests/,fixtures/}`. Native drivers add Cargo/source files only when implemented. Current Phase 1 does not authorize adding physical drivers; report that prerequisite rather than claiming support.
+A sanitized identity/evidence summary, capability matrix, unresolved questions, and eventually `devices/<manufacturer>/<model>/{manifest.toml,protocol.md,validation.md,tests/,fixtures/}`. Native drivers add source only when implemented/evidence-backed. Current Phase 2 provides communication infrastructure and simulation; enumeration alone does not authorize unknown operations or establish model support.
 
 ## Stop conditions
 
