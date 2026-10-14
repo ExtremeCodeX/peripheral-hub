@@ -1,6 +1,6 @@
 # Architecture overview
 
-**Status: Phase 1 Rust foundation implemented; application runtime remains planned.** This document follows the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md). The [SDK reference](sdk.md) describes actual contracts; the [status ledger](implementation-status.md) records validation.
+**Status: SDK foundation and Phase 2 HID/IPC/daemon implemented; desktop remains planned.** This document follows the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md). See [SDK reference](sdk.md), [daemon guide](daemon.md) and [validation ledger](implementation-status.md).
 
 ## Layers and trust boundaries
 
@@ -28,9 +28,10 @@ The frontend must not access USB/HID or submit arbitrary packets. The daemon own
 | Path | Planned responsibility | Current state |
 | --- | --- | --- |
 | `apps/desktop/` | Tauri 2 + React/TypeScript/Vite interface | Empty package/config placeholders and directories |
-| `apps/daemon/` | User-session runtime and IPC server | Empty manifest and source directory |
+| `apps/daemon/` | User-session runtime, lifecycle, simulation and IPC diagnostics | Implemented binary/library and software integration tests |
 | `apps/device-research-assistant/` | Rust research CLI | Empty manifest/source placeholder |
 | `crates/core`, `crates/device-sdk`, `crates/device-registry` | Inventory, versioned contracts, explicit factory matching | Implemented libraries with unit tests |
+| `crates/transport-hid`, `crates/ipc` | Real hidapi discovery/report transport and protected local IPC | Implemented, with Linux software/runtime and Windows static evidence distinguished |
 | Other `crates/` directories | Transports, domains, IPC, storage, research | Directories only |
 | `devices/` | Community evidence and implemented support | Empty manufacturer/model placeholders |
 | `schemas/` | Versioned interchange validation | Empty JSON files |
@@ -40,11 +41,11 @@ The frontend must not access USB/HID or submit arbitrary packets. The daemon own
 | `.github/` | Future templates, CI, and ownership | Empty placeholders; no active CI |
 | `config/agents/` | Optional REA/MCP example | Empty placeholder; not usable configuration |
 
-Cargo membership follows only the three implemented crates. Rust 1.99.0 is pinned and `Cargo.lock` is generated. Node/application manifests remain empty. Existing placeholders and all pre-existing directories are preserved.
+Cargo membership follows six implemented crates. Rust 1.99.0 is pinned and `Cargo.lock` is generated. Desktop/DRA/Node manifests remain empty. Existing organization is preserved; SDK/Core/Registry sources are unchanged by Phase 2.
 
 ## Contract requirements
 
-SDK 1.0 implements observed `DeviceDescriptor` fields (VID/PID, manufacturer/product, optional serial, path/interface, usage page/usage, interface number, transport, and known firmware); model-level `DeviceId`, physical `DeviceInstanceId`, and endpoint `DeviceInterfaceId`; granular `Capabilities`; driver/factory traits; and bounded `Transport` contracts for HID input/output/feature reports. It supplies no physical transport or driver implementation.
+SDK 1.0 implements observed identity, capabilities, driver/factory and bounded report contracts. Its own crate remains transport-independent; Phase 2 supplies hidapi implementation externally. Discovery uses conservative session-epoch unit/endpoint tokens and does not infer composite grouping across paths. No proprietary physical driver is bundled.
 
 `DriverRegistry` considers interfaces/usage and optional exact product/firmware evidence rather than VID/PID alone; ambiguity is an error. `DeviceError` implements `NotSupported`, `NotConnected`, `PermissionDenied`, `InvalidArgument`, `Timeout`, `TransportError`, `ProtocolError`, and `IncompatibleVersion`. Registry/Core errors preserve typed sources. Core commits caller-provided inventory snapshots atomically; it does not monitor OS connections.
 

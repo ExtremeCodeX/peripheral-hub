@@ -4,7 +4,16 @@ Last updated: 2026-10-13. English is the technical reference. This ledger distin
 
 ## Authorized scope
 
-The current user authorizes **Phase 1 — Rust foundation and Device SDK only**: workspace, Core, versioned SDK, identity/capabilities, Registry, errors, structured logging, and unit tests. Phase 2 (HID backend, daemon, IPC, connection monitoring, simulators) requires a later review. The documentary foundation recorded below is historical; its documentation-only restriction no longer describes the active scope.
+The current user authorizes **Phase 2 — HID communication and daemon**: preserve SDK 1.0/Core/Registry, add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests. Do not advance to Phase 3 desktop work, commit or push. Phase 1 and documentary records below are historical evidence.
+
+### Active Phase 2 plan
+
+1. Audit instructions, architecture, relevant skills, contracts and current Git/tools — completed. Initial worktree clean at `6e7d642`.
+2. Implement real HID discovery/transport, protected framed IPC, daemon lifecycle, explicit simulator — completed as software implementation; native report I/O and Windows runtime validation remain pending.
+3. Run formatting, all-target Clippy, compilation, tests and daemon/client integration — completed. Final suite: 55 passed, zero failures/ignored; real Linux process and enumeration checks recorded below.
+4. Update architecture, real commands, bilingual public status and evidence/limits — completed. 177 relative links, seven skill structures, Git whitespace and preservation/scope checks passed.
+
+The temporary Rust 1.99.0/Zig tools remain available. Cargo tooling/cache moved to ignored `target/phase2-cargo` with the original `/tmp/opencode/cargo` path retained as a symlink after `/tmp` ran out of space. Non-destructive real HID enumeration was explicitly executed later in this session, without input/output/feature report I/O, firmware changes or private capture. No evidence was sent to external services.
 
 ### Active Phase 1 plan
 
@@ -184,3 +193,68 @@ The temporary `stable` toolchain resolves to the same verified 1.99.0 release as
 ### Relevant changed files
 
 Workspace/toolchain: `Cargo.toml`, generated `Cargo.lock`, `rust-toolchain.toml`. Implemented packages: `crates/device-sdk/{Cargo.toml,src/}`, `crates/device-registry/{Cargo.toml,src/}`, `crates/core/{Cargo.toml,src/,tests/structured_logging.rs}`. Architectural reference: `sdk.md`, `decisions/0002-sdk-and-registry-contracts.md`, updated overview/lifecycle/driver-system and this ledger. Current status/setup: root READMEs, CONTRIBUTING/AGENTS, priority English/pt-BR contributor/user guides, skill index and add-device/develop-driver/develop-feature prerequisites. No application/schema/CI placeholders were filled.
+
+## Phase 2: HID communication and user-session daemon
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| Preserved Phase 1 contracts | Completed (concluído) | SDK 1.0, Core and Registry source/manifests unchanged; all 35 original tests still pass |
+| HID discovery | Completed for current Linux enumeration | Real hidapi initialization/refresh; eight interfaces observed; no model selected and no physical control capability claimed |
+| HID report transport | Implemented; physical I/O validation partial (parcial) | Actual hidapi open/read/write/feature delegation, reviewed policy, report-ID normalization, rate/size limits, bounded worker and handle retirement. Tests use injected backend behavior; no physical report operation ran |
+| Local IPC | Implemented; Windows runtime partial (parcial) | Version 1, bounded frames/DTOs, deadlines/correlation, same-user Unix credentials/modes/lock and safe Windows SID/DACL/process checks. Unix sockets executed; Windows all-target check/Clippy only |
+| Daemon/lifecycle | Completed as Linux software | Serialized bounded manager actor, polling, explicit matched opening, invalidation/closing on removal/change/fault, journal, reconnect and signal shutdown |
+| Simulator | Completed (concluído), simulated evidence only | Explicit `--simulate`, fictitious registered model, bounded memory transport, validated lighting/state, controlled presence and failure injection; never a physical fallback |
+| Diagnostics | Completed on Linux | Binary `--help`, physical `enumerate`, `serve`, typed health/list/get/capabilities/state/lighting/connect/disconnect/events and simulation presence commands |
+| Documentation and relevant skills | Completed (concluído) | Real setup/run commands/limits, IPC reference, ADR 0003, pt-BR daemon guide; 177 links and seven skill structures checked |
+
+Physical mode has an empty Registry and exposes unknown/discovered endpoints only. Real opening/control is not claimed merely because enumeration or synthetic tests pass. The named-pipe backend has not run on Windows and is not certified as runtime-compatible. No frontend, SQLite, profile storage, declarative interpreter, proprietary driver, DRA, CI or release was added.
+
+### Commands and actual outcomes
+
+Validation uses the same explicit environment as Phase 1: temporary Rust stable resolves to 1.99.0, host linker `/tmp/opencode/phase1-cc` delegates to Zig 0.15.2, and caches/build output remain ignored. The Cargo path is now a symlink into `target/phase2-cargo`; this is session tooling, not a project dependency or setup requirement.
+
+| Command / action | Outcome |
+| --- | --- |
+| `git status --short`, `git log --oneline -3` | Passed; initial clean worktree at `6e7d642` (`feat: implement core and device sdk foundation (#1)`) |
+| Tool lookup and `rustc --version` | No Rust/C compiler on original PATH; temporary rustc confirmed 1.99.0 |
+| `cargo fetch` | First dependency fetch succeeded; later all-platform fetch failed unpacking Windows i686 import libraries with “No space left on device” in `/tmp` |
+| `ls target`; `mv /tmp/opencode/cargo target/phase2-cargo && ln -s /home/extremecodex/Documents/OpenPeripherals/target/phase2-cargo /tmp/opencode/cargo` | Passed; only temporary session tooling/cache relocated to ignored output; no source cleanup or user implementation overwritten |
+| `rustup target add --toolchain stable x86_64-pc-windows-gnu` with temporary homes | Passed; installed standard library for static cross-target checks |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0, after final code changes |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no warning suppressions or host target restrictions |
+| `cargo check --workspace` | Passed, exit 0; six implemented members |
+| `cargo test --workspace` | Passed, exit 0: **55 passed / 0 failed / 0 ignored**. SDK 18, Registry 8, Core/logging 9, HID 5, IPC 6, daemon 9. Empty doc-test suites are not counted as extra tests |
+| `cargo build --workspace --locked` | Passed, exit 0; actual host daemon binary built |
+| `cargo doc --workspace --no-deps` | Passed, exit 0; six API references generated in ignored `target/doc/` |
+| `cargo check --workspace --all-targets --target x86_64-pc-windows-gnu` | Passed, exit 0; static compilation/type checking only, not linked Windows execution or runtime tests |
+| `cargo clippy --workspace --all-targets --target x86_64-pc-windows-gnu -- -D warnings` | Passed, exit 0; static Windows lint evidence only |
+| `python3 /tmp/opencode/phase2_cli_smoke.py` | Passed using separate native daemon/client processes in explicit simulation: help/health/list/duplicate refusal/connect/capabilities/lighting/state/removal/reappearance/events/SIGTERM/socket cleanup |
+| `target/debug/peripheral-hub-daemon enumerate` | Passed, exit 0; observed eight real HID interfaces, all unknown/discovered in physical mode, no raw locator/serial exported |
+| `python3 /tmp/opencode/phase2_physical_inventory_smoke.py` | Passed on final binary: physical enumerate and daemon IPC each showed eight unknown/discovered interfaces; connect on an unknown endpoint and simulation in physical mode returned NotSupported; SIGINT/socket cleanup passed. No input/output/feature report operation or physical driver validation |
+| `python3 /tmp/opencode/check_phase2_docs.py` | Passed: 177 relative links, seven skill structures, six real members, unchanged SDK/Core/Registry/master/LICENSE/toolchain and preserved out-of-scope placeholders; temporary tooling/build paths remain ignored |
+| `git diff --check`, `git diff --stat`, `git status --short` | Passed; only intended workspace/HID/IPC/daemon and documentation additions/updates visible. No files staged, committed or pushed |
+
+The two Python scripts are ephemeral laboratory verification under `/tmp/opencode`, not a Python application runtime or shipped tools. Real discovery/process checks were explicitly invoked outside Cargo tests. The automatic suite uses simulation/test doubles and local IPC only; it never enumerates/opens physical devices.
+
+### Failures corrected and design review
+
+- Initial all-target Clippy reported collapsible conditionals in socket cleanup and daemon lifecycle; they were rewritten with no warning suppression.
+- Initial local integration tests failed because Rust tempfile directories inherited permissive permissions in this environment. Tests now explicitly provision private mode-0700 endpoint directories; production authorization was retained, not weakened. Subsequent complete suites passed.
+- A docs.rs guessed pipe-options URL returned 404. Actual downloaded interprocess/hidapi/sysinfo sources were inspected and Windows code checked instead of inventing API signatures. Windows identity APIs use safe dependency wrappers; project unsafe remains forbidden.
+- Physical device parent grouping was deliberately kept conservative: different paths are not merged by VID/PID/serial. Duplicate usage collections collapse to unknown usage rather than guessed protocol matches. Report I/O policies/rates are explicit and no physical policy is guessed.
+- Deadline review added exact remaining-wait checks/handle retirement and tests of expired queued mutation cancellation. A fresh random source epoch prevents reused endpoint IDs after restart; `Health.session_id` instructs event clients to reset cursors. Restart integration tests reject stale IDs.
+- Removed an unnecessary fingerprint/hash dependency; OS entropy is used only for ephemeral identity namespaces. OS backend error messages are sanitized before logs/IPC and private fields are excluded from device summaries.
+
+### Limitations and pending priorities
+
+1. **Physical report I/O and reviewed drivers:** input/output/feature behavior, report lengths, Windows-native count/padding conventions, firmware and capability-specific operations require approved hardware/protocol evidence. This execution only tested non-destructive enumeration physically; no compatibility entry is created.
+2. **Windows runtime:** verify actual same/different-user SID/DACL access, named-pipe reconnect/duplicate/shutdown, process-owner lookup and device permissions on Windows 10/11. Cross-target check/Clippy are not runtime evidence. Linux peer credentials were exercised with same-user processes; no privilege change/cross-user physical test was attempted.
+3. **Discovery/lifecycle constraints:** composite/dongle grouping across paths is incomplete; interface count is not physical unit count. Polling can miss short transitions. Known records are retained on enumeration failure, but list/open/driver operations surface the error rather than claiming an empty success.
+4. **Native cancellation:** kernel HID writes/features can outlive deadlines; callers receive Timeout and handles retire, but cancellation cannot be guaranteed. An already executing mutation has an unknown outcome and must not be replayed. A stalled OS operation can retain its worker until the OS returns/process exits. No physical mutation was executed here.
+5. **Later scope/governance:** desktop Phase 3, profiles/SQLite, DRA, manifests/interpreter, CI/packaging, private reporting channel and explicit license confirmation remain pending. Do not advance before user review.
+
+### Relevant files and decisions
+
+Added real members `crates/transport-hid/{Cargo.toml,src/}`, `crates/ipc/{Cargo.toml,src/,tests/}`, and `apps/daemon/{Cargo.toml,src/,tests/}`; updated root workspace/generated lockfile. Preserved SDK/Core/Registry, toolchain, master and license. Added [daemon guide](daemon.md), [IPC reference](ipc.md), [ADR 0003](decisions/0003-hid-daemon-local-ipc.md) and [pt-BR usage guide](../pt-BR/users/daemon.md), plus current public status/security/contribution/skill prerequisite updates. No commit, push, PR, vendor binary execution, raw capture, firmware action or external evidence upload occurred.

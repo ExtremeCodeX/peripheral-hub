@@ -1,6 +1,6 @@
 # Security architecture
 
-**Status: required controls; not implemented or audited.** The public [security policy](../../SECURITY.md) governs reporting and responsible research.
+**Status: Phase 2 implements bounded transport/IPC and same-user authorization, with Linux tests and Windows static evidence.** This is not a security audit or Windows runtime certification. See [IPC controls](ipc.md) and the public [security policy](../../SECURITY.md).
 
 ## Assets and untrusted inputs
 

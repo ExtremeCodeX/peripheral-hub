@@ -1,6 +1,6 @@
 # Driver system
 
-**Status: SDK 1.0, explicit factory Registry, and conservative matching are implemented.** No declarative interpreter, production native driver, or physical transport exists. See the [SDK reference](sdk.md).
+**Status: SDK 1.0, Registry and conservative matching are implemented; Phase 2 adds transport and an explicit software simulator.** No declarative interpreter or proprietary physical driver exists. See [SDK](sdk.md) and [daemon](daemon.md). The physical registry is empty; the fictitious simulator is registered only for `--simulate`.
 
 ## Two reviewed support paths
 

@@ -12,11 +12,11 @@ Authorized implementation scope, sanitized protocol evidence, identity/interface
 
 ## Tools
 
-Read [AGENTS.md](../../../AGENTS.md), [SDK 1.0](../../../docs/architecture/sdk.md), [driver architecture](../../../docs/architecture/driver-system.md), and the [protocol format](../../../docs/protocols/specification-format.md). SDK/Registry/Core checks are available with `cargo check --workspace` and `cargo test --workspace` after formatting/Clippy. `DriverFactory`/`DeviceDriver` contracts exist; physical backends, declarative interpreter, manifest validators and scaffold tools do not. Contract-test doubles are private unit-test helpers, not a runtime simulator.
+Read [AGENTS.md](../../../AGENTS.md), [SDK 1.0](../../../docs/architecture/sdk.md), [driver architecture](../../../docs/architecture/driver-system.md), [HID/daemon guide](../../../docs/architecture/daemon.md), and [protocol format](../../../docs/protocols/specification-format.md). `HidDiscovery::open_reviewed`, `HidPolicy` and checked report transport exist, but no physical factory/policy is bundled. Root check/tests are real; daemon `--simulate` is an explicit fictitious example only. Declarative interpreter, manifest validators and scaffold utilities remain absent.
 
 ## Procedure
 
-1. Confirm implementation authorization and SDK/backend/validator readiness. Current scope is Phase 1 contracts only; physical drivers need a later authorized stage. Do not create a Cargo manifest without source or invent missing backends/manifest APIs.
+1. Confirm scope and evidence. Current Phase 2 implements transport and an explicit simulator, not proprietary hardware support or manifest execution. A physical driver needs reviewed protocol/policy, authorization and hardware validation. Do not create source-less manifests or invent absent validator/interpreter APIs.
 2. Choose declarative support only for safe operations already modeled by the bounded interpreter. Use compiled, explicitly registered Rust for complex framing, sequencing, or state. Never load arbitrary runtime DLLs.
 3. Specify identity using VID/PID plus interfaces, usage, revision evidence, and ambiguity handling. Separate model ID from physical instance ID.
 4. Implement only evidenced capabilities. Define byte/type/range limits, timeouts, rate limits, lifecycle, ACK/response handling, and explicit errors. Unknown or absent operations return `NotSupported`; transport failure must not return success.

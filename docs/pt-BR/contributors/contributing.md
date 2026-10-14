@@ -4,9 +4,9 @@ O [CONTRIBUTING.md em inglês](../../../CONTRIBUTING.md) é a referência. Esta 
 
 ## Escopo e ambiente
 
-A Fase 1 implementa SDK Rust, Registry e Core em memória, com verificações de workspace e testes unitários funcionais. Leia os [contratos do SDK](../../architecture/sdk.md). Aplicação, backend HID, daemon, DRA, validadores de manifestos, schemas e CI continuam pendentes. Esta execução termina antes da Fase 2, que precisa de revisão e autorização posterior.
+A Fase 2 preserva SDK Rust, Registry e Core e acrescenta descoberta/transporte HID real, IPC protegido, daemon e simulação explícita. Leia os [contratos do SDK](../../architecture/sdk.md) e o [guia do daemon](../users/daemon.md). Desktop, drivers físicos, perfis, DRA, validadores de manifestos, schemas e CI continuam pendentes. Esta execução termina antes da Fase 3.
 
-A stack prevista é Rust estável/Cargo, Node.js compatível com as futuras dependências, pnpm e Tauri 2 + React/TypeScript/Vite. Rust 1.99.0 está fixado com rustfmt/Clippy, edition 2024 e `Cargo.lock` gerado. Instale rustup e linker nativo conforme a referência do SDK. Somente três crates de biblioteca implementadas são membros do workspace. Manifests pnpm continuam vazios; não há `pnpm dev`, `cargo run` ou comando DRA funcional. Windows 10/11 é prioritário; preserve a portabilidade para Linux/macOS sem afirmar suporte físico validado.
+A stack prevista é Rust estável/Cargo, Node.js/pnpm e Tauri 2 + React/TypeScript/Vite. Rust 1.99.0 está fixado com rustfmt/Clippy, edition 2024 e `Cargo.lock`; instale rustup e linker nativo. Há seis pacotes reais no workspace. `cargo run -p peripheral-hub-daemon -- serve --simulate` inicia desenvolvimento seguro; `health` e `list` consultam o daemon em outro terminal. Manifests frontend/DRA continuam vazios. Windows 10/11 é prioritário; testes de software Linux e análise estática Windows não comprovam runtime Windows ou hardware.
 
 O repositório canônico informado pelo mantenedor é [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub), com branch padrão `main`. Faça fork, clone e crie uma branch focada. O checkout local agora possui histórico Git e remoto `origin`; a auditoria documental original ocorreu antes dessa configuração. Mantenha lockfiles reais, sem dependências instaladas ou produtos de build no Git.
 

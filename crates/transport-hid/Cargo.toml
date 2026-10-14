@@ -1,0 +1,15 @@
+[package]
+name = "peripheral-hub-transport-hid"
+description = "Reviewed bounded hidapi transport and non-destructive discovery"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+peripheral-hub-device-sdk.workspace = true
+hidapi.workspace = true
+getrandom = "0.4"
+
+[lints]
+workspace = true

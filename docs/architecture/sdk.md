@@ -2,13 +2,13 @@
 
 ## Implemented packages and boundaries
 
-The workspace currently has exactly three library crates (Cargo package version `0.1.0`):
+The preserved Phase 1 foundation contains three library crates (Cargo package version `0.1.0`):
 
 - `peripheral-hub-device-sdk`: identity, typed capabilities/commands/errors, matching rules, driver/factory and transport contracts, semantic validators, and a transport bounds wrapper.
 - `peripheral-hub-device-registry`: explicit factory registration, metadata validation, unique interface matching, and driver construction without I/O.
 - `peripheral-hub-core`: in-memory inventory replacement and grouping over caller-supplied descriptors and a Registry.
 
-Dependency direction is **Core → Registry → SDK**, with Core also using SDK types directly. Drivers implement the SDK's `DriverFactory` and `DeviceDriver`; they do not depend on Core internals. No factory is registered by default. There are no production drivers, OS discovery, HID/USB backends, daemon, IPC, persistent state, or user application yet.
+Dependency direction is **Core → Registry → SDK**, with Core also using SDK types directly. Drivers implement `DriverFactory` and `DeviceDriver`, not Core internals. Phase 2 adds HID, IPC and daemon packages, documented in the [daemon guide](daemon.md), without changing these contracts. The physical registry remains empty; only explicit simulation registers a fictitious factory. No persistent profiles, desktop or proprietary physical driver exists.
 
 ## Version policy
 
@@ -40,7 +40,7 @@ SDK 1.0 has one typed device command: `DeviceCommand::SetLighting`. `Capabilitie
 
 `TransportLimits` caps each payload at 65535 bytes and the nonzero maximum timeout at 30 seconds; a zero report byte limit means `NotSupported`. `CheckedTransport<T>` snapshots validated limits, rejects invalid operations/timeouts/lengths before delegation, checks returned read ID/size, rejects incomplete/invalid write counts, and preserves backend errors. It cannot enforce elapsed time or allocation limits inside an untrusted backend: the reviewed backend must honor deadlines and bounds. Rate limits and safe protocol operations remain future backend/driver responsibilities.
 
-No transport implementation is provided. Test-only doubles exercise the contract without OS access and are not a public simulator or a HID backend.
+The SDK itself provides no OS backend. Phase 2 implements a real reviewed/bounded `hidapi` adapter and explicit simulation in `peripheral-hub-transport-hid`. OS cancellation/deadline limits are documented in the daemon guide. The original private SDK doubles remain contract-test evidence, not physical compatibility evidence.
 
 ## Core inventory and errors
 

@@ -12,7 +12,7 @@ User-authorized scope, acceptance criteria, current implementation status, affec
 
 ## Tools
 
-Read [AGENTS.md](../../../AGENTS.md), [architecture overview](../../../docs/architecture/overview.md), [SDK reference](../../../docs/architecture/sdk.md), [IPC design](../../../docs/architecture/ipc.md), and existing ADRs. Phase 1 has three real Cargo packages: `peripheral-hub-device-sdk`, `peripheral-hub-device-registry`, `peripheral-hub-core`. Run root `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo check --workspace`, and `cargo test --workspace`. Application/pnpm/IPC manifests remain placeholders; later layers need separate authorization.
+Read [AGENTS.md](../../../AGENTS.md), [overview](../../../docs/architecture/overview.md), [SDK](../../../docs/architecture/sdk.md), [IPC](../../../docs/architecture/ipc.md), [daemon guide](../../../docs/architecture/daemon.md), and ADRs. Six Cargo packages are implemented; root fmt/Clippy/check/test are real. Run `cargo run -p peripheral-hub-daemon -- serve --simulate`, then diagnostic `health`/`list` for software-only integration. Real enumeration uses `enumerate`, with no unknown report writes. Frontend/pnpm/DRA remain placeholders and Phase 3 is out of scope.
 
 ## Procedure
 

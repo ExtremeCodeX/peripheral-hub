@@ -1,6 +1,6 @@
 # Segurança e pesquisa responsável
 
-O [SECURITY.md em inglês](../../../SECURITY.md) é a referência. Não há versões publicadas suportadas nem controles de segurança implementados/auditados nesta etapa.
+O [SECURITY.md em inglês](../../../SECURITY.md) é a referência. Não há releases publicadas suportadas. A Fase 2 implementa daemon/CLI, limites de transporte/IPC e autorização local ao mesmo usuário; testes Linux e checagens estáticas Windows são distintos de auditoria, validação física e execução Windows. Consulte o [registro de evidências](../../architecture/implementation-status.md).
 
 ## Reporte privado
 

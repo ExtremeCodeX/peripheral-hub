@@ -1,6 +1,6 @@
 # Peripheral Hub AI skills
 
-These repository-local procedures follow [AGENTS.md](../../AGENTS.md), the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md), and the [status ledger](../../docs/architecture/implementation-status.md). They are procedures, not autonomous hardware tools. Current user scope authorizes Phase 1 Rust foundation/SDK/Core/Registry only; Phase 2 requires later review.
+These procedures follow [AGENTS.md](../../AGENTS.md), the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md), and the [status ledger](../../docs/architecture/implementation-status.md). Current scope authorizes Phase 2 HID/daemon/IPC/lifecycle and explicit simulation, preserving Phase 1 contracts. Phase 3 desktop requires later review; a skill does not grant hardware execution permission.
 
 ## Choosing a skill
 
@@ -20,7 +20,7 @@ The device workflow is identification → evidence → implementation → valida
 
 Each `.agents/skills/<name>/SKILL.md` begins with YAML `name`, `description`, and `compatibility`. Read it and any linked references before acting. OpenCode's documented skill location is preserved; see [official skills guidance](https://opencode.ai/docs/skills/). Restart OpenCode after changing skills/configuration so a new session loads them.
 
-The [SDK reference](../../docs/architecture/sdk.md) documents actual Phase 1 APIs. Rust checks are real: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo check --workspace`, and `cargo test --workspace`. DRA, physical backends, scaffold/manifest-validation tools, interchange schemas, frontend, and CI are still unimplemented. Verify tools/scope before acting and do not turn planned master CLI examples into claimed commands. REA remains optional; no MCP server is configured.
+The [SDK reference](../../docs/architecture/sdk.md) and [daemon guide](../../docs/architecture/daemon.md) document actual APIs/commands. Run root fmt, Clippy, check and tests; use `cargo run -p peripheral-hub-daemon -- serve --simulate` with diagnostic `health`/`list` for safe end-to-end development. `enumerate` is real non-destructive HID inventory, not DRA or hardware control validation. DRA, physical drivers, scaffold/manifest validators, profiles, frontend and CI remain absent. REA is optional and unconfigured; do not invent its/DRA commands.
 
 ## Evidence and handoff
 

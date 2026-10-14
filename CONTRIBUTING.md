@@ -6,7 +6,7 @@ Thank you for helping build a transparent, community-maintained peripheral platf
 
 ## What contributors can do now
 
-Phase 1 implements the Rust SDK, Registry and in-memory Core, with working workspace checks and unit tests. Read the [SDK reference](docs/architecture/sdk.md) for actual contracts. Application/HID/daemon/DRA implementations, manifest validators, schemas and CI remain future work. This execution stops before Phase 2; contributors must agree on the next scope before implementing those layers.
+Phase 2 builds on the unchanged Rust SDK, Registry and Core with real HID discovery/transport, versioned protected IPC, a daemon and explicit simulation. Read [SDK contracts](docs/architecture/sdk.md) and the [daemon guide](docs/architecture/daemon.md) for actual APIs/commands. Desktop, physical drivers, profiles, DRA, manifest validators, schemas and CI remain future work. This execution stops before Phase 3 desktop implementation.
 
 The existing repository includes Apache-2.0 text in `LICENSE`. Preserve it; explicit maintainer confirmation required by the master specification remains pending before official distribution. A published security contact and community conduct/enforcement policy are also pending. Be respectful, constructive, and mindful of personal information in every interaction.
 
@@ -14,7 +14,7 @@ The existing repository includes Apache-2.0 text in `LICENSE`. Preserve it; expl
 
 The intended toolchain is stable Rust with Cargo, Node.js compatible with the eventual frontend dependencies, and pnpm. Windows 10/11 is the initial target; Linux/macOS portability must be preserved. Desktop system prerequisites should be taken from [Tauri 2 documentation](https://v2.tauri.app/start/prerequisites/) and recorded for the implemented target.
 
-Rust is pinned to stable 1.99.0 with rustfmt/Clippy, edition 2024, and a generated `Cargo.lock`. Install rustup plus a native linker; see the SDK reference for prerequisites. Only the three implemented library crates are workspace members. `package.json` and pnpm lockfile/workspace are still empty; there is no `cargo run`, `pnpm dev`, or DRA command. Add Cargo members only with real source. Preserve real lockfiles; do not commit dependency trees or build output.
+Rust is pinned to stable 1.99.0 with rustfmt/Clippy, edition 2024, and a generated `Cargo.lock`. Install rustup plus a native linker; six real packages are workspace members. Run `cargo run -p peripheral-hub-daemon -- serve --simulate` for software-only development and use `health`/`list` in another terminal. Physical `enumerate` is non-destructive; no physical driver is registered. pnpm/DRA manifests remain empty. Preserve real lockfiles and add members only with actual source; do not commit dependency trees or build output.
 
 The canonical repository supplied by the maintainer is [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub), with default branch `main`. Fork it, clone your fork, and create a focused branch. The local checkout now contains Git history and an `origin` remote; the original documentary audit predated that setup.
 

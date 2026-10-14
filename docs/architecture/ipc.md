@@ -1,27 +1,34 @@
-# Local IPC and user-session daemon
+# Local IPC version 1 and user-session daemon
 
-**Status: mandatory design direction, not a working protocol.** DTO shapes, framing, message limits, and wire version numbers have not been implemented.
+## Implemented transport and authorization
 
-## Boundary and platform policy
+`peripheral-hub-ipc` supplies shared typed DTOs, bounded framing, a deadline-aware client, and protected local listeners. There is no TCP/network listener or automatic administrator daemon.
 
-The Tauri bridge uses a typed IPC client to request daemon operations. The daemon owns device orchestration and runs in the current user's session; it is not automatically an administrator or privileged system service.
+- **Unix:** endpoint directory must be a real effective-user-owned directory with mode 0700; socket is mode 0600. Both server and client validate kernel peer UID. A nonblocking exclusive `flock` prevents duplicate instances. Lock files reject symlinks, hardlinks, incorrect ownership and broad permissions. Verified stale sockets are recovered only under the lock; unrelated files/symlinks are preserved. Drop removes only the socket with the original device/inode, not a replacement file. The default uses a validated `XDG_RUNTIME_DIR` when supplied, otherwise a user-specific private directory under the system temporary directory.
+- **Windows:** safe `interprocess` named-pipe APIs create a local-only, non-inheritable first instance with a protected DACL granting only the current process-user SID. Safe `sysinfo` APIs determine the actual peer process SID on both ends; missing/mismatched identity fails closed. Pipe names have a local `\\.\pipe\peripheral-hub-` prefix and current SID suffix. No guessed username/env identity, broad default DACL or local unsafe block is used. `sysinfo`/Windows API behavior, DACL enforcement and runtime reconnect/shutdown still require Windows execution tests: cross-target checks are static evidence only.
 
-- Windows: named pipes restricted to the same user, with reviewed access-control and peer verification.
-- Unix development/future targets: protected Unix domain sockets in an appropriate user-owned runtime location with restrictive permissions and peer verification where available.
-- No public network listener or implicit trust based solely on the endpoint's path/name.
+OS-authorized same-user processes may call typed operations. There is no separate privilege-granting token in a JSON message. Administrator/root OS powers are not an isolation boundary this application can override.
 
-Authentication/access restrictions, endpoint ownership, duplicate-instance handling, stale endpoints, cleanup, and OS-specific details must be designed and tested before use. This document does not imply those controls exist.
+## Framing, bounds and version
 
-## Contract requirements
+Each message is **4-byte big-endian length + UTF-8 JSON**. Incoming length must be 1..262144 bytes, checked before payload allocation. Unknown fields/operations and malformed/truncated messages fail. No blobs, packets, shell commands, executables or arbitrary transport requests are accepted.
 
-Shared typed DTOs belong in `crates/ipc`. An explicit version and compatibility policy must cover request/response/event formats. Candidate operations required by the specification include `health`, `list_devices`, `get_device`, `get_capabilities`, `get_profile`, `save_profile`, `set_lighting`, and connection/status events. These are operation names to implement, not callable APIs today.
+`Request { version, request_id, operation }` and `Response { version, request_id, result }` use wire `IPC_VERSION = 1`, independent of SDK 1.0 and future profile/manifest/research formats. `result` is serde's `Ok`/`Err` tagged Result containing a typed `Reply` or `Fault`. Unsupported versions return `IncompatibleVersion`; clients verify both version and echoed correlation ID. Correlation tokens are not authentication credentials.
 
-Bound message lengths, input fields, timeouts, and request rates. Use structured errors; unsupported capabilities, permission denial, transport failure, and malformed messages must not become successful responses. The desktop must reflect disconnected and simulated states accurately.
+Defaults: 256 live interfaces, 128 retained events, 16 clients (configurable up to 32), 32 requests per connection, 128 total requests/second, 32 queued manager items, 5-second frame deadline, and 2-second manager deadline. Client deadlines cover connect/write/read. Frames that cannot be safely parsed may cause a closed connection instead of an uncorrelated response. Oversized results are rejected rather than truncated.
 
-## Runtime requirements
+## Typed operations
 
-Avoid duplicate daemons in one user session, handle orderly shutdown, reconnect clients, and invalidate stale device state. Permit separate development execution of desktop/daemon once actual packages exist; exact commands are pending real manifests.
+Implemented: `Health`, `ListDevices`, `GetDevice`, `GetCapabilities`, `Connect`, `Disconnect`, `ReadState`, `SetLighting`, `Events`, and `SimulatePresence` (simulation only). `GetProfile`/`SaveProfile` are explicitly unsupported, with no pretend persistence or profile DTO schema. There is no frontend integration yet.
 
-Future integration tests should cover version incompatibility, malformed/oversized input, same-user restrictions, duplicate instances, timeouts, disconnects/reconnects, and truthful error propagation. Platform-specific tests must declare their platform; no fabricated cross-platform validation.
+`DeviceSummary` omits private path and serial; it exposes observed identity fields, opaque unit/interface tokens, optional matched model, actual connection status, backend mode and sanitized failure. A model match is not proof of connection or physical validation. No physical factory is bundled.
 
-See [ADR 0001](decisions/0001-foundation-boundaries.md) and [security architecture](security.md).
+`Health.session_id` identifies the daemon epoch. Clients must reset event cursors when it changes. Discovery endpoint tokens also contain a fresh source epoch, preventing stale commands from targeting a newly enumerated endpoint after restart. `Events { after }` returns a bounded journal and a gap flag; a gap requires re-listing devices. Cursors beyond the current sequence are invalid. This is polling, not a durable event stream.
+
+## Failure and shutdown semantics
+
+The client creates a fresh authorized connection per call, enabling recovery after daemon restarts without automatically retrying any mutation. An operation already executing at disconnect/timeout may have an unknown outcome; do not replay it. Queued requests whose deadline passed are discarded before execution. Errors remain typed; exported/logged backend details are sanitized.
+
+Shutdown aborts outstanding client I/O, closes managed drivers and removes the owned Unix socket. Native OS calls cannot all be cancelled; a cleanup timeout is an explicit failure, not a completed shutdown claim. Stale lock files contain no secrets and may remain as coordination objects.
+
+See [daemon guide](daemon.md), [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), and [implementation evidence](implementation-status.md). Unix software tests cover real local sockets and rejection/cleanup behavior; no cross-user UID change/elevation or physical HID writes run automatically.
