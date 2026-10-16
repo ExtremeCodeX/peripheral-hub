@@ -1,8 +1,11 @@
 use peripheral_hub_device_sdk::*;
+use peripheral_hub_profiles::*;
 use serde::{Deserialize, Serialize};
 
 /// Implemented IPC wire contract; independent from SDK 1.0.
-pub const IPC_VERSION: u16 = 1;
+///
+/// Version 2 extends version 1 with typed profile operations.
+pub const IPC_VERSION: u16 = 2;
 /// Maximum live interfaces exposed by this bounded daemon.
 pub const MAX_INTERFACES: usize = 256;
 
@@ -73,10 +76,23 @@ pub enum Operation {
         /// Desired software-only presence.
         present: bool,
     },
-    /// Not implemented in Phase 2; returns NotSupported.
-    GetProfile,
-    /// Not implemented in Phase 2; no arbitrary profile payload is accepted.
-    SaveProfile,
+    /// List stored profile summaries; no full payloads are returned.
+    ListProfiles,
+    /// Fetch one stored profile by validated identifier.
+    GetProfile {
+        /// Validated profile identifier.
+        profile_id: ProfileId,
+    },
+    /// Insert or replace a validated profile; no raw report payload is accepted.
+    SaveProfile {
+        /// Fully validated profile payload.
+        profile: Profile,
+    },
+    /// Remove one stored profile.
+    DeleteProfile {
+        /// Validated profile identifier.
+        profile_id: ProfileId,
+    },
 }
 
 /// Actual connection status, separate from physical validation.
@@ -190,6 +206,10 @@ pub enum Reply {
     Outcome(CommandOutcome),
     /// Lifecycle transitions.
     Events(EventBatch),
+    /// Stored profile summaries.
+    Profiles(Vec<ProfileSummary>),
+    /// One stored profile.
+    Profile(Profile),
     /// Completed non-hardware administrative action.
     Ack,
 }
@@ -218,9 +238,37 @@ pub enum Fault {
     /// Sanitized SDK failure.
     #[error("device operation failed: {0}")]
     Device(DeviceError),
+    /// Profile contract or persistence failure, projected to a stable code.
+    #[error("profile operation failed: {0}")]
+    Profile(ProfileFault),
     /// Internal infrastructure failure, without exception detail.
     #[error("internal daemon error")]
     Internal,
+}
+
+/// Stable, wire-safe projection of profile failures; no storage detail leaks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProfileFault {
+    /// A field failed contract validation.
+    Invalid,
+    /// The schema version is not understood.
+    UnsupportedVersion,
+    /// The requested profile does not exist.
+    NotFound,
+    /// Local persistence failed.
+    Storage,
+}
+
+impl std::fmt::Display for ProfileFault {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Invalid => "invalid",
+            Self::UnsupportedVersion => "unsupported_version",
+            Self::NotFound => "not_found",
+            Self::Storage => "storage",
+        })
+    }
 }
 
 /// Replace backend detail strings before logs or IPC exports.
@@ -241,6 +289,17 @@ pub fn sanitize_error(error: DeviceError) -> DeviceError {
 impl From<DeviceError> for Fault {
     fn from(error: DeviceError) -> Self {
         Self::Device(sanitize_error(error))
+    }
+}
+impl From<ProfileError> for Fault {
+    fn from(error: ProfileError) -> Self {
+        let fault = match error {
+            ProfileError::Invalid(_) | ProfileError::InvalidJson => ProfileFault::Invalid,
+            ProfileError::UnsupportedVersion => ProfileFault::UnsupportedVersion,
+            ProfileError::NotFound => ProfileFault::NotFound,
+            ProfileError::Storage(_) => ProfileFault::Storage,
+        };
+        Self::Profile(fault)
     }
 }
 

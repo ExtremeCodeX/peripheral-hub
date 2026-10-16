@@ -136,15 +136,24 @@ impl PeripheralCore {
             .values()
             .filter(|r| matches!(r.identification, Identification::Compatible(_)))
             .count();
-        tracing::info!(
-            event = "inventory_replaced",
-            added = change.added,
-            removed = change.removed,
-            updated = change.updated,
-            interfaces = self.records.len(),
-            compatible,
-            unknown = self.records.len() - compatible
-        );
+        if change.added + change.removed + change.updated == 0 {
+            tracing::debug!(
+                event = "inventory_replaced",
+                interfaces = self.records.len(),
+                compatible,
+                unknown = self.records.len() - compatible
+            );
+        } else {
+            tracing::info!(
+                event = "inventory_replaced",
+                added = change.added,
+                removed = change.removed,
+                updated = change.updated,
+                interfaces = self.records.len(),
+                compatible,
+                unknown = self.records.len() - compatible
+            );
+        }
         Ok(change)
     }
 

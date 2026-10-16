@@ -4,7 +4,7 @@
 
 ## Current status and reporting
 
-There are no published supported releases yet. Phase 2 provides a runnable Rust daemon/diagnostic client and implements bounded local IPC, same-user authorization and reviewed HID policy boundaries. Linux software/runtime checks and Windows static checks are separate from a security audit or hardware/Windows runtime validation; see [implementation evidence](docs/architecture/implementation-status.md). Future desktop/drivers/research tooling remain governed by this policy.
+There are no published supported releases yet. Phase 2 provides a runnable Rust daemon/diagnostic client and implements bounded local IPC, same-user authorization and reviewed HID policy boundaries. Linux software/runtime checks and Windows static checks are separate from a security audit or hardware/Windows runtime validation; see [implementation evidence](docs/architecture/implementation-status.md). The desktop frontend/bridge, drivers and research tooling remain governed by this policy.
 
 A maintainer-verified private reporting contact **has not been configured**. The canonical repository is [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub); availability of private vulnerability reporting has not been verified. Before accepting sensitive reports or publishing releases, maintainers must provide and test a private channel and establish response ownership. No response-time commitment or email address is invented here.
 
@@ -24,11 +24,15 @@ A private report should include the affected revision/component, impact, precond
 
 ## Responsible research and consent
 
+The exclusive purpose of DRA, REA and reverse-engineering tools is **peripheral protocol study, interoperability and independent driver development in authorized environments**. Apply all ten binding rules in the [responsible research policy](docs/reverse-engineering/responsible-research.md). Prioritize static analysis and passive USB/HID observation; no authentication/DRM/licensing/security bypass, credential/private-key/confidential-information extraction, vulnerability exploitation, unauthorized access or proprietary source reproduction is permitted. Consent to an experiment does not waive these prohibitions.
+
 Research only software and hardware you own or are authorized to examine, subject to applicable law and license terms. Record source, authorization, device identity, research goal, and consent locally before capturing or performing experiments.
+
+Use only legitimately sourced executables. Active physical operations need separate explicit approval identifying target, purpose, action and limits; ownership, enumeration or an available API is not approval. Suspend affected operations with unknown purpose, provenance or authorization and request human review before resuming. If secrets or a vulnerability concern are encountered incidentally, stop that analysis branch; use the private reporting policy without extracting secrets or developing an exploit.
 
 Never automatically run a vendor installer or unknown executable. Dynamic analysis needs explicit authorization and an isolated laboratory machine/VM where appropriate. VM USB passthrough and physical hardware constraints may limit analysis; do not infer safety from virtualization alone. Elevated USBPcap capture, when needed, is an explicit laboratory action, not a daemon privilege requirement.
 
-REA is optional development tooling, not part of the runtime. Verify actual tool installation/startup instructions before configuring MCP; never commit tokens or guessed endpoints. Do not upload binaries, captures, or research data to external tools/services without explicit authorization and data review.
+REA is optional development tooling, not part of the runtime. Verify actual tool installation/startup instructions before configuring MCP; never commit tokens or guessed endpoints. Original binaries and raw captures stay in ignored local storage and must never be forwarded automatically to models or external services. External handoffs contain only necessary, explicitly authorized, reviewed and sanitized protocol findings, with no confidential information or proprietary source snippets.
 
 ## Research data and privacy
 

@@ -2,6 +2,7 @@
 use peripheral_hub_daemon::*;
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_profiles::{Profile, ProfileId};
 use peripheral_hub_transport_hid::simulated::SimulatedSource;
 use std::time::Duration;
 use tokio::sync::oneshot;
@@ -197,6 +198,61 @@ async fn typed_client_driver_transport_roundtrip_and_reconnect_after_restart() {
             .result,
         Err(Fault::Device(DeviceError::NotConnected))
     ));
+    stop.send(()).unwrap();
+    server.await.unwrap().unwrap();
+}
+
+#[tokio::test]
+async fn profile_operations_roundtrip_over_local_ipc() {
+    let directory = private_directory();
+    let endpoint = endpoint(&directory, "profiles");
+    let (stop, server) = start(&endpoint).await;
+    let mut client = Client::new(endpoint.clone(), Duration::from_secs(2)).unwrap();
+    let profile = Profile {
+        id: ProfileId::new("night").unwrap(),
+        name: "Night".into(),
+        device_model: None,
+        lighting: None,
+    };
+    assert!(matches!(
+        client
+            .call(Operation::SaveProfile {
+                profile: profile.clone()
+            })
+            .await
+            .unwrap()
+            .result,
+        Ok(Reply::Profile(saved)) if saved == profile
+    ));
+    let Reply::Profiles(profiles) = client
+        .call(Operation::ListProfiles)
+        .await
+        .unwrap()
+        .result
+        .unwrap()
+    else {
+        panic!("profiles")
+    };
+    assert_eq!(profiles.len(), 1);
+    assert_eq!(profiles[0].id.as_str(), "night");
+    assert!(matches!(
+        client
+            .call(Operation::GetProfile {
+                profile_id: ProfileId::new("missing").unwrap()
+            })
+            .await
+            .unwrap()
+            .result,
+        Err(Fault::Profile(ProfileFault::NotFound))
+    ));
+    client
+        .call(Operation::DeleteProfile {
+            profile_id: ProfileId::new("night").unwrap(),
+        })
+        .await
+        .unwrap()
+        .result
+        .unwrap();
     stop.send(()).unwrap();
     server.await.unwrap().unwrap();
 }

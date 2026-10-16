@@ -1,0 +1,28 @@
+{
+  "name": "@peripheral-hub/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Peripheral Hub desktop (Tauri 2 + React + TypeScript). The frontend never accesses USB/HID directly; it calls the restricted Tauri bridge, which forwards typed operations to the user-session daemon.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

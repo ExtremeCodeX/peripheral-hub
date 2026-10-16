@@ -12,7 +12,7 @@ Authorized implementation scope, sanitized protocol evidence, identity/interface
 
 ## Tools
 
-Read [AGENTS.md](../../../AGENTS.md), [SDK 1.0](../../../docs/architecture/sdk.md), [driver architecture](../../../docs/architecture/driver-system.md), [HID/daemon guide](../../../docs/architecture/daemon.md), and [protocol format](../../../docs/protocols/specification-format.md). `HidDiscovery::open_reviewed`, `HidPolicy` and checked report transport exist, but no physical factory/policy is bundled. Root check/tests are real; daemon `--simulate` is an explicit fictitious example only. Declarative interpreter, manifest validators and scaffold utilities remain absent.
+Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [AGENTS.md](../../../AGENTS.md), [SDK 1.0](../../../docs/architecture/sdk.md), [driver architecture](../../../docs/architecture/driver-system.md), [HID/daemon guide](../../../docs/architecture/daemon.md), and [protocol format](../../../docs/protocols/specification-format.md). Implement drivers independently from permissible protocol facts; never reproduce proprietary/decompiled source or bypass protections. `HidDiscovery::open_reviewed`, `HidPolicy` and checked report transport exist, but no physical factory/policy is bundled. Root check/tests are real; daemon `--simulate` is an explicit fictitious example only. Declarative interpreter, manifest validators and scaffold utilities remain absent.
 
 ## Procedure
 

@@ -12,7 +12,7 @@ User-authorized scope, acceptance criteria, current implementation status, affec
 
 ## Tools
 
-Read [AGENTS.md](../../../AGENTS.md), [overview](../../../docs/architecture/overview.md), [SDK](../../../docs/architecture/sdk.md), [IPC](../../../docs/architecture/ipc.md), [daemon guide](../../../docs/architecture/daemon.md), and ADRs. Six Cargo packages are implemented; root fmt/Clippy/check/test are real. Run `cargo run -p peripheral-hub-daemon -- serve --simulate`, then diagnostic `health`/`list` for software-only integration. Real enumeration uses `enumerate`, with no unknown report writes. Frontend/pnpm/DRA remain placeholders and Phase 3 is out of scope.
+Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [AGENTS.md](../../../AGENTS.md), [overview](../../../docs/architecture/overview.md), [SDK](../../../docs/architecture/sdk.md), [IPC](../../../docs/architecture/ipc.md), [daemon guide](../../../docs/architecture/daemon.md), [desktop reference](../../../docs/architecture/desktop.md), and ADRs. Eight Cargo packages are implemented; root fmt/Clippy/check/test are real. Run `cargo run -p peripheral-hub-daemon -- serve --simulate`, then diagnostic `health`/`list` for software-only integration. The desktop frontend runs `pnpm install` plus `pnpm --filter @peripheral-hub/desktop typecheck|test|build`; the Tauri shell requires platform webview dependencies and is not built here. Real enumeration uses `enumerate`, with no unknown report writes. DRA, physical drivers and packaging remain out of scope.
 
 ## Procedure
 

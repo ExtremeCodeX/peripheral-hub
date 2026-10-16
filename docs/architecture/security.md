@@ -1,6 +1,6 @@
 # Security architecture
 
-**Status: Phase 2 implements bounded transport/IPC and same-user authorization, with Linux tests and Windows static evidence.** This is not a security audit or Windows runtime certification. See [IPC controls](ipc.md) and the public [security policy](../../SECURITY.md).
+**Status: bounded transport/IPC, same-user authorization and local SQLite profile persistence are implemented, with Linux tests and Windows static evidence.** This is not a security audit or Windows runtime certification. See [IPC controls](ipc.md), [storage/profiles](decisions/0004-storage-and-profiles.md) and the public [security policy](../../SECURITY.md).
 
 ## Assets and untrusted inputs
 
@@ -20,7 +20,7 @@ Protect physical devices, local user data/profiles, credentials, private researc
 
 ## Laboratory isolation
 
-Unknown vendor programs are never executed automatically. Dynamic analysis and elevated capture require explicit authorization, an appropriate laboratory, and attention to VM passthrough limitations. Raw binaries/captures stay in ignored local storage; no automatic uploads to AI or other external services.
+Unknown vendor programs are never executed automatically. Dynamic analysis and elevated capture require explicit authorization, an appropriate laboratory, and attention to VM passthrough limitations. Raw binaries/captures stay in ignored local storage; no automatic uploads to AI or other external services. All reverse-engineering work follows the binding [responsible research policy](../reverse-engineering/responsible-research.md): interoperability only, static/passive first, no bypass/secret extraction/exploitation/unauthorized access/proprietary source reproduction, and human review for unknown purpose or authorization.
 
 Disallowed operations include unknown packet replay, bootloader/firmware actions, undocumented permanent writes, and destructive commands. Global input hooks/injection are outside the initial macro scope. Hardware testing is opt-in and separate from CI.
 

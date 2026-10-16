@@ -6,7 +6,7 @@
 
 ## Project status
 
-Peripheral Hub has an implemented **Rust foundation and Phase 2 daemon**: SDK 1.0, Registry, Core, real `hidapi` discovery/report transport, versioned local IPC, connection management and explicit software simulation. The Rust daemon and diagnostic client run independently of a GUI. Desktop, physical device drivers, profiles, DRA, interchange schemas and CI remain unimplemented; no physical control capability is validated.
+Peripheral Hub has an implemented **Rust foundation and daemon**: SDK 1.0, Registry, Core, real `hidapi` discovery/report transport, versioned local IPC, connection management, explicit software simulation, and SQLite-backed profile persistence with typed profile IPC. The Rust daemon and diagnostic client run independently of a GUI. Desktop, physical device drivers, profile import/export, DRA, interchange schemas and CI remain unimplemented; no physical control capability is validated.
 
 **No device compatibility or physical functionality is currently claimed.** The existing `devices/manufacturer/device-model/` directory is a structural placeholder, not a supported product. The project specification is [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md); the [status ledger](docs/architecture/implementation-status.md) distinguishes delivered documentation from future software milestones.
 
@@ -77,7 +77,18 @@ cargo run -p peripheral-hub-daemon -- health
 cargo run -p peripheral-hub-daemon -- list
 ```
 
-For non-destructive physical HID inventory, use `cargo run -p peripheral-hub-daemon -- enumerate`; physical daemon mode is `serve` without `--simulate`. Unknown devices are never automatically opened or written. See [daemon and transport guide](docs/architecture/daemon.md), [SDK contracts](docs/architecture/sdk.md), and [CONTRIBUTING.md](CONTRIBUTING.md). Linux daemon tests and Windows cross-target static checks are recorded separately; Windows runtime/hardware control is unvalidated. pnpm manifests remain empty and no desktop installer exists.
+For non-destructive physical HID inventory, use `cargo run -p peripheral-hub-daemon -- enumerate`; physical daemon mode is `serve` without `--simulate`. Unknown devices are never automatically opened or written.
+
+The desktop frontend (React/TypeScript) is a pnpm workspace member. Install Node 20+/pnpm, then:
+
+```sh
+pnpm install
+pnpm --filter @peripheral-hub/desktop typecheck
+pnpm --filter @peripheral-hub/desktop test
+pnpm --filter @peripheral-hub/desktop build
+```
+
+It expects a running daemon and reaches it only through the restricted Tauri `daemon_call` bridge. The Tauri shell in `apps/desktop/src-tauri` is real source but is not built or launched here because platform webview dependencies are absent, so there is no desktop installer. See the [daemon and transport guide](docs/architecture/daemon.md), [desktop reference](docs/architecture/desktop.md), [SDK contracts](docs/architecture/sdk.md), and [CONTRIBUTING.md](CONTRIBUTING.md). Linux daemon tests and Windows cross-target static checks are recorded separately; Windows runtime/hardware control is unvalidated.
 
 ## Community contributions
 

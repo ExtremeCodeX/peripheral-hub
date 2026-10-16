@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Minimal desktop capability. The main window may use core defaults and the app's own daemon_call bridge command; no filesystem, shell or network plugins are granted.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

@@ -2,6 +2,7 @@ use peripheral_hub_core::{Identification, PeripheralCore};
 use peripheral_hub_device_registry::{DriverRegistry, RegistryError};
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_profiles::ProfileRepository;
 use peripheral_hub_transport_hid::DeviceSource;
 use std::collections::{BTreeMap, VecDeque};
 
@@ -20,14 +21,26 @@ pub struct DeviceManager {
     events: VecDeque<ConnectionEvent>,
     sequence: u64,
     discovery_error: Option<DeviceError>,
+    profiles: ProfileRepository,
 }
 impl DeviceManager {
     /// Own an explicit registry/backend; physical mode never registers simulation.
     pub fn new(registry: DriverRegistry, source: Box<dyn DeviceSource>) -> Self {
-        Self::try_new(registry, source).expect("OS session entropy unavailable")
+        Self::try_new(registry, source).expect("daemon initialization failed")
     }
-    /// Fallible initialization used by applications to report entropy failures.
+    /// Fallible initialization with an ephemeral in-memory profile store.
     pub fn try_new(registry: DriverRegistry, source: Box<dyn DeviceSource>) -> DeviceResult<Self> {
+        let profiles = ProfileRepository::open_in_memory().map_err(|_| {
+            DeviceError::ProtocolError("profile storage initialization failed".into())
+        })?;
+        Self::with_profiles(registry, source, profiles)
+    }
+    /// Initialization with an explicit profile repository (for example file-backed).
+    pub fn with_profiles(
+        registry: DriverRegistry,
+        source: Box<dyn DeviceSource>,
+        profiles: ProfileRepository,
+    ) -> DeviceResult<Self> {
         Ok(Self {
             session_id: peripheral_hub_transport_hid::session_epoch()?,
             core: PeripheralCore::new(registry),
@@ -36,6 +49,7 @@ impl DeviceManager {
             events: VecDeque::new(),
             sequence: 0,
             discovery_error: None,
+            profiles,
         })
     }
     /// Actual source mode, never an automatic fallback from failed hardware discovery.
@@ -321,7 +335,18 @@ impl DeviceManager {
                 self.refresh()?;
                 Ok(Reply::Ack)
             }
-            Operation::GetProfile | Operation::SaveProfile => Err(DeviceError::NotSupported.into()),
+            Operation::ListProfiles => Ok(Reply::Profiles(self.profiles.list()?)),
+            Operation::GetProfile { profile_id } => {
+                Ok(Reply::Profile(self.profiles.get(&profile_id)?))
+            }
+            Operation::SaveProfile { profile } => {
+                self.profiles.save(&profile)?;
+                Ok(Reply::Profile(profile))
+            }
+            Operation::DeleteProfile { profile_id } => {
+                self.profiles.delete(&profile_id)?;
+                Ok(Reply::Ack)
+            }
         }
     }
     fn operation_error(

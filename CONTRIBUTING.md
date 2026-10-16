@@ -6,7 +6,7 @@ Thank you for helping build a transparent, community-maintained peripheral platf
 
 ## What contributors can do now
 
-Phase 2 builds on the unchanged Rust SDK, Registry and Core with real HID discovery/transport, versioned protected IPC, a daemon and explicit simulation. Read [SDK contracts](docs/architecture/sdk.md) and the [daemon guide](docs/architecture/daemon.md) for actual APIs/commands. Desktop, physical drivers, profiles, DRA, manifest validators, schemas and CI remain future work. This execution stops before Phase 3 desktop implementation.
+The implemented stack builds on the unchanged Rust SDK, Registry and Core with real HID discovery/transport, versioned protected IPC, a daemon with explicit simulation, SQLite-backed profiles, and a React/TypeScript desktop frontend with a restricted Tauri bridge. Read [SDK contracts](docs/architecture/sdk.md), the [daemon guide](docs/architecture/daemon.md) and the [desktop reference](docs/architecture/desktop.md) for actual APIs/commands. Physical drivers, DRA, manifest validators, schemas, packaging and CI remain future work.
 
 The existing repository includes Apache-2.0 text in `LICENSE`. Preserve it; explicit maintainer confirmation required by the master specification remains pending before official distribution. A published security contact and community conduct/enforcement policy are also pending. Be respectful, constructive, and mindful of personal information in every interaction.
 
@@ -49,7 +49,7 @@ cargo test --workspace
 cargo build --workspace --locked
 ```
 
-Future frontend work must run `pnpm install --frozen-lockfile` and only defined lint/test/build scripts; future manifest/schema validation needs real validators. Those commands are unavailable for the current placeholders. Report failures and unavailable tools honestly.
+Desktop work runs `pnpm install --frozen-lockfile` plus the defined `typecheck`, `test` and `build` scripts (`pnpm --filter @peripheral-hub/desktop <script>`). The Tauri shell is a standalone manifest and needs platform webview prerequisites from the [Tauri 2 documentation](https://v2.tauri.app/start/prerequisites/); it is excluded from the root Cargo workspace. Future manifest/schema validation needs real validators. Report failures and unavailable tools honestly.
 
 Meaningful tests should cover typed contracts, ambiguous driver matching, lengths/limits, invalid inputs, `NotSupported`, disconnects, timeouts, IPC authorization, profile migrations, and DRA correlation/sanitization. Frontend tests must distinguish simulated and physical states. Hardware tests are opt-in, outside automatic CI, with exact OS/device/firmware/capability evidence.
 

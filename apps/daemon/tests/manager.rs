@@ -3,6 +3,7 @@ use peripheral_hub_daemon::*;
 use peripheral_hub_device_registry::DriverRegistry;
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_profiles::{Profile, ProfileId};
 use peripheral_hub_transport_hid::{DeviceSource, simulated::*};
 
 fn first_id(manager: &mut DeviceManager) -> DeviceInterfaceId {
@@ -172,12 +173,70 @@ fn permission_denied_on_open_is_visible_and_unsupported_commands_do_not_succeed(
         manager.handle(Operation::Connect { interface_id: id }),
         Err(Fault::Device(DeviceError::PermissionDenied))
     ));
-    for operation in [Operation::GetProfile, Operation::SaveProfile] {
-        assert!(matches!(
-            manager.handle(operation),
-            Err(Fault::Device(DeviceError::NotSupported))
-        ));
-    }
+}
+
+#[test]
+fn profiles_are_validated_and_persisted_through_the_manager() {
+    let mut manager =
+        DeviceManager::new(simulated_registry(), Box::new(SimulatedSource::default()));
+    let profile = Profile {
+        id: ProfileId::new("gaming").unwrap(),
+        name: "Gaming".into(),
+        device_model: None,
+        lighting: Some(LightingCommand {
+            zone: "whole-device".into(),
+            color: RgbColor {
+                red: 255,
+                green: 0,
+                blue: 0,
+            },
+            brightness: Some(80),
+            effect: LightingEffect::Static,
+        }),
+    };
+    let Reply::Profile(saved) = manager
+        .handle(Operation::SaveProfile {
+            profile: profile.clone(),
+        })
+        .unwrap()
+    else {
+        panic!("save profile")
+    };
+    assert_eq!(saved, profile);
+    let Reply::Profiles(profiles) = manager.handle(Operation::ListProfiles).unwrap() else {
+        panic!("list profiles")
+    };
+    assert_eq!(profiles.len(), 1);
+    assert_eq!(profiles[0].id.as_str(), "gaming");
+    let Reply::Profile(fetched) = manager
+        .handle(Operation::GetProfile {
+            profile_id: ProfileId::new("gaming").unwrap(),
+        })
+        .unwrap()
+    else {
+        panic!("get profile")
+    };
+    assert_eq!(fetched, profile);
+
+    // Invalid profiles are rejected by contract, not silently stored.
+    let mut invalid = profile.clone();
+    invalid.name = String::new();
+    assert!(matches!(
+        manager.handle(Operation::SaveProfile { profile: invalid }),
+        Err(Fault::Profile(ProfileFault::Invalid))
+    ));
+
+    manager
+        .handle(Operation::DeleteProfile {
+            profile_id: ProfileId::new("gaming").unwrap(),
+        })
+        .unwrap();
+    assert!(matches!(
+        manager.handle(Operation::GetProfile {
+            profile_id: ProfileId::new("gaming").unwrap()
+        }),
+        Err(Fault::Profile(ProfileFault::NotFound))
+    ));
 }
 
 #[test]

@@ -4,9 +4,9 @@ O [CONTRIBUTING.md em inglês](../../../CONTRIBUTING.md) é a referência. Esta 
 
 ## Escopo e ambiente
 
-A Fase 2 preserva SDK Rust, Registry e Core e acrescenta descoberta/transporte HID real, IPC protegido, daemon e simulação explícita. Leia os [contratos do SDK](../../architecture/sdk.md) e o [guia do daemon](../users/daemon.md). Desktop, drivers físicos, perfis, DRA, validadores de manifestos, schemas e CI continuam pendentes. Esta execução termina antes da Fase 3.
+Preserva SDK Rust, Registry e Core e acrescenta descoberta/transporte HID real, IPC protegido, daemon, simulação explícita e persistência de perfis em SQLite (com operações IPC tipadas). Leia os [contratos do SDK](../../architecture/sdk.md), o [guia do daemon](../users/daemon.md) e o [ADR 0004](../../architecture/decisions/0004-storage-and-profiles.md). Desktop, drivers físicos, import/export de perfis, DRA, validadores de manifestos, schemas e CI continuam pendentes.
 
-A stack prevista é Rust estável/Cargo, Node.js/pnpm e Tauri 2 + React/TypeScript/Vite. Rust 1.99.0 está fixado com rustfmt/Clippy, edition 2024 e `Cargo.lock`; instale rustup e linker nativo. Há seis pacotes reais no workspace. `cargo run -p peripheral-hub-daemon -- serve --simulate` inicia desenvolvimento seguro; `health` e `list` consultam o daemon em outro terminal. Manifests frontend/DRA continuam vazios. Windows 10/11 é prioritário; testes de software Linux e análise estática Windows não comprovam runtime Windows ou hardware.
+A stack prevista é Rust estável/Cargo, Node.js/pnpm e Tauri 2 + React/TypeScript/Vite. Rust 1.99.0 está fixado com rustfmt/Clippy, edition 2024 e `Cargo.lock`; instale rustup e linker nativo. Há oito membros reais no workspace. `cargo run -p peripheral-hub-daemon -- serve --simulate` inicia desenvolvimento seguro; `health` e `list` consultam o daemon em outro terminal. Manifests frontend/DRA continuam vazios. Windows 10/11 é prioritário; testes de software Linux e análise estática Windows não comprovam runtime Windows ou hardware.
 
 O repositório canônico informado pelo mantenedor é [ExtremeCodeX/peripheral-hub](https://github.com/ExtremeCodeX/peripheral-hub), com branch padrão `main`. Faça fork, clone e crie uma branch focada. O checkout local agora possui histórico Git e remoto `origin`; a auditoria documental original ocorreu antes dessa configuração. Mantenha lockfiles reais, sem dependências instaladas ou produtos de build no Git.
 
@@ -32,7 +32,7 @@ cargo test --workspace
 cargo build --workspace --locked
 ```
 
-Frontend futuro requer `pnpm install --frozen-lockfile` e somente scripts definidos; validação de manifestos/schemas requer validadores reais. Esses componentes ainda são placeholders. Registre resultados e bloqueios exatos. Testes significativos devem cobrir contratos, ambiguidades, limites, dados inválidos, desconexão, timeout, permissão e `NotSupported`; IPC, perfis e sanitização DRA serão testados quando implementados. Hardware é opt-in, fora da CI automática, com SO/firmware/capacidade registrados.
+O desktop usa `pnpm install --frozen-lockfile` e somente os scripts definidos (`typecheck`/`test`/`build` via `pnpm --filter @peripheral-hub/desktop`); o shell Tauri é um manifesto isolado que exige dependências de webview e não é compilado aqui. Validação de manifestos/schemas ainda requer validadores reais. Registre resultados e bloqueios exatos. Testes significativos devem cobrir contratos, ambiguidades, limites, dados inválidos, desconexão, timeout, permissão e `NotSupported`; perfis e IPC já têm testes, e a sanitização DRA será testada quando implementada. Hardware é opt-in, fora da CI automática, com SO/firmware/capacidade registrados.
 
 ## IA e pull requests
 

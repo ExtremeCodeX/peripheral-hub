@@ -2,7 +2,7 @@
 
 ## Scope and truthfulness
 
-- Read [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md) in full, inspect existing files and nested instructions, and check [implementation status](docs/architecture/implementation-status.md) before work. This execution authorizes Phase 2 (real HID discovery/transport, daemon, protected IPC, connection management, simulation) only. Preserve SDK 1.0/Core/Registry contracts; do not advance to Phase 3 desktop work.
+- Read [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md) in full, inspect existing files and nested instructions, and check [implementation status](docs/architecture/implementation-status.md) before work. The current execution authorizes Phase 2 (real HID discovery/transport, daemon, protected IPC, connection management, simulation), Fase 3 (storage/profiles) and Fase 4 (desktop interface). Preserve SDK 1.0/Core/Registry contracts; do not advance to Phase 5 (DRA), packaging/release, or any hardware operation without new authorization.
 - Preserve existing directories and user changes. Inspect before editing; no destructive Git cleanup, fabricated implementations, invented packets, or fabricated test results.
 - Record actual changes, commands, failures, and blockers in the status ledger. Never equate directory scaffolding, simulated tests, or static analysis with working software or hardware compatibility.
 
@@ -23,13 +23,28 @@
 - No unknown packet replay, firmware flashing, bootloader entry, undocumented permanent-memory writes, or destructive operations. Enumeration is non-destructive. Macro MVP is editing/validation/persistence/simulation, not global input injection.
 - Preserve provenance and distinguish `simulated`, `inferred`, `tested`, `validated-on-hardware`; research hypotheses use `confirmed-on-hardware`, `inferred`, `unverified`. Report firmware/platform and capability-specific evidence.
 
+## Responsible reverse engineering
+
+DRA, REA and all reverse-engineering tools are exclusively for **peripheral protocol study, interoperability and independent driver development in authorized environments**. Read the [responsible research policy](docs/reverse-engineering/responsible-research.md) before research; all agents/skills must apply these binding rules:
+
+1. Investigate only owned hardware or devices with adequate authorization.
+2. Use legitimately sourced executables; respect copyright, licenses and applicable law.
+3. Prioritize static analysis and passive USB/HID observation.
+4. Never implement authentication, DRM, licensing or security-mechanism bypasses.
+5. Never extract credentials, private keys or confidential manufacturer information.
+6. Never develop vulnerability exploitation or unauthorized system access.
+7. Never reproduce proprietary source code, including decompiled snippets, in the repository; implement drivers independently from permissible protocol facts.
+8. Keep original executables and raw captures in ignored local storage; never automatically send them to models or external services. Share only authorized, reviewed, sanitized protocol findings.
+9. Require explicit human authorization for active physical-device operations, with the device, action and limits identified. Ownership, discovery, a skill or an available API does not grant this authorization.
+10. Suspend operations with unknown purpose or authorization and request human review before resuming. Approval of an active experiment does not permit any prohibited activity above.
+
 ## Skills
 
 Load the matching `.agents/skills/<name>/SKILL.md` and its relevant references before the corresponding task. [Skill index](.agents/skills/README.md): `add-device` coordinates research and contribution; `reverse-engineer` analyzes authorized artifacts; `capture-protocol` collects/correlates evidence; `develop-driver` builds evidence-backed support; `validate-device` verifies support claims; `develop-feature` changes application layers; `review-contribution` reviews changes. Skills do not override user scope or authorize hardware operations. Do not invent absent DRA/REA/scaffold commands, add MCP configuration without verified installation, or spawn subagents unless explicitly requested.
 
 ## Validation order and commands
 
-**Current implementation:** six Cargo members: SDK, Registry, Core, `peripheral-hub-transport-hid`, `peripheral-hub-ipc`, and `peripheral-hub-daemon`. See [SDK reference](docs/architecture/sdk.md) and [daemon/transport guide](docs/architecture/daemon.md). The daemon has a diagnostic CLI and explicit `--simulate` mode; physical drivers, desktop, DRA, profiles, schemas and CI remain unimplemented. Do not run empty frontend packages or claim CI/hardware compatibility passes.
+**Current implementation:** eight Cargo members: SDK, Registry, Core, `peripheral-hub-transport-hid`, `peripheral-hub-ipc`, `peripheral-hub-storage`, `peripheral-hub-profiles` and the `peripheral-hub-daemon` app; plus a pnpm workspace member `@peripheral-hub/desktop` (React/TypeScript frontend) and a standalone Tauri bridge under `apps/desktop/src-tauri` that is excluded from the root Cargo workspace. See [SDK reference](docs/architecture/sdk.md), [daemon/transport guide](docs/architecture/daemon.md) and [desktop reference](docs/architecture/desktop.md). The daemon has a diagnostic CLI and explicit `--simulate` mode. Physical drivers, DRA, schemas, packaging and CI remain unimplemented; the Tauri shell needs platform webview dependencies and is not built here. Do not claim CI/hardware compatibility passes, and never equate the frontend build/typecheck with a running desktop or physical control.
 
 Inspect package names/scripts first, then validate in this order:
 
