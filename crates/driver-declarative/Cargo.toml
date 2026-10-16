@@ -1,0 +1,24 @@
+[package]
+name = "peripheral-hub-driver-declarative"
+description = "Validated TOML manifests and a bounded declarative driver interpreter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+peripheral-hub-device-sdk.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+toml.workspace = true
+
+[dev-dependencies]
+peripheral-hub-device-registry.workspace = true
+peripheral-hub-core.workspace = true
+peripheral-hub-transport-hid.workspace = true
+serde_json.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

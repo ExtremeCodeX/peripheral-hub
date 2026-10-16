@@ -1,0 +1,16 @@
+[package]
+name = "peripheral-hub-example-native-driver"
+description = "Fictitious native driver example for the Peripheral Hub SDK"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+peripheral-hub-device-sdk.workspace = true
+
+[dev-dependencies]
+peripheral-hub-device-registry.workspace = true
+
+[lints]
+workspace = true

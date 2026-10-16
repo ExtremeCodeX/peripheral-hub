@@ -14,7 +14,7 @@ compatibility: opencode
 
 ## Tools
 
-Use repository inspection and guides. [SDK 1.0](../../../docs/architecture/sdk.md), Registry and Core are preserved; [Phase 2](../../../docs/architecture/daemon.md) supplies real non-destructive `cargo run -p peripheral-hub-daemon -- enumerate` and explicit `serve --simulate` diagnostics. DRA, proprietary physical drivers, manifest validators and scaffold tools remain absent. REA/capture tools require verified installation/authorization. Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and [device guide](../../../docs/en/contributors/adding-a-device.md).
+Use repository inspection and guides. [SDK 1.0](../../../docs/architecture/sdk.md), Registry and Core are preserved; [Phase 2](../../../docs/architecture/daemon.md) supplies real non-destructive `cargo run -p peripheral-hub-daemon -- enumerate` and explicit `serve --simulate` diagnostics. The declarative interpreter and manifest validator (`peripheral-hub-driver-declarative`, `serve --manifests DIR`, `schemas/device-manifest.schema.json`) now exist but support volatile lighting only; DRA, proprietary physical drivers and scaffold tools remain absent. REA/capture tools require verified installation/authorization. Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and [device guide](../../../docs/en/contributors/adding-a-device.md).
 
 ## Procedure
 
@@ -28,7 +28,7 @@ Use repository inspection and guides. [SDK 1.0](../../../docs/architecture/sdk.m
 
 ## Artifacts
 
-A sanitized identity/evidence summary, capability matrix, unresolved questions, and eventually `devices/<manufacturer>/<model>/{manifest.toml,protocol.md,validation.md,tests/,fixtures/}`. Native drivers add source only when implemented/evidence-backed. Current Phase 2 provides communication infrastructure and simulation; enumeration alone does not authorize unknown operations or establish model support.
+A sanitized identity/evidence summary, capability matrix, unresolved questions, and eventually `devices/<manufacturer>/<model>/{manifest.toml,protocol.md,validation.md,tests/,fixtures/}`. Native drivers add source only when implemented/evidence-backed. The implemented interpreter/validator and simulation provide communication and volatile-lighting infrastructure only; enumeration alone does not authorize unknown operations or establish model support.
 
 ## Stop conditions
 

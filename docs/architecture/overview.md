@@ -42,7 +42,7 @@ The frontend must not access USB/HID or submit arbitrary packets. The daemon own
 | `.github/` | Future templates, CI, and ownership | Empty placeholders; no active CI |
 | `config/agents/` | Optional REA/MCP example | Empty placeholder; not usable configuration |
 
-Cargo membership follows eight implemented members (SDK, Registry, Core, HID transport, IPC, storage, profiles and the daemon app); the Tauri shell is a standalone manifest excluded from the workspace. Rust 1.99.0 is pinned and `Cargo.lock` is generated. The pnpm workspace builds the desktop frontend. DRA manifests remain empty. Existing organization is preserved; SDK/Core/Registry sources remain unchanged.
+Cargo membership follows ten implemented members (SDK, Registry, Core, HID transport, IPC, storage, profiles, the bounded declarative driver interpreter, a fictitious native example and the daemon app); the Tauri shell is a standalone manifest excluded from the workspace. Rust 1.99.0 is pinned and `Cargo.lock` is generated. The pnpm workspace builds the desktop frontend. `schemas/device-manifest.schema.json` is implemented; the other DRA/interchange schemas remain empty. Existing organization is preserved; SDK/Core/Registry sources remain unchanged.
 
 ## Contract requirements
 
