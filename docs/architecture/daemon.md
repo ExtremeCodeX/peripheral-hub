@@ -34,6 +34,10 @@ Profiles are model-agnostic, schema-versioned `Profile` records: a stable `Profi
 
 Only `serve --simulate` registers the fictitious `simulation:peripheral` model. Its synthetic VID/PID, descriptors, JSON memory reports and lighting state are not a vendor protocol or compatibility entry. All summaries/state/outcomes identify `simulated`. The real daemon never falls back to this source after HID failure. Simulation supports controlled presence changes, capability validation, lighting/state, reconnects, and injected transport errors in tests. It performs no global input injection or hardware writes.
 
+## Declarative drivers
+
+`serve --manifests DIR` loads reviewed declarative TOML manifests from a directory the operator names, via `register_manifest_dir`. Paths are sorted, each manifest is parsed and semantically validated by `peripheral-hub-driver-declarative`, and startup aborts on the first invalid or conflicting manifest; nothing is fetched or loaded at runtime. The factory's provenance is `Simulated` under `--simulate` and `Physical` otherwise, and the manager rejects any driver outcome whose mode differs from the source mode, so a declarative report is never mislabeled as physical. Loading requires a matching model: a manifest only matches when its `DeviceMatchRule` evidence (VID/PID plus interface or HID usage) agrees with the observed descriptor, and the interpreter supports volatile `SetLighting` for declared zones only. See the [driver system](driver-system.md), `examples/declarative-driver/manifest.toml` and [ADR 0006](decisions/0006-declarative-drivers.md).
+
 ## Running
 
 Install pinned Rust 1.99.0 and a native platform linker. From the repository root:
@@ -89,6 +93,14 @@ The file path is a client-side argument only; it never crosses the IPC boundary 
 
 For non-destructive physical enumeration: `cargo run -p peripheral-hub-daemon -- enumerate`. For a physical discovery daemon: `cargo run -p peripheral-hub-daemon -- serve`. No physical lighting driver is bundled, so real device commands are unsupported. This enumeration command does not validate I/O or device compatibility.
 
+To exercise declarative manifest loading (validates and registers the fictitious example; the synthetic `0xF0F0:0x0001` device is only produced by a matching test source, so no real hardware is implied):
+
+```sh
+cargo run -p peripheral-hub-daemon -- serve --simulate --manifests examples/declarative-driver
+```
+
+`--manifests` is only valid with `serve`; an invalid or conflicting manifest aborts startup.
+
 The daemon/client choose the same per-user endpoint by default. `--endpoint PATH` overrides it for each process; Unix parent directories must be owned by the effective user and mode 0700, while Windows custom names must retain the validated local prefix and current SID suffix. No administrator elevation is requested. Ctrl+C (and Unix SIGTERM) stops the daemon and closes handles; a second server on the same endpoint is refused. Run only one default endpoint per user; custom endpoints are explicit separate development instances.
 
-The desktop frontend and its restricted Tauri bridge are implemented as source under `apps/desktop` (see the [desktop reference](desktop.md)); the Tauri shell is not built or launched in this environment, and no DRA launch command exists yet. SQLite-backed profiles, their IPC operations and schema-versioned JSON import/export are implemented; model-driven application of a profile to a device remains outside this execution. Exact IPC framing and authorization are in [IPC reference](ipc.md), decisions in [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), [ADR 0004](decisions/0004-storage-and-profiles.md) and [ADR 0005](decisions/0005-desktop-ui.md), and actual tests/platform evidence in the [ledger](implementation-status.md).
+The desktop frontend and its restricted Tauri bridge are implemented as source under `apps/desktop` (see the [desktop reference](desktop.md)); the Tauri shell is not built or launched in this environment, and no DRA launch command exists yet. SQLite-backed profiles, their IPC operations and schema-versioned JSON import/export are implemented; model-driven application of a profile to a device remains outside this execution. Declarative manifests load only from an explicit `--manifests` directory and execute only bounded volatile-lighting operations. Exact IPC framing and authorization are in [IPC reference](ipc.md), decisions in [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), [ADR 0004](decisions/0004-storage-and-profiles.md), [ADR 0005](decisions/0005-desktop-ui.md) and [ADR 0006](decisions/0006-declarative-drivers.md), and actual tests/platform evidence in the [ledger](implementation-status.md).

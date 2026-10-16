@@ -12,7 +12,7 @@ use std::time::Duration;
 fn help() {
     println!(
         "Peripheral Hub daemon\n\
-      serve [--simulate] [--endpoint PATH] [--profiles PATH]\n\
+      serve [--simulate] [--endpoint PATH] [--profiles PATH] [--manifests DIR]\n\
       enumerate                         Non-destructive physical HID inventory\n\
       health|list|events [--endpoint PATH]\n\
       get|connect|disconnect|capabilities|state ID [--endpoint PATH]\n\
@@ -27,6 +27,8 @@ fn help() {
       --help\n\
       Profiles persist in a local SQLite file; default is under the user data directory\n\
       (override with --profiles PATH on serve, or PERIPHERAL_HUB_DATA).\n\
+      --manifests DIR loads reviewed declarative TOML drivers for this run; invalid\n\
+      manifests abort startup and no manifest is fetched or loaded at runtime.\n\
       Simulation is explicit software-only; no physical driver is bundled."
     );
 }
@@ -120,10 +122,23 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+    let manifests_dir = if let Some(index) = args.iter().position(|arg| arg == "--manifests") {
+        if index + 1 >= args.len() {
+            return Err("--manifests needs a local directory path".into());
+        }
+        let path = args.remove(index + 1);
+        args.remove(index);
+        Some(PathBuf::from(path))
+    } else {
+        None
+    };
     if args.is_empty() {
         return Err("missing command; see --help".into());
     }
     let command = args.remove(0);
+    if command != "serve" && manifests_dir.is_some() {
+        return Err("--manifests is only valid with serve".into());
+    }
     if command == "enumerate" {
         if !args.is_empty() || endpoint.is_some() || profiles_path.is_some() {
             return Err("enumerate accepts no extra arguments".into());
@@ -148,7 +163,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         // Claim the endpoint before initializing a backend or spawning a manager.
         let listener = Listener::bind(&endpoint).await?;
-        let (registry, source): (DriverRegistry, Box<dyn DeviceSource>) = if simulated {
+        let (mut registry, source): (DriverRegistry, Box<dyn DeviceSource>) = if simulated {
             (simulated_registry(), Box::new(SimulatedSource::new()?))
         } else {
             let source: Box<dyn DeviceSource> = match HidDiscovery::new() {
@@ -157,6 +172,14 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             };
             (DriverRegistry::new(), source)
         };
+        if let Some(dir) = manifests_dir {
+            let mode = if simulated {
+                ExecutionMode::Simulated
+            } else {
+                ExecutionMode::Physical
+            };
+            register_manifest_dir(&mut registry, &dir, mode)?;
+        }
         let profiles_path = profiles_path.unwrap_or_else(default_profiles_path);
         if let Some(parent) = profiles_path.parent() {
             std::fs::create_dir_all(parent)?;

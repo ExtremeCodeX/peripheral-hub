@@ -6,7 +6,7 @@ Thank you for helping build a transparent, community-maintained peripheral platf
 
 ## What contributors can do now
 
-The implemented stack builds on the unchanged Rust SDK, Registry and Core with real HID discovery/transport, versioned protected IPC, a daemon with explicit simulation, SQLite-backed profiles, and a React/TypeScript desktop frontend with a restricted Tauri bridge. Read [SDK contracts](docs/architecture/sdk.md), the [daemon guide](docs/architecture/daemon.md) and the [desktop reference](docs/architecture/desktop.md) for actual APIs/commands. Physical drivers, DRA, manifest validators, schemas, packaging and CI remain future work.
+The implemented stack builds on the unchanged Rust SDK, Registry and Core with real HID discovery/transport, versioned protected IPC, a daemon with explicit simulation, SQLite-backed profiles, a bounded declarative driver interpreter (`serve --manifests DIR`, `schemas/device-manifest.schema.json`), and a React/TypeScript desktop frontend with a restricted Tauri bridge. Read [SDK contracts](docs/architecture/sdk.md), the [daemon guide](docs/architecture/daemon.md), the [driver system](docs/architecture/driver-system.md) and the [desktop reference](docs/architecture/desktop.md) for actual APIs/commands. Proprietary physical drivers, DRA, the remaining schemas, packaging and CI remain future work.
 
 The existing repository includes Apache-2.0 text in `LICENSE`. Preserve it; explicit maintainer confirmation required by the master specification remains pending before official distribution. A published security contact and community conduct/enforcement policy are also pending. Be respectful, constructive, and mindful of personal information in every interaction.
 

@@ -12,12 +12,12 @@ Device artifacts, driver/manifest versions, protocol evidence, claimed capabilit
 
 ## Tools
 
-Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and the [device lifecycle](../../../docs/architecture/device-lifecycle.md). Inspect implemented validators, Cargo/frontend scripts, fake transports, and available laboratory equipment. Empty schemas or manifests are not executable validators.
+Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and the [device lifecycle](../../../docs/architecture/device-lifecycle.md). Inspect the implemented manifest validator/interpreter (`peripheral-hub-driver-declarative`, `schemas/device-manifest.schema.json`), Cargo/frontend scripts, fake transports, and available laboratory equipment. The interpreter supports volatile lighting only; it is not evidence of physical support.
 
 ## Procedure
 
 1. Enumerate every support claim and its evidence. Verify identity, model versus instance, interface/usage, revision restrictions, and unsupported capabilities.
-2. If real schema/semantic validators exist, validate valid and invalid inputs, versions, limits, and unsupported operations. Otherwise record validation as unavailable, not passed.
+2. Validate manifests with the implemented schema/semantic validator: check valid and invalid inputs, versions, limits, offsets/effects, undeclared zones and unsupported operations. Invoke the interpreter only for modeled volatile-lighting operations; record any unsupported path as unavailable, not passed.
 3. Run actual formatting, static checks, and relevant unit/integration tests, including ambiguous matching, wrong interfaces, malformed data, timeout, disconnect, permission failure, and `NotSupported`. Record commands and outputs precisely.
 4. Verify frontend/runtime labels distinguish simulation from physical operations and do not report success after a daemon/transport failure. Inspect profile/schema compatibility where relevant.
 5. Plan opt-in hardware tests only for known safe evidenced commands and explicit consent. Record OS, firmware, device revision, interface, driver commit, action, expected result, observed result, and limitations. No automatic hardware CI.

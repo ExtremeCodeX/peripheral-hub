@@ -2,7 +2,7 @@
 
 [English](../../en/contributors/adding-a-device.md)
 
-**Etapa atual:** [SDK 1.0, Registry e Core](../../architecture/sdk.md) são preservados; a [Fase 2](../users/daemon.md) implementa descoberta/transporte HID real, IPC protegido, daemon e simulação explícita. DRA, validadores de manifestos, scaffold e drivers físicos continuam pendentes. Um driver real exige escopo autorizado, política/protocolo comprovados e validação física por capacidade; enumeração bem-sucedida não basta.
+**Etapa atual:** [SDK 1.0, Registry e Core](../../architecture/sdk.md) são preservados; a [Fase 2](../users/daemon.md) implementa descoberta/transporte HID real, IPC protegido, daemon e simulação explícita, e o [sistema de drivers](../../architecture/driver-system.md) adiciona um interpretador declarativo limitado (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) que cobre apenas iluminação volátil. DRA, scaffold e drivers físicos proprietários continuam pendentes. Um driver real exige escopo autorizado, política/protocolo comprovados e validação física por capacidade; enumeração bem-sucedida não basta.
 
 ## Identidade e objetivo limitado
 

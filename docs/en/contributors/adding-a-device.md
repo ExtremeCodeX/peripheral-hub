@@ -2,7 +2,7 @@
 
 [Português brasileiro](../../pt-BR/contributors/adding-a-device.md)
 
-**Current stage:** [SDK 1.0, Registry, and Core](../../architecture/sdk.md) are preserved; [Phase 2](../../architecture/daemon.md) implements real HID discovery/report transport, protected IPC, daemon and explicit simulation. DRA, manifest validators, scaffold tools and physical drivers remain absent. A real driver needs authorized scope, proven policy/protocol and capability-specific hardware validation, not just successful enumeration.
+**Current stage:** [SDK 1.0, Registry, and Core](../../architecture/sdk.md) are preserved; [Phase 2](../../architecture/daemon.md) implements real HID discovery/report transport, protected IPC, daemon and explicit simulation, and the [driver system](../../architecture/driver-system.md) adds a bounded declarative manifest interpreter (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) that supports volatile lighting only. DRA, scaffold tools and proprietary physical drivers remain absent. A real driver needs authorized scope, proven policy/protocol and capability-specific hardware validation, not just successful enumeration.
 
 ## Start with identity and a limited goal
 

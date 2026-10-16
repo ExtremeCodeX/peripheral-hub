@@ -1,0 +1,65 @@
+# Fictitious declarative driver example.
+#
+# This is NOT a real vendor, device, or protocol. It exists only to show the
+# bounded manifest format and is exercised by automated tests. Synthetic VID/PID
+# (`0xF0F0`/`0x0001`) never appear as a tested physical device, and no hardware
+# support is claimed. A real manifest must be backed by authorized protocol
+# evidence and validated on hardware before any compatibility claim.
+
+manifest_version = 1
+
+[model]
+id = "declarative:example-lighting"
+display_name = "Fictitious declarative lighting example"
+sdk_major = 1
+sdk_minor = 0
+
+# Matching requires identity evidence beyond VID/PID: interface and HID usage.
+[[match]]
+vendor_id = 0xF0F0
+product_id = 0x0001
+transport = "hid"
+interface_number = 3
+usage = { page = 0xFF00, usage = 1 }
+product = "Fictitious example keyboard"
+
+[capabilities.lighting]
+zones = ["whole-device"]
+brightness = true
+effects = ["static"]
+
+[[operations]]
+kind = "set_lighting"
+zone = "whole-device"
+
+# One bounded output report: header byte, RGB, brightness, effect byte.
+[operations.report]
+kind = "output"
+report_id = 0
+length = 6
+timeout_ms = 100
+max_rate_per_second = 20
+
+[[operations.report.fields]]
+offset = 0
+fill = 0x11
+
+[[operations.report.fields]]
+offset = 1
+source = "red"
+
+[[operations.report.fields]]
+offset = 2
+source = "green"
+
+[[operations.report.fields]]
+offset = 3
+source = "blue"
+
+[[operations.report.fields]]
+offset = 4
+source = "brightness"
+
+[operations.report.effect]
+offset = 5
+values = [{ effect = "static", value = 1 }]

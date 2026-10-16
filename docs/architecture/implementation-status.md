@@ -4,7 +4,7 @@ Last updated: 2026-10-16. English is the technical reference. This ledger distin
 
 ## Authorized scope
 
-The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon). No commit, push or PR is authorized; Phase 5 (DRA), packaging/release and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
+The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers). No commit, push or PR is authorized; Phase 5 (DRA), packaging/release and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
 
 ### Active Phase 2 plan
 
@@ -454,3 +454,54 @@ The smoke test used only the explicit software simulator and a temporary local f
 ### Relevant files
 
 Added `apps/daemon/src/profile_files.rs` and `apps/daemon/tests/profile_files.rs`; updated `apps/daemon/src/{lib.rs,main.rs}`. Documentation: `daemon.md`, pt-BR `users/daemon.md`, [ADR 0004](decisions/0004-storage-and-profiles.md) and this ledger. IPC protocol, SDK/Core/Registry contracts, storage/profiles libraries, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## Declarative driver system (user "Fase 4": native and declarative drivers)
+
+The user asked to implement the driver system and called it "Fase 4". In the master document the declarative/native driver work is §4.4 (part of Fase 2), while Fase 4 is the user interface, which is already implemented and validated (desktop section above). This execution therefore implements the master's §4.4 "drivers nativos e declarativos" without changing the SDK 1.0/Core/Registry contracts, and does not touch the desktop. Phase 1–3, storage/profiles, desktop and the profile import/export records above are preserved historical evidence. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| Declarative crate | Completed (concluído) | New member `peripheral-hub-driver-declarative`: typed TOML manifest model (`manifest_version`, `model`, `match`, `capabilities`, `operations`), semantic validation and a bounded report encoder. Reuses SDK `DeviceMatchRule`/`Capabilities`; SDK contracts unchanged |
+| Bounded interpreter | Completed (concluído) | `DeclarativeFactory`/`DeclarativeDriver`: open validates transport limits, `execute` gates on capabilities, enforces a rate limit, writes exactly one output/feature report of 1..64 bytes within 0..30 s, and requires the full write count. `input` reports, empty/oversized payloads, overlapping offsets, undeclared zones and unmapped effects are rejected |
+| Explicit provenance | Completed (concluído) | `DeclarativeFactory::new(manifest, mode)` takes the mode from the daemon, not the transport; the daemon builds it `Simulated` under `--simulate` and `Physical` otherwise, and the existing manager rejects a mode mismatch instead of reporting simulated success |
+| JSON Schema | Completed (concluído) | Real `schemas/device-manifest.schema.json` (draft 2020-12) mirroring the typed model; the Rust validator stays authoritative for overlap/effect/capability rules the schema cannot express |
+| Fictitious examples | Completed (concluído) | `examples/declarative-driver/manifest.toml` (synthetic `0xF0F0:0x0001`) and the compiled `examples/native-driver` crate (`0xF0F1:0x0002`); both are labeled fictitious, are not runtime support and are not registered by the daemon on their own |
+| Daemon loading | Completed (concluído) | New `register_manifest_dir` (`serve --manifests DIR`): sorted paths, fail-fast on the first invalid/conflicting manifest, no runtime fetch; `--manifests` is rejected outside `serve` |
+| Tests | Completed (concluído) | Crate unit tests (validation/encoding) + integration tests (identification, capability gating, rate limit, non-matching descriptor) + native example test + daemon `tests/declarative.rs` (load, list, connect, capabilities, valid + invalid `SetLighting`, invalid-manifest abort). Suite grew 71 → **84 passed / 0 failed / 0 ignored** |
+| Documentation | Completed (concluído) | [ADR 0006](decisions/0006-declarative-drivers.md); updated [driver-system](driver-system.md), [SDK](sdk.md), [daemon](daemon.md) and this ledger; `develop-driver`/`add-device`/`validate-device` skills updated |
+
+`toml` was added as a workspace dependency; `serde`, `thiserror` and `tracing` were already present. Added workspace members: `crates/driver-declarative`, `examples/native-driver`. The physical registry is still empty and no proprietary protocol, packet, capture or hardware compatibility is claimed.
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`).
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or warning suppressions |
+| `cargo check --workspace` | Passed, exit 0; ten members including the two new ones |
+| `cargo test --workspace` | Passed: **84 passed / 0 failed / 0 ignored** (declarative unit 7, declarative integration 3, native example 1, daemon declarative 2; +13) |
+| `python3 -c "import json;json.load(open('schemas/device-manifest.schema.json'))"` | Passed; the schema file parses as JSON |
+
+The tests use synthetic descriptors and in-memory transports only; no physical device was enumerated, opened or written.
+
+### Failures corrected and design review
+
+- The first declarative duplicate-zone test built an incomplete manifest (an operation with no report), so it failed as a TOML error instead of the intended semantic `Invalid`. The test now duplicates a complete operation and asserts the duplicate-zone rejection.
+- The daemon `manifests.rs` initially used `thiserror::Error` without the crate being a daemon dependency; `thiserror` was added to `apps/daemon/Cargo.toml`. No behavior changed.
+- The manifest `FieldSource` enum needed `PartialOrd`/`Ord` for the duplicate-source `BTreeSet`; the derive was extended.
+
+### Limitations and pending priorities
+
+1. **Volatile lighting only:** the interpreter models only `SetLighting`. Displays, macros, feature/input reads, persistence and firmware need a reviewed native crate or a future contract revision, not a manifest.
+2. **Manifest matching needs real evidence:** a manifest matches only with VID/PID plus interface or HID usage evidence, but the hypothetical `0xF0F0:0x0001` identity is synthetic. A real `devices/` entry still requires authorized protocol evidence and `validated-on-hardware` results.
+3. **No runtime loading:** manifests load only from an explicit `--manifests` directory at startup; there is no hot-reload or dynamic plugin loading.
+4. **Windows evidence is static:** as before, the Windows target checks are compilation evidence only.
+5. **Later scope/governance:** DRA, packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending.
+
+### Relevant files and decisions
+
+Added `crates/driver-declarative/{Cargo.toml,src/,tests/declarative.rs}`, `examples/declarative-driver/manifest.toml`, `examples/native-driver/{Cargo.toml,src/,tests/}`, `schemas/device-manifest.schema.json`, `apps/daemon/src/manifests.rs`, `apps/daemon/tests/declarative.rs` and [ADR 0006](decisions/0006-declarative-drivers.md). Updated root `Cargo.toml`/`Cargo.lock`, `apps/daemon/{Cargo.toml,src/lib.rs,src/main.rs}`, the [driver system](driver-system.md)/[SDK](sdk.md)/[daemon](daemon.md) references, this ledger and the `develop-driver`/`add-device`/`validate-device` skills. SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
