@@ -71,6 +71,16 @@ describe("IpcClient", () => {
     });
   });
 
+  it("sends typed parameters for apply_profile", async () => {
+    const { transport, calls } = fakeDaemon(() => ({ result: "outcome", data: { mode: "simulated" } }));
+    const client = new IpcClient(transport);
+    await expect(client.applyProfile("iface-1", "gaming")).resolves.toEqual({ mode: "simulated" });
+    expect(calls[0]).toEqual({
+      operation: "apply_profile",
+      parameters: { interface_id: "iface-1", profile_id: "gaming" },
+    });
+  });
+
   it("propagates an error reply as a fault", async () => {
     const { transport } = fakeDaemon(() => ({ code: "device", detail: { code: "not_supported" } }));
     const client = new IpcClient(transport);

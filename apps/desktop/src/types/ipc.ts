@@ -1,11 +1,11 @@
-// TypeScript mirror of the daemon's typed local IPC contract (IPC_VERSION = 2).
+// TypeScript mirror of the daemon's typed local IPC contract (IPC_VERSION = 3).
 //
 // These shapes are intentionally a faithful copy of `crates/ipc/src/protocol.rs`
 // and the SDK DTOs it re-uses. The frontend never talks to USB/HID; it only
 // builds these typed operations, and the restricted Tauri bridge performs the
 // local IPC call. Keep this file in sync when the wire version changes.
 
-export const IPC_VERSION = 2;
+export const IPC_VERSION = 3;
 
 export type ExecutionMode = "simulated" | "physical";
 
@@ -190,7 +190,11 @@ export type Operation =
   | { operation: "list_profiles" }
   | { operation: "get_profile"; parameters: { profile_id: string } }
   | { operation: "save_profile"; parameters: { profile: Profile } }
-  | { operation: "delete_profile"; parameters: { profile_id: string } };
+  | { operation: "delete_profile"; parameters: { profile_id: string } }
+  | {
+      operation: "apply_profile";
+      parameters: { interface_id: string; profile_id: string };
+    };
 
 // serde serializes Result<Reply, Fault> as { Ok } | { Err }.
 export type ResponseResult = { Ok: Reply } | { Err: Fault };

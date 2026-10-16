@@ -82,6 +82,13 @@ cargo run -p peripheral-hub-daemon -- profile-get gaming
 cargo run -p peripheral-hub-daemon -- profile-delete gaming
 ```
 
+`profile-apply ID INTERFACE_ID` applies a stored profile to an already connected device. It reuses the same capability-gated lighting path as `lighting`, enforces the profile's optional model binding (`NotSupported` on mismatch), and returns the actual `simulated`/`physical` outcome; a profile without an applicable preference or a disconnected interface is rejected rather than reported as success:
+
+```sh
+cargo run -p peripheral-hub-daemon -- connect INTERFACE_ID
+cargo run -p peripheral-hub-daemon -- profile-apply gaming INTERFACE_ID
+```
+
 Import/export use the schema-versioned JSON envelope (`profile_schema_version`). `profile-export ID [PATH]` writes the validated document (stdout when `PATH` is omitted); `profile-import PATH` parses and validates the file before `SaveProfile`, so an unknown version or malformed document is rejected rather than stored:
 
 ```sh
@@ -103,4 +110,4 @@ cargo run -p peripheral-hub-daemon -- serve --simulate --manifests examples/decl
 
 The daemon/client choose the same per-user endpoint by default. `--endpoint PATH` overrides it for each process; Unix parent directories must be owned by the effective user and mode 0700, while Windows custom names must retain the validated local prefix and current SID suffix. No administrator elevation is requested. Ctrl+C (and Unix SIGTERM) stops the daemon and closes handles; a second server on the same endpoint is refused. Run only one default endpoint per user; custom endpoints are explicit separate development instances.
 
-The desktop frontend and its restricted Tauri bridge are implemented as source under `apps/desktop` (see the [desktop reference](desktop.md)); the Tauri shell is not built or launched in this environment, and no DRA launch command exists yet. SQLite-backed profiles, their IPC operations and schema-versioned JSON import/export are implemented; model-driven application of a profile to a device remains outside this execution. Declarative manifests load only from an explicit `--manifests` directory and execute only bounded volatile-lighting operations. Exact IPC framing and authorization are in [IPC reference](ipc.md), decisions in [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), [ADR 0004](decisions/0004-storage-and-profiles.md), [ADR 0005](decisions/0005-desktop-ui.md) and [ADR 0006](decisions/0006-declarative-drivers.md), and actual tests/platform evidence in the [ledger](implementation-status.md).
+The desktop frontend and its restricted Tauri bridge are implemented as source under `apps/desktop` (see the [desktop reference](desktop.md)); the Tauri shell is not built or launched in this environment, and no DRA launch command exists yet. SQLite-backed profiles, their IPC operations, schema-versioned JSON import/export and model-driven application of a profile to a connected device (`profile-apply`) are implemented. Declarative manifests load only from an explicit `--manifests` directory and execute only bounded volatile-lighting operations. Exact IPC framing and authorization are in [IPC reference](ipc.md), decisions in [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), [ADR 0004](decisions/0004-storage-and-profiles.md), [ADR 0005](decisions/0005-desktop-ui.md), [ADR 0006](decisions/0006-declarative-drivers.md) and [ADR 0007](decisions/0007-profile-application.md), and actual tests/platform evidence in the [ledger](implementation-status.md).

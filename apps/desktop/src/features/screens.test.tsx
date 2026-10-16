@@ -138,6 +138,26 @@ describe("ProfilesScreen", () => {
     expect(html).toContain("Gaming");
     expect(html).toContain("gaming");
   });
+
+  it("offers an apply target for a connected device", () => {
+    const html = renderScreen(<ProfilesScreen />, {
+      connection: "ready",
+      devices: [{ ...device, status: "connected" }],
+      profiles: [{ id: "gaming", name: "Gaming", device_model: null }],
+    });
+    expect(html).toContain("Apply to connected device");
+    expect(html).toContain("K67");
+    expect(html).toContain("Apply");
+  });
+
+  it("disables apply when no device is connected", () => {
+    const html = renderScreen(<ProfilesScreen />, {
+      connection: "ready",
+      devices: [device],
+      profiles: [{ id: "gaming", name: "Gaming", device_model: null }],
+    });
+    expect(html).toContain("No connected device");
+  });
 });
 
 describe("DiagnosticsScreen", () => {

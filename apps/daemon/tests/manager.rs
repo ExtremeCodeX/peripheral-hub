@@ -240,6 +240,111 @@ fn profiles_are_validated_and_persisted_through_the_manager() {
 }
 
 #[test]
+fn apply_profile_enforces_binding_capability_and_live_connection() {
+    let mut manager =
+        DeviceManager::new(simulated_registry(), Box::new(SimulatedSource::default()));
+    manager.refresh().unwrap();
+    let id = first_id(&mut manager);
+    manager
+        .handle(Operation::Connect {
+            interface_id: id.clone(),
+        })
+        .unwrap();
+
+    let mut bound = Profile {
+        id: ProfileId::new("bound").unwrap(),
+        name: "Bound".into(),
+        device_model: Some(DeviceId::new("simulation:peripheral").unwrap()),
+        lighting: Some(lighting()),
+    };
+    manager
+        .handle(Operation::SaveProfile {
+            profile: bound.clone(),
+        })
+        .unwrap();
+    let Reply::Outcome(outcome) = manager
+        .handle(Operation::ApplyProfile {
+            interface_id: id.clone(),
+            profile_id: ProfileId::new("bound").unwrap(),
+        })
+        .unwrap()
+    else {
+        panic!("outcome")
+    };
+    assert_eq!(outcome.mode, ExecutionMode::Simulated);
+    let Reply::State(state) = manager
+        .handle(Operation::ReadState {
+            interface_id: id.clone(),
+        })
+        .unwrap()
+    else {
+        panic!("state")
+    };
+    assert_eq!(state.lighting, Some(lighting()));
+
+    // An unbound profile applies to any device that supports the request.
+    bound.id = ProfileId::new("unbound").unwrap();
+    bound.device_model = None;
+    manager
+        .handle(Operation::SaveProfile { profile: bound })
+        .unwrap();
+    assert!(matches!(
+        manager.handle(Operation::ApplyProfile {
+            interface_id: id.clone(),
+            profile_id: ProfileId::new("unbound").unwrap(),
+        }),
+        Ok(Reply::Outcome(_))
+    ));
+
+    // A profile bound to another model never applies to this device.
+    manager
+        .handle(Operation::SaveProfile {
+            profile: Profile {
+                id: ProfileId::new("foreign").unwrap(),
+                name: "Foreign".into(),
+                device_model: Some(DeviceId::new("example:other").unwrap()),
+                lighting: Some(lighting()),
+            },
+        })
+        .unwrap();
+    assert!(matches!(
+        manager.handle(Operation::ApplyProfile {
+            interface_id: id.clone(),
+            profile_id: ProfileId::new("foreign").unwrap(),
+        }),
+        Err(Fault::Device(DeviceError::NotSupported))
+    ));
+
+    // A profile without an applicable preference is not silently applied.
+    manager
+        .handle(Operation::SaveProfile {
+            profile: Profile {
+                id: ProfileId::new("empty").unwrap(),
+                name: "Empty".into(),
+                device_model: None,
+                lighting: None,
+            },
+        })
+        .unwrap();
+    assert!(matches!(
+        manager.handle(Operation::ApplyProfile {
+            interface_id: id.clone(),
+            profile_id: ProfileId::new("empty").unwrap(),
+        }),
+        Err(Fault::Device(DeviceError::NotSupported))
+    ));
+
+    // Applying to an interface that is not open fails without fabricating success.
+    assert!(matches!(
+        manager.handle(Operation::ApplyProfile {
+            interface_id: DeviceInterfaceId::new("not-live").unwrap(),
+            profile_id: ProfileId::new("bound").unwrap(),
+        }),
+        Err(Fault::Device(DeviceError::NotConnected))
+    ));
+}
+
+#[test]
 fn unknown_interfaces_are_not_opened_and_initialization_failure_stays_physical() {
     let mut manager =
         DeviceManager::new(DriverRegistry::new(), Box::new(SimulatedSource::default()));

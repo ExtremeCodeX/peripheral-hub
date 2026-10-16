@@ -22,6 +22,7 @@ fn help() {
       profile-get ID [--endpoint PATH]\n\
       profile-save ID NAME [R G B] [--endpoint PATH]\n\
       profile-delete ID [--endpoint PATH]\n\
+      profile-apply ID INTERFACE_ID [--endpoint PATH]  Apply a stored profile to a connected device\n\
       profile-export ID [PATH] [--endpoint PATH]  Write versioned profile JSON\n\
       profile-import PATH [--endpoint PATH]       Import versioned profile JSON\n\
       --help\n\
@@ -277,6 +278,10 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             profile_id: ProfileId::new(id.clone()).map_err(|_| "invalid profile id")?,
         },
         ("profile-delete", [id]) => Operation::DeleteProfile {
+            profile_id: ProfileId::new(id.clone()).map_err(|_| "invalid profile id")?,
+        },
+        ("profile-apply", [id, interface_id]) => Operation::ApplyProfile {
+            interface_id: DeviceInterfaceId::new(interface_id.clone())?,
             profile_id: ProfileId::new(id.clone()).map_err(|_| "invalid profile id")?,
         },
         ("profile-save", [id, name]) => Operation::SaveProfile {

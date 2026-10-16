@@ -182,4 +182,15 @@ export class IpcClient {
     }
     throw unexpected("ack", reply.result);
   }
+
+  async applyProfile(interfaceId: string, profileId: string): Promise<CommandOutcome> {
+    const reply = await this.send({
+      operation: "apply_profile",
+      parameters: { interface_id: interfaceId, profile_id: profileId },
+    });
+    if (isReply(reply, "outcome")) {
+      return reply.data;
+    }
+    throw unexpected("outcome", reply.result);
+  }
 }

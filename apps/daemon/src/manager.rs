@@ -297,20 +297,7 @@ impl DeviceManager {
             Operation::SetLighting {
                 interface_id,
                 command,
-            } => {
-                let request = DeviceCommand::SetLighting(command);
-                let driver = self.driver(&interface_id)?;
-                driver.capabilities()?.validate_command(&request)?;
-                let result = driver.execute(&request);
-                match result {
-                    Ok(outcome) if outcome.mode == self.mode() => Ok(Reply::Outcome(outcome)),
-                    Ok(_) => Err(self.failed(
-                        &interface_id,
-                        DeviceError::ProtocolError("driver mode mismatch".into()),
-                    )),
-                    Err(error) => self.operation_error(&interface_id, error),
-                }
-            }
+            } => self.execute_lighting(&interface_id, command),
             Operation::Events { after } => {
                 if after > self.sequence {
                     return Err(Fault::InvalidArgument);
@@ -347,6 +334,40 @@ impl DeviceManager {
                 self.profiles.delete(&profile_id)?;
                 Ok(Reply::Ack)
             }
+            Operation::ApplyProfile {
+                interface_id,
+                profile_id,
+            } => {
+                let profile = self.profiles.get(&profile_id)?;
+                let summary = self.summary(&interface_id)?;
+                if let Some(bound) = &profile.device_model
+                    && summary.model.as_ref() != Some(bound)
+                {
+                    return Err(DeviceError::NotSupported.into());
+                }
+                let Some(command) = profile.lighting else {
+                    return Err(DeviceError::NotSupported.into());
+                };
+                self.execute_lighting(&interface_id, command)
+            }
+        }
+    }
+    fn execute_lighting(
+        &mut self,
+        id: &DeviceInterfaceId,
+        command: LightingCommand,
+    ) -> Result<Reply, Fault> {
+        let request = DeviceCommand::SetLighting(command);
+        let driver = self.driver(id)?;
+        driver.capabilities()?.validate_command(&request)?;
+        let result = driver.execute(&request);
+        match result {
+            Ok(outcome) if outcome.mode == self.mode() => Ok(Reply::Outcome(outcome)),
+            Ok(_) => Err(self.failed(
+                id,
+                DeviceError::ProtocolError("driver mode mismatch".into()),
+            )),
+            Err(error) => self.operation_error(id, error),
         }
     }
     fn operation_error(

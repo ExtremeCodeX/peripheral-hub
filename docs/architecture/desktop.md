@@ -9,7 +9,7 @@ apps/desktop/src            React/TypeScript UI (no USB/HID, no socket)
         ↓ invoke("daemon_call", { operation })
 apps/desktop/src-tauri      single Tauri command, typed Operation → Response
         ↓ Endpoint::default_for_user(), 5 s client deadline
-peripheral-hub-ipc          same-user local framed IPC (IPC version 2)
+peripheral-hub-ipc          same-user local framed IPC (IPC version 3)
         ↓
 peripheral-hub-daemon       lifecycle, profiles/storage, registry, drivers
 ```
@@ -20,7 +20,7 @@ The UI submits a typed `Operation` and receives the daemon's versioned `Response
 
 | Module | Responsibility |
 | --- | --- |
-| `src/types/ipc.ts` | Faithful mirror of `crates/ipc/src/protocol.rs` and the SDK DTOs it re-uses (`IPC_VERSION = 2`, adjacently tagged enums) |
+| `src/types/ipc.ts` | Faithful mirror of `crates/ipc/src/protocol.rs` and the SDK DTOs it re-uses (`IPC_VERSION = 3`, adjacently tagged enums) |
 | `src/services/transport.ts`, `tauriTransport.ts` | `DaemonTransport` interface and the Tauri `invoke` implementation |
 | `src/services/ipcClient.ts` | Version check, `Ok`/`Err` unwrapping, reply-discriminant assertions |
 | `src/services/errors.ts` | `DaemonFaultError`, `BridgeError`, fault/device-error descriptions, unsupported/permission helpers |
@@ -35,7 +35,7 @@ The UI submits a typed `Operation` and receives the daemon's versioned `Response
 - **Devices:** discovered devices, connection status, product/manufacturer/VID:PID, matched model, and simulation-vs-physical mode. Unknown models are shown as read-only and are never opened.
 - **Device details:** explicit capability rows (including "not declared"), connection controls, and support/partial-support warnings.
 - **Lighting:** color/brightness/effect controls only when the daemon reports the capability; success and error messages come from the daemon; a simulated operation is labeled as simulated.
-- **Profiles:** create/rename/edit/save/apply/delete over the real profile operations, plus client-side versioned JSON import/export. Invalid data is rejected with typed faults.
+- **Profiles:** create/rename/edit/save/apply/delete over the real profile operations, plus client-side versioned JSON import/export. Applying targets an explicitly selected connected device, honors the profile's optional model binding, and reports the actual `simulated`/`physical` provenance. Invalid data is rejected with typed faults.
 - **Macros:** editing, validation, versioned persistence and a descriptive simulation trace only; the UI states that no input was injected.
 - **Displays:** declared display contract and a placeholder preview; no frame is transmitted, and effective control is only for a driver with validated display support.
 - **Diagnostics:** daemon version, SDK contract, IPC version, discovery state, transport status, and DRA/support-request guidance.
@@ -74,7 +74,7 @@ It requires platform webview dependencies and is intentionally excluded from the
 
 ## Evidence and limits
 
-- Automated evidence here: TypeScript typechecking, 53 Vitest tests across 9 files, a production Vite build, and `cargo fmt`/`clippy -D warnings`/`check`/`test`/`build --locked` on the Rust workspace.
+- Automated evidence here: TypeScript typechecking, 57 Vitest tests across 9 files, a production Vite build, and `cargo fmt`/`clippy -D warnings`/`check`/`test`/`build --locked` on the Rust workspace.
 - The Tauri shell is not compiled or launched in this sandbox (`pkg-config`, a C toolchain, GTK and `webkit2gtk` are absent). On a host with the native dependencies above it compiles with `cargo run --manifest-path apps/desktop/src-tauri/Cargo.toml` and, against a live `serve --simulate` daemon, lists the simulated device, applies a simulated lighting change and persists a profile across a daemon restart.
 - There is no installer, no single-instance behaviour and no daemon auto-start; the daemon and desktop are started manually. Windows remains static-evidence only.
 - Macros are not input injection, and displays are not frame transmission. No physical control capability is claimed by this layer.

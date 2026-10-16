@@ -138,6 +138,25 @@ describe("DaemonController", () => {
     expect(store.getState().profiles).toEqual([profile]);
   });
 
+  it("forwards a profile-apply outcome", async () => {
+    const { transport, calls } = fakeDaemon((operation: Operation): Reply | Fault => {
+      if (operation.operation === "apply_profile") {
+        return { result: "outcome", data: { mode: "simulated" } };
+      }
+      return { code: "internal" };
+    });
+    const store = connectedStore();
+    const outcome = await new DaemonController(new IpcClient(transport), store).applyProfile(
+      "iface-1",
+      "gaming",
+    );
+    expect(outcome).toEqual({ mode: "simulated" });
+    expect(calls[0]).toEqual({
+      operation: "apply_profile",
+      parameters: { interface_id: "iface-1", profile_id: "gaming" },
+    });
+  });
+
   it("describes faults and unknown errors", () => {
     expect(errorMessage(new DaemonFaultError({ code: "busy" }))).toContain("busy");
     expect(errorMessage(new Error("boom"))).toBe("boom");

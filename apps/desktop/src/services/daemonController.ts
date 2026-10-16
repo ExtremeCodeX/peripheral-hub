@@ -116,4 +116,8 @@ export class DaemonController {
     await this.client.deleteProfile(profileId);
     await this.refreshProfiles();
   }
+
+  applyProfile(interfaceId: string, profileId: string): Promise<CommandOutcome> {
+    return this.client.applyProfile(interfaceId, profileId);
+  }
 }

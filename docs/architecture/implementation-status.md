@@ -4,7 +4,7 @@ Last updated: 2026-10-16. English is the technical reference. This ledger distin
 
 ## Authorized scope
 
-The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers). No commit, push or PR is authorized; Phase 5 (DRA), packaging/release and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
+The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application** (their "Fase 5", which is the master's out-of-scope DRA). No commit, push or PR is authorized; DRA, packaging/release and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
 
 ### Active Phase 2 plan
 
@@ -448,7 +448,7 @@ The smoke test used only the explicit software simulator and a temporary local f
 
 1. **File path is client-side:** import/export read/write a local path chosen by the caller; the daemon never receives a path over IPC and there is no file picker (the desktop keeps its own client-side import/export in TypeScript).
 2. **No data migration beyond forward-only:** only `profile_schema_version` 1 exists, so no re-encode of older stored rows is implemented; a future version bump would need an explicit migration rather than the current reject-on-read behavior.
-3. **Model-driven application still pending:** applying a saved profile to a connected device remains unimplemented; profiles record intent only.
+3. **Model-driven application still pending:** applying a saved profile to a connected device remains unimplemented; profiles record intent only. *(Superseded by the profile-application session below.)*
 4. **Windows evidence remains static:** the Windows target check/Clippy are compilation evidence only, not runtime/DACL validation.
 
 ### Relevant files
@@ -505,3 +505,51 @@ The tests use synthetic descriptors and in-memory transports only; no physical d
 ### Relevant files and decisions
 
 Added `crates/driver-declarative/{Cargo.toml,src/,tests/declarative.rs}`, `examples/declarative-driver/manifest.toml`, `examples/native-driver/{Cargo.toml,src/,tests/}`, `schemas/device-manifest.schema.json`, `apps/daemon/src/manifests.rs`, `apps/daemon/tests/declarative.rs` and [ADR 0006](decisions/0006-declarative-drivers.md). Updated root `Cargo.toml`/`Cargo.lock`, `apps/daemon/{Cargo.toml,src/lib.rs,src/main.rs}`, the [driver system](driver-system.md)/[SDK](sdk.md)/[daemon](daemon.md) references, this ledger and the `develop-driver`/`add-device`/`validate-device` skills. SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## Domain features §4.6: profile application (user "Fase 5")
+
+The user asked to start "Fase 5 — RGB, macros, displays e aplicação de perfis". In the master document Fase 5 is the out-of-scope DRA; the requested substance is §4.6 "Recursos de domínio". After explicit confirmation, this execution implements the first domain increment, **profile application**, and leaves RGB (already modeled), macros and displays for later increments. Phase 1–3, storage/profiles, desktop and the driver-system records above are preserved historical evidence. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| IPC contract | Completed (concluído) | `IPC_VERSION` raised 2 → 3 with `Operation::ApplyProfile { interface_id, profile_id }`; replies with the existing `Reply::Outcome`. Older clients are rejected by the incompatible-version path |
+| Daemon manager | Completed (concluído) | `ApplyProfile` loads the profile, enforces the optional `device_model` binding (`NotSupported` on mismatch), requires an open driver, and reuses the extracted `execute_lighting` capability-gated path shared with `SetLighting`; a profile with no `lighting` returns `NotSupported`. No raw report or new device operation |
+| Daemon CLI | Completed (concluído) | `profile-apply ID INTERFACE_ID` plus help text |
+| Desktop | Completed (concluído) | `src/types/ipc.ts` bumped to `IPC_VERSION = 3` with the new operation; `ipcClient.applyProfile` and `DaemonController.applyProfile`; the Profiles screen gained an apply target listing connected devices, a per-row Apply action, and reports the actual mode |
+| Tests | Completed (concluído) | Daemon `tests/manager.rs` adds one end-to-end test (success, unbound apply, model mismatch, no-lighting, not-connected) → Rust **84 → 85 passed**; frontend `ipcClient`, `daemonController` and `screens` tests added → **53 → 57 passed** |
+| Documentation | Completed (concluído) | New [ADR 0007](decisions/0007-profile-application.md); updated [IPC](ipc.md), [daemon](daemon.md), [desktop](desktop.md), [ADR 0004](decisions/0004-storage-and-profiles.md) and this ledger |
+
+SDK 1.0/Core/Registry contracts, the storage/profiles libraries and the profile schema version are unchanged. The physical registry remains empty and no hardware compatibility is claimed.
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`) and the local Node/pnpm under `target/phase4-node`.
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or warning suppressions |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **85 passed / 0 failed / 0 ignored** (+1 daemon `manager`) |
+| `pnpm --filter @peripheral-hub/desktop typecheck` | Passed, exit 0 |
+| `pnpm --filter @peripheral-hub/desktop test` | Passed: **57 passed / 0 failed** across 9 files (+2 ipcClient/controller, +2 screens) |
+
+All tests use the explicit software simulator, an in-memory profile store and local IPC doubles; no physical device was enumerated, opened or written.
+
+### Failures corrected and design review
+
+- The `SetLighting` execution body was duplicated logic; it was extracted into a private `execute_lighting` helper so `ApplyProfile` cannot drift from the capability/mode checks. No behavior changed.
+
+### Limitations and pending priorities
+
+1. **Apply needs an open driver:** `ApplyProfile` targets an already connected interface; it does not auto-connect or auto-discover. The desktop surface lists connected devices for that reason.
+2. **Volatile lighting only:** a profile can only carry a lighting preference today, so applying performs no display/macro action. A profile with no applicable preference is rejected, not silently accepted.
+3. **Remaining §4.6 work:** richer RGB (multi-zone/effects), macro persistence/limits in the daemon, and the display contract/preview remain pending.
+4. **Later scope/governance:** DRA, packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending.
+5. **Windows evidence is static:** as before, the Windows target checks are compilation evidence only.
+
+### Relevant files and decisions
+
+Updated `crates/ipc/src/protocol.rs`, `apps/daemon/src/{manager.rs,main.rs}`, `apps/daemon/tests/manager.rs`, `apps/desktop/src/types/ipc.ts`, `apps/desktop/src/services/{ipcClient.ts,daemonController.ts}`, `apps/desktop/src/features/profiles/ProfilesScreen.tsx`, `apps/desktop/src/services/{ipcClient.test.ts,daemonController.test.ts}` and `apps/desktop/src/features/screens.test.tsx`; added [ADR 0007](decisions/0007-profile-application.md) and updated the [IPC](ipc.md)/[daemon](daemon.md)/[desktop](desktop.md) references and [ADR 0004](decisions/0004-storage-and-profiles.md). SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.

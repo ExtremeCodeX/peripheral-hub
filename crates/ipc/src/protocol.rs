@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 /// Implemented IPC wire contract; independent from SDK 1.0.
 ///
 /// Version 2 extends version 1 with typed profile operations.
-pub const IPC_VERSION: u16 = 2;
+/// Version 3 adds the profile-application operation.
+pub const IPC_VERSION: u16 = 3;
 /// Maximum live interfaces exposed by this bounded daemon.
 pub const MAX_INTERFACES: usize = 256;
 
@@ -21,7 +22,7 @@ pub struct Request {
     pub operation: Operation,
 }
 
-/// Allowed user-session operations. Profiles are explicit unsupported placeholders.
+/// Allowed user-session operations. No raw reports or executable commands exist.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
     tag = "operation",
@@ -90,6 +91,17 @@ pub enum Operation {
     },
     /// Remove one stored profile.
     DeleteProfile {
+        /// Validated profile identifier.
+        profile_id: ProfileId,
+    },
+    /// Apply a stored profile's supported preferences to an open driver.
+    ///
+    /// The manager enforces the optional model binding and capability-gates the
+    /// embedded lighting request; a profile with no applicable preference or a
+    /// model mismatch yields `NotSupported`, never a fabricated success.
+    ApplyProfile {
+        /// Opaque endpoint token of an already connected device.
+        interface_id: DeviceInterfaceId,
         /// Validated profile identifier.
         profile_id: ProfileId,
     },
