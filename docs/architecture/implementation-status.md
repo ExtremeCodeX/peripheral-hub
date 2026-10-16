@@ -1,10 +1,10 @@
 # Implementation status and evidence ledger
 
-Last updated: 2026-10-13. English is the technical reference. This ledger distinguishes delivered documentation from working software.
+Last updated: 2026-10-16. English is the technical reference. This ledger distinguishes delivered documentation from working software.
 
 ## Authorized scope
 
-The current user authorizes **Phase 2 — HID communication and daemon**: preserve SDK 1.0/Core/Registry, add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests. Do not advance to Phase 3 desktop work, commit or push. Phase 1 and documentary records below are historical evidence.
+The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon). No commit, push or PR is authorized; Phase 5 (DRA), packaging/release and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
 
 ### Active Phase 2 plan
 
@@ -258,3 +258,143 @@ The two Python scripts are ephemeral laboratory verification under `/tmp/opencod
 ### Relevant files and decisions
 
 Added real members `crates/transport-hid/{Cargo.toml,src/}`, `crates/ipc/{Cargo.toml,src/,tests/}`, and `apps/daemon/{Cargo.toml,src/,tests/}`; updated root workspace/generated lockfile. Preserved SDK/Core/Registry, toolchain, master and license. Added [daemon guide](daemon.md), [IPC reference](ipc.md), [ADR 0003](decisions/0003-hid-daemon-local-ipc.md) and [pt-BR usage guide](../pt-BR/users/daemon.md), plus current public status/security/contribution/skill prerequisite updates. No commit, push, PR, vendor binary execution, raw capture, firmware action or external evidence upload occurred.
+
+## Responsible reverse engineering policy (documentation-only)
+
+| Task | State | Evidence / acceptance |
+| --- | --- | --- |
+| Binding RE policy | Completed (concluído) as documentation | Added [responsible-research.md](../reverse-engineering/responsible-research.md) (English reference) with purpose, ten rules, applied workflow and evidence handling; pt-BR summary in [pt-BR contributors guide](../pt-BR/contributors/responsible-research.md) |
+| Agent rules | Completed (concluído) as documentation | `AGENTS.md` gained a "Responsible reverse engineering" section listing the ten binding rules and linking the policy |
+| Security alignment | Completed (concluído) as documentation | `SECURITY.md`, `docs/architecture/security.md`, and `docs/pt-BR/contributors/security.md` cross-reference the policy (static/passive first, no bypass/secrets/exploitation/unauthorized access/proprietary source, no automatic external upload, human review) |
+| Workflow and skills | Completed (concluído) as documentation | Research workflow boundary plus each skill's Tools/Stop conditions updated; `.agents/skills/README.md` new mandatory-policy section |
+
+This entry records a documentation-only change. No Rust source, manifest, IPC/daemon behavior, SDK/Core/Registry contract, master specification or license was modified, and no software, hardware or CI validation is claimed. Relative-link and scope checks are recorded below. The earlier ephemeral `check_phase2_docs.py` script no longer exists in this session; the check below was performed with a fresh local-only link checker.
+
+| Command / check | Outcome |
+| --- | --- |
+| `python3 /tmp/opencode/check_relative_links.py` | Passed: 110 relative links across the 16 policy/agent/security/skill files resolve; no broken references |
+| `git status --short`, `git diff --check` | Passed; only intended Markdown additions/updates (no `crates/`, `apps/`, `Cargo.*` or schema changes); no tracked whitespace errors and no files staged or committed |
+
+## Storage and profiles (master Fase 3: "Daemon, IPC e perfis")
+
+The current user authorized completing the master document's Fase 3, which adds real persistence: `crates/storage` (SQLite connection and forward-only migrations) and `crates/profiles` (schema-versioned profile model and repository), plus profile operations in IPC/daemon and automated tests. Phase 1 and Phase 2 records above are preserved historical evidence. No commit, push, PR, vendor execution, hardware access or external data sharing occurred.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| Storage library | Completed (concluído) | `peripheral-hub-storage`: single owned `rusqlite` 0.40 connection, `foreign_keys` ON, 5-second busy timeout, `PRAGMA user_version` migrations that are strictly increasing, run per-migration in a transaction, and reject a newer-than-supported schema without downgrade. 5 unit tests |
+| Profile library | Completed (concluído) | `peripheral-hub-profiles`: `ProfileId` token validation, `Profile`/`ProfileSummary`/`ProfileFile`, `PROFILE_SCHEMA_VERSION = 1`, JSON import/export with unknown-field/version rejection, and a `ProfileRepository` (save upsert/get/list/delete/count) that re-validates on read. 7 unit tests |
+| IPC contract | Completed (concluído) | `IPC_VERSION` raised to 2; typed `ListProfiles`/`GetProfile`/`SaveProfile`/`DeleteProfile`, `Reply::Profiles`/`Reply::Profile`, and `Fault::Profile(ProfileFault)` with `Invalid`/`UnsupportedVersion`/`NotFound`/`Storage`. No raw packets or file paths in the wire contract |
+| Daemon integration | Completed (concluído) | Manager holds a `ProfileRepository` (`with_profiles`), handles the profile operations, and never converts a fault into success. `serve` opens the per-user SQLite file (default path or `--profiles PATH`); CLI adds `profiles`/`profile-get`/`profile-save`/`profile-delete` |
+| Tests | Completed (concluído) | Suite grew 55 → 69: storage 5, profiles 7, daemon `manager` +1, IPC roundtrip +1. Integration tests exercise profile save/list/get/delete and invalid/not-found paths over local IPC |
+| Documentation | Completed (concluído) | [ADR 0004](decisions/0004-storage-and-profiles.md); updated [daemon](daemon.md), [IPC](ipc.md), [overview](overview.md), [SDK](sdk.md), [security](security.md), READMEs, project-status pages, pt-BR daemon guide and skills index |
+
+Packages added: `crates/storage`, `crates/profiles`. The workspace now has eight implemented members (SDK, Registry, Core, HID transport, IPC, storage, profiles, daemon app). SDK 1.0/Core/Registry source contracts and the empty physical registry are unchanged.
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools in ignored `target/` (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`). The shim was extended to translate `x86_64-pc-windows-gnu` for Zig, and the Windows standard library was added with `rustup target add x86_64-pc-windows-gnu`.
+
+| Command / action | Outcome |
+| --- | --- |
+| `rustc --version`, `cargo --version` | `rustc 1.99.0 (b940084d7 2026-09-28)`, `cargo 1.99.0 (5f94df478 2026-08-27)` |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0, after final changes |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or warning suppressions |
+| `cargo check --workspace` | Passed, exit 0; eight members |
+| `cargo test --workspace` | Passed: **69 passed / 0 failed / 0 ignored**. SDK 18, Registry 8, Core+logging 9, HID 5, IPC 6, storage 5, profiles 7, daemon 11 |
+| `cargo build --workspace --locked` | Passed, exit 0; host daemon binary built |
+| `cargo doc --workspace --no-deps` | Passed, exit 0; eight API references generated under ignored `target/doc/` |
+| `cargo check --workspace --all-targets --target x86_64-pc-windows-gnu` | Passed, exit 0; static cross-target type checking only, including the new C-backed `rusqlite`/`libsqlite3-sys` |
+| `cargo clippy --workspace --all-targets --target x86_64-pc-windows-gnu -- -D warnings` | Passed, exit 0; static Windows lint evidence only |
+| `/tmp/opencode/phase3_profiles_smoke.sh` | Passed with separate native daemon/client processes in explicit simulation: `profile-save`/`profiles`/`profile-get`/`profile-delete`; a 65-byte name returned `Fault::Profile("invalid")`; profiles persisted across a daemon restart; deleting removed the row |
+| `python3 /tmp/opencode/check_all_links.py` | Passed: 235 relative links across all 42 repository Markdown files resolve (whole-repository scan superseding the earlier 16-file policy-only check) |
+| `git diff --check`, `git status --short` | Passed; no tracked whitespace errors, intended source/config/docs changes only, no files staged, committed or pushed |
+
+### Failures corrected and design review
+
+- Initial `cargo check` failed because `ProfileFault` lacked a `Display` implementation for the `thiserror` format argument. A stable `Display` returning fixed codes was added rather than dropping the detail.
+- `prepare_cached` was unavailable because the `rusqlite` `cache` feature is not enabled; repositories use `prepare` only.
+- `impl From<rusqlite::Error> for ProfileError` and a `tempfile` dev-dependency were added after the first compile of the profiles tests failed.
+- The existing daemon `manager` test assumed `GetProfile`/`SaveProfile` returned `NotSupported`; it was rewritten to assert real persistence, contract rejection and `NotFound` behavior.
+- The session-local compiler shim originally only translated `-unknown-`; the Windows target passed `x86_64-pc-windows-gnu`, so the shim gained a `-pc-windows-` → `-windows-` translation. This is ephemeral tooling outside the repository.
+
+### Limitations and pending priorities
+
+1. **Single connection:** storage keeps one connection and does not support concurrent multi-process writers or pooling; all persistence runs on the serialized daemon manager worker.
+2. **Forward-only migrations:** only `PRAGMA user_version` and forward migrations exist; there is no down-migration, schema diffing or automatic backup. A newer on-disk schema is refused, not migrated.
+3. **No profile import/export CLI or desktop binding:** `Profile::to_json`/`from_json` exist in the library, but there is no user-facing import/export command or UI, and no model-driven application of a saved profile to a connected device.
+4. **No encryption or sanitization of stored profiles:** the SQLite file relies on OS file permissions on the same-user data path; it is not encrypted.
+5. **Windows evidence is static:** the Windows target check/Clippy including the C-built SQLite are compilation evidence only, not Windows runtime or DACL validation.
+6. **Later scope/governance:** desktop UI, DRA, declarative interpreter, manifest/interchange schemas, CI/packaging, private reporting channel and explicit license confirmation remain pending.
+
+### Relevant files and decisions
+
+Added `crates/storage/{Cargo.toml,src/}`, `crates/profiles/{Cargo.toml,src/}`; updated root `Cargo.toml`/`Cargo.lock`, `crates/ipc/{Cargo.toml,src/protocol.rs}`, `apps/daemon/{Cargo.toml,src/main.rs,src/manager.rs,tests/manager.rs,tests/ipc_roundtrip.rs}`. Documentation: [ADR 0004](decisions/0004-storage-and-profiles.md), `daemon.md`, `ipc.md`, `overview.md`, `sdk.md`, `security.md`, READMEs, project-status pages, pt-BR daemon/contributing guides and skills index. SDK/Core/Registry, toolchain, master and license are unchanged. No commit, push, PR, vendor binary execution, raw capture, firmware action or external evidence upload occurred.
+
+## Desktop interface (master Fase 4: "Interface de usuário")
+
+The current user authorized the master document's Fase 4: a React/Tauri 2 desktop that operates against the real daemon with the simulated driver, including profiles. Phase 1–3 records above are preserved historical evidence. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| pnpm workspace | Completed (concluído) | Root `package.json`, `pnpm-workspace.yaml` and `@peripheral-hub/desktop`; `pnpm-lock.yaml` regenerated (the tracked file was an empty placeholder); esbuild build scripts approved via `pnpm.onlyBuiltDependencies` |
+| Frontend types/services | Completed (concluído) | `src/types/ipc.ts` mirrors IPC v2; `DaemonTransport`/`TauriTransport`, `IpcClient` (version check, `Ok`/`Err` unwrap, discriminant assertions), typed errors, view models and `DaemonController` |
+| State and screens | Completed (concluído) | Observable store + `useSyncExternalStore` hook with injectable transport; devices, details, lighting, profiles, macros, displays and diagnostics screens with empty/loading/error/unsupported states |
+| Profile and macro logic | Completed (concluído) | Versioned profile JSON import/export and macro validate/serialize/simulate in pure TypeScript; macros never inject input and displays never transmit frames |
+| Restricted Tauri bridge | Source complete (código); not built (não compilado) | `apps/desktop/src-tauri` single `daemon_call(Operation) -> Response` command using `Endpoint::default_for_user()` and a 5 s deadline; standalone manifest excluded from the root workspace |
+| Frontend validation | Completed (concluído) | `tsc --noEmit` clean; Vitest **53 tests across 9 files** (including `DaemonController` and `tauriTransport` flow tests and 13 screen/render tests); production `vite build` succeeded |
+| Host runtime round-trip | Tested (host, user-run) | Rebuilt host shell launched against a live `serve --simulate` daemon; the Devices screen listed the simulated interface (`simulated-…-interface-1`, `ffff:fffe`, driver `simulation:peripheral`), a **simulated lighting** change (RGB/brightness) was applied, and a saved **profile persisted across a daemon restart**, all through `daemon_call` → local IPC → daemon → `simulation:peripheral`. Confirms the end-to-end desktop→daemon path incl. profile persistence in simulation; macros/displays remain editing/simulation-only and unexercised on the host |
+| Tauri manifest graph | Resolved (resolvido) | `cargo metadata` on `apps/desktop/src-tauri` succeeds (standalone workspace member, `tauri 2.12.4`, `tauri-build 2.7.3`, path `peripheral-hub-ipc` with workspace-inherited fields); compilation still blocked by absent webview packages |
+| Rust workspace | Completed (concluído) | `fmt`/`clippy -D warnings`/`check`/`test` still pass after adding the workspace `exclude`; suite unchanged at 69 tests |
+| Documentation | Completed (concluído) | [ADR 0005](decisions/0005-desktop-ui.md), [desktop reference](desktop.md), pt-BR desktop guide; updated overview/IPC/daemon/READMEs/project-status/AGENTS/skill |
+
+### Commands and actual outcomes
+
+Session Node/pnpm were installed under ignored `target/phase4-node` (Node v24.22.0, npm 11.19.1, pnpm 10.34.7). Rust validation reused the Phase 3 toolchain (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`).
+
+| Command / action | Outcome |
+| --- | --- |
+| `pnpm install` | First run ignored the empty tracked lockfile; after adding `pnpm.onlyBuiltDependencies`, esbuild 0.21.5/0.25.12 postinstall succeeded and the lockfile was written |
+| Align Vite/Vitest | Initial `vite ^6` conflicted with `vitest 2.1.8` (duplicate Vite 5/6 types broke `tsc`); pinned `vite ^5.4.11`, after which typecheck passed |
+| `pnpm --filter @peripheral-hub/desktop typecheck` | Passed, exit 0 (`tsc --noEmit`) |
+| `pnpm --filter @peripheral-hub/desktop test` | Passed: **50 tests / 8 files** (viewModel 6, profileFile 5, macroModel 6, daemonStore 4, ipcClient 6, daemonController 7, screens 13, Badge 3) |
+| `cargo metadata --manifest-path apps/desktop/src-tauri/Cargo.toml` | Passed after fixing a wrong relative path; resolved 429 packages including `peripheral-hub-ipc`, `tauri 2.12.4` and `tauri-build 2.7.3`. Resolution/type-graph only, not compilation |
+| Host `cargo run --manifest-path apps/desktop/src-tauri/Cargo.toml` (user-run, webview deps installed) | Compiled all Linux/webkit/GTK dependencies; failed only at `tauri::generate_context!` because no app icon was configured (`bundle.icon` empty → missing `icons/icon.png`). Icons and `bundle.icon` were then added; re-run pending |
+| `pnpm --filter @peripheral-hub/desktop build` | Passed; `dist/index.html`, `index-*.css` (3.93 kB) and `index-*.js` (177.23 kB) emitted |
+| `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; eight members, unchanged |
+| `cargo check --workspace` | Passed after adding `exclude = ["apps/desktop/src-tauri"]` |
+| `cargo test --workspace` | Passed: **69 passed / 0 failed / 0 ignored**, unchanged |
+| `python3 /tmp/opencode/check_all_links.py` | Passed: 270 relative links across 45 repository Markdown files resolve |
+
+The sandbox here cannot build the shell (`pkg-config`, `gtk+-3.0` and `webkit2gtk-4.1` are absent). A **user-run host** build (webview dependencies installed) compiled and launched the shell, and against a live `serve --simulate` daemon the device list/details rendered and a simulated lighting operation completed. Profile persistence and macro/display checks on the host are still pending; Windows remains static-evidence only.
+
+The daemon's per-second `inventory_replaced` line was confirmed to be the normal 1 s enumeration heartbeat, not a fault. To keep terminals usable it now logs at `INFO` only when the inventory actually changes (added/removed/updated non-zero) and at `debug` otherwise; `cargo fmt`, `clippy -D warnings` and the workspace tests (including `structured_logging.rs`, which exercises the change case) still pass.
+
+### Failures corrected and design review
+
+- The tracked `pnpm-lock.yaml` was an empty placeholder that pnpm reported as broken; it was regenerated rather than fabricated.
+- The initial Vite 6 / Vitest 2 version mismatch produced a large plugin type error; the frontend pinned Vite 5 to match Vitest instead of suppressing the error.
+- One `daemonStore` test asserted the wrong post-unsubscribe state; the assertion was corrected (the unsubscribe check itself passed).
+- `cargo metadata` on the Tauri shell failed because its `peripheral-hub-ipc` path dependency was written as `../../crates/ipc` (resolving to `apps/crates/ipc`); it was corrected to `../../../crates/ipc` and the manifest graph then resolved. This was a real build-blocking defect caught before any webview-host build.
+- The screen render tests required `useSyncExternalStore` to have a server snapshot; the provider gained an optional `initialState` and a third `getServerSnapshot` argument, which also removes a latent server-render crash.
+- A host build (user-run, webview dependencies installed) compiled every shell dependency and then panicked in `tauri::generate_context!`: no application icon was configured, so it tried to open the missing `icons/icon.png`. The `bundle.icon` list was set and a small generated PNG icon set (`icons/{32x32,128x128,128x128@2x,icon}.png`) was added.
+- After the icon fix the user-run host shell launched but the webview showed "Could not connect to localhost: Connection refused": a **debug** build loads `build.devUrl` (the Vite dev server) instead of the embedded `frontendDist`, and the host has no Vite/pnpm running. Root cause: Tauri selects the dev URL from the `tauri` crate's `custom-protocol` feature (`dev = !custom-protocol`), not from the Cargo profile; `tauri = { features = [] }` leaves `cfg(dev)` always on, so even `--release` loaded `devUrl`. `devUrl`/`beforeDevCommand` were removed from `tauri.conf.json` so the embedded `frontendDist` is used regardless of the dev flag; the desktop guides document this, the `touch src/main.rs` recompile caveat, and how to re-add `devUrl` for live-reload. Runtime GUI evidence against the daemon is still pending a launch of the rebuilt shell.
+- On the first successful host launch the UI rendered but always showed "Daemon unavailable" and a generic "Unexpected error." on Devices, with Retry not helping. Cause: the Tauri `invoke` promise rejects with the command's Rust error value (a plain string), while `errorMessage` only recognized `Error`/`BridgeError`/`DaemonFaultError`, so the bridge's real message was discarded. `tauriTransport` now wraps any rejection in a `BridgeError`, preserving the bridge text (for example "No local daemon is reachable…"), and a `tauriTransport.test.ts` covers forwarding, message preservation and the non-string fallback (53 frontend tests pass).
+- A `ProfilesScreen` draft used a non-narrowing optional access for `device_model`; it was rewritten with a local constant, and `DaemonController.getProfile` was added for screen use.
+- The Tauri shell was deliberately excluded from the root workspace rather than forcing webview dependencies into `cargo check --workspace`.
+
+### Limitations and pending priorities
+
+1. **Desktop runtime verified in simulation (host):** the sandbox here cannot compile the shell (no webview), but a user-run host build launches, renders the UI, lists the simulated device, applies a simulated lighting change and persists a profile across a daemon restart. The daemon and desktop must be started manually in separate terminals (no installer/single-instance/auto-start); if the daemon stops the UI shows "Daemon unavailable". No physical device was touched and no installer exists.
+2. **GUI evidence is simulation-only:** typecheck, 53 Vitest tests and a production build pass, and the host run above is recorded; macros and displays were not exercised on the host and remain editing/validation/persistence/simulation with no hardware action. Component tests use `react-dom/server` because no browser/jsdom environment is configured.
+3. **No schema/interchange work:** profile and macro JSON are client-side versioned documents; none are shipped daemon commands, and no model-driven application of a profile to a device exists.
+4. **Macros/displays are not hardware actions:** macros are editing/validation/persistence/simulation only, and displays transmit no frames.
+5. **Later scope/governance:** DRA, declarative interpreter, manifest/interchange schemas, CI/packaging, signed releases, private reporting channel and explicit license confirmation remain pending.
+
+### Relevant files and decisions
+
+Added `package.json` (root, with pnpm build approvals), `pnpm-workspace.yaml`, regenerated `pnpm-lock.yaml`, and `apps/desktop/{package.json,tsconfig.json,vite.config.ts,index.html,src/}` (types, services, stores, hooks, components, features and Vitest tests, including `src/services/daemonController.test.ts` and `src/features/screens.test.tsx`) plus `apps/desktop/src-tauri/{Cargo.toml,build.rs,tauri.conf.json,capabilities/default.json,src/main.rs}`. Updated root `Cargo.toml` (`exclude`). Documentation: [ADR 0005](decisions/0005-desktop-ui.md), `desktop.md`, pt-BR `users/desktop.md`, `overview.md`, `ipc.md`, `daemon.md`, READMEs, project-status pages, `AGENTS.md`, `CONTRIBUTING.md`, pt-BR daemon guide, `develop-feature` skill and this ledger. SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor binary execution, raw capture, firmware action or external evidence upload occurred.

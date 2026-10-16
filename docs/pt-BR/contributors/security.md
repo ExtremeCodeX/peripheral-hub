@@ -21,9 +21,13 @@ Um reporte privado deve indicar revisão/componente, impacto, condições, repro
 
 ## Consentimento e laboratório
 
+A finalidade exclusiva de DRA, REA e ferramentas de engenharia reversa é **estudar protocolos de periféricos para interoperabilidade e desenvolvimento independente de drivers em ambientes autorizados**. Aplique as dez regras vinculantes da [política de pesquisa responsável](responsible-research.md). Priorize análise estática e observação passiva USB/HID. São proibidos bypass de autenticação/DRM/licenciamento/segurança, extração de credenciais/chaves privadas/informações confidenciais, exploração de vulnerabilidades, acesso não autorizado e reprodução de fonte proprietária. Consentimento a um experimento não elimina essas proibições.
+
 Analise apenas software/hardware próprios ou autorizados, respeitando leis e licenças. Registre origem, autorização, objetivo, identidade e consentimento localmente. Nunca execute um instalador/binário automaticamente. Análise dinâmica e captura elevada precisam de autorização explícita e laboratório adequado; uma VM pode ter limitações de passthrough USB.
 
-REA é ferramenta opcional de desenvolvimento. Verifique instalação/inicialização antes de configurar MCP e nunca inclua tokens/endpoints presumidos. Não envie evidências a serviços externos ou ferramentas de IA sem autorização explícita e revisão de dados.
+Use executáveis de origem legítima. Operações físicas ativas exigem aprovação separada com alvo, finalidade, ação e limites; propriedade, enumeração e API disponível não a substituem. Suspenda operações com finalidade, origem ou autorização desconhecidas e solicite revisão humana. Segredos ou suspeitas de vulnerabilidade encontrados incidentalmente não autorizam extração, exploração ou investigação fora desse objetivo.
+
+REA é ferramenta opcional de desenvolvimento. Verifique instalação/inicialização antes de configurar MCP e nunca inclua tokens/endpoints presumidos. Binários originais e capturas brutas ficam em armazenamento local ignorado, sem envio automático a modelos ou serviços externos. Compartilhamentos externos contêm somente fatos de protocolo necessários, explicitamente autorizados, revisados e sanitizados, sem informações confidenciais ou trechos de fonte proprietária.
 
 ## Privacidade e artefatos
 

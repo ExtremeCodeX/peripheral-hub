@@ -4,21 +4,79 @@ use peripheral_hub_daemon::*;
 use peripheral_hub_device_registry::DriverRegistry;
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_profiles::{Profile, ProfileId, ProfileRepository};
 use peripheral_hub_transport_hid::{DeviceSource, HidDiscovery, simulated::SimulatedSource};
+use std::path::PathBuf;
 use std::time::Duration;
 
 fn help() {
     println!(
         "Peripheral Hub daemon\n\
-      serve [--simulate] [--endpoint PATH]\n\
+      serve [--simulate] [--endpoint PATH] [--profiles PATH]\n\
       enumerate                         Non-destructive physical HID inventory\n\
       health|list|events [--endpoint PATH]\n\
       get|connect|disconnect|capabilities|state ID [--endpoint PATH]\n\
       lighting ID R G B [--endpoint PATH]  Typed request; hardware needs a reviewed driver\n\
       simulate-present|simulate-absent [--endpoint PATH]\n\
+      profiles [--endpoint PATH]        List stored profile summaries\n\
+      profile-get ID [--endpoint PATH]\n\
+      profile-save ID NAME [R G B] [--endpoint PATH]\n\
+      profile-delete ID [--endpoint PATH]\n\
       --help\n\
+      Profiles persist in a local SQLite file; default is under the user data directory\n\
+      (override with --profiles PATH on serve, or PERIPHERAL_HUB_DATA).\n\
       Simulation is explicit software-only; no physical driver is bundled."
     );
+}
+
+/// Per-user database path; never inside the repository or a public location.
+fn default_profiles_path() -> PathBuf {
+    let base = std::env::var_os("PERIPHERAL_HUB_DATA")
+        .map(PathBuf::from)
+        .or_else(|| {
+            #[cfg(windows)]
+            {
+                std::env::var_os("LOCALAPPDATA").map(PathBuf::from)
+            }
+            #[cfg(not(windows))]
+            {
+                std::env::var_os("XDG_DATA_HOME")
+                    .map(PathBuf::from)
+                    .or_else(|| {
+                        std::env::var_os("HOME")
+                            .map(|home| PathBuf::from(home).join(".local/share"))
+                    })
+            }
+        })
+        .unwrap_or_else(std::env::temp_dir);
+    base.join("peripheral-hub").join("profiles.sqlite")
+}
+
+/// Build a profile from diagnostic arguments; optional RGB sets whole-device static lighting.
+fn profile_from(
+    id: &str,
+    name: &str,
+    rgb: Option<(&str, &str, &str)>,
+) -> Result<Profile, Box<dyn std::error::Error>> {
+    let lighting = match rgb {
+        Some((red, green, blue)) => Some(LightingCommand {
+            zone: "whole-device".into(),
+            color: RgbColor {
+                red: red.parse()?,
+                green: green.parse()?,
+                blue: blue.parse()?,
+            },
+            brightness: None,
+            effect: LightingEffect::Static,
+        }),
+        None => None,
+    };
+    Ok(Profile {
+        id: ProfileId::new(id)?,
+        name: name.into(),
+        device_model: None,
+        lighting,
+    })
 }
 
 #[tokio::main]
@@ -50,12 +108,22 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+    let profiles_path = if let Some(index) = args.iter().position(|arg| arg == "--profiles") {
+        if index + 1 >= args.len() {
+            return Err("--profiles needs a local path".into());
+        }
+        let path = args.remove(index + 1);
+        args.remove(index);
+        Some(PathBuf::from(path))
+    } else {
+        None
+    };
     if args.is_empty() {
         return Err("missing command; see --help".into());
     }
     let command = args.remove(0);
     if command == "enumerate" {
-        if !args.is_empty() || endpoint.is_some() {
+        if !args.is_empty() || endpoint.is_some() || profiles_path.is_some() {
             return Err("enumerate accepts no extra arguments".into());
         }
         let mut manager =
@@ -87,8 +155,14 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             };
             (DriverRegistry::new(), source)
         };
+        let profiles_path = profiles_path.unwrap_or_else(default_profiles_path);
+        if let Some(parent) = profiles_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let profiles = ProfileRepository::open_file(&profiles_path)?;
+        tracing::info!(event = "profiles_opened");
         let manager = ManagerHandle::start(
-            DeviceManager::try_new(registry, source)?,
+            DeviceManager::with_profiles(registry, source, profiles)?,
             Duration::from_secs(2),
         )?;
         tracing::info!(event = "daemon_started", simulated);
@@ -132,6 +206,19 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
                 brightness: None,
                 effect: LightingEffect::Static,
             },
+        },
+        ("profiles", []) => Operation::ListProfiles,
+        ("profile-get", [id]) => Operation::GetProfile {
+            profile_id: ProfileId::new(id.clone()).map_err(|_| "invalid profile id")?,
+        },
+        ("profile-delete", [id]) => Operation::DeleteProfile {
+            profile_id: ProfileId::new(id.clone()).map_err(|_| "invalid profile id")?,
+        },
+        ("profile-save", [id, name]) => Operation::SaveProfile {
+            profile: profile_from(id, name, None)?,
+        },
+        ("profile-save", [id, name, red, green, blue]) => Operation::SaveProfile {
+            profile: profile_from(id, name, Some((red, green, blue)))?,
         },
         _ => return Err("unknown command or invalid arguments; see --help".into()),
     };

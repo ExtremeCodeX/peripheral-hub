@@ -14,7 +14,7 @@ compatibility: opencode
 
 ## Tools
 
-Use repository inspection and guides. [SDK 1.0](../../../docs/architecture/sdk.md), Registry and Core are preserved; [Phase 2](../../../docs/architecture/daemon.md) supplies real non-destructive `cargo run -p peripheral-hub-daemon -- enumerate` and explicit `serve --simulate` diagnostics. DRA, proprietary physical drivers, manifest validators and scaffold tools remain absent. REA/capture tools require verified installation/authorization. Read [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and [device guide](../../../docs/en/contributors/adding-a-device.md).
+Use repository inspection and guides. [SDK 1.0](../../../docs/architecture/sdk.md), Registry and Core are preserved; [Phase 2](../../../docs/architecture/daemon.md) supplies real non-destructive `cargo run -p peripheral-hub-daemon -- enumerate` and explicit `serve --simulate` diagnostics. DRA, proprietary physical drivers, manifest validators and scaffold tools remain absent. REA/capture tools require verified installation/authorization. Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and [device guide](../../../docs/en/contributors/adding-a-device.md).
 
 ## Procedure
 

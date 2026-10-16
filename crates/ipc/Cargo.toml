@@ -8,6 +8,7 @@ publish.workspace = true
 
 [dependencies]
 peripheral-hub-device-sdk.workspace = true
+peripheral-hub-profiles.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

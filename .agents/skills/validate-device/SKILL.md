@@ -12,7 +12,7 @@ Device artifacts, driver/manifest versions, protocol evidence, claimed capabilit
 
 ## Tools
 
-Read [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and the [device lifecycle](../../../docs/architecture/device-lifecycle.md). Inspect implemented validators, Cargo/frontend scripts, fake transports, and available laboratory equipment. Empty schemas or manifests are not executable validators.
+Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [AGENTS.md](../../../AGENTS.md), [SECURITY.md](../../../SECURITY.md), and the [device lifecycle](../../../docs/architecture/device-lifecycle.md). Inspect implemented validators, Cargo/frontend scripts, fake transports, and available laboratory equipment. Empty schemas or manifests are not executable validators.
 
 ## Procedure
 

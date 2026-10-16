@@ -1,0 +1,21 @@
+[package]
+name = "peripheral-hub-profiles"
+description = "Versioned JSON profiles with validated SQLite persistence"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+peripheral-hub-device-sdk.workspace = true
+peripheral-hub-storage.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

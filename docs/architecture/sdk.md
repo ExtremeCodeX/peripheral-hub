@@ -8,7 +8,7 @@ The preserved Phase 1 foundation contains three library crates (Cargo package ve
 - `peripheral-hub-device-registry`: explicit factory registration, metadata validation, unique interface matching, and driver construction without I/O.
 - `peripheral-hub-core`: in-memory inventory replacement and grouping over caller-supplied descriptors and a Registry.
 
-Dependency direction is **Core → Registry → SDK**, with Core also using SDK types directly. Drivers implement `DriverFactory` and `DeviceDriver`, not Core internals. Phase 2 adds HID, IPC and daemon packages, documented in the [daemon guide](daemon.md), without changing these contracts. The physical registry remains empty; only explicit simulation registers a fictitious factory. No persistent profiles, desktop or proprietary physical driver exists.
+Dependency direction is **Core → Registry → SDK**, with Core also using SDK types directly. Drivers implement `DriverFactory` and `DeviceDriver`, not Core internals. Phase 2 adds HID, IPC and daemon packages, documented in the [daemon guide](daemon.md), without changing these contracts. The physical registry remains empty; only explicit simulation registers a fictitious factory. The desktop frontend exists under `apps/desktop` and consumes these contracts only through the daemon's local IPC; no proprietary physical driver exists. Profile persistence lives in the separate storage/profiles layer, not in the SDK.
 
 ## Version policy
 

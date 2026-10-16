@@ -12,7 +12,7 @@ Research goal, owner consent, exact device/interfaces, OS/firmware/vendor softwa
 
 ## Tools
 
-Read [SECURITY.md](../../../SECURITY.md) and the [research workflow](../../../docs/reverse-engineering/research-workflow.md). DRA is planned, not currently implemented. USBPcap plus Wireshark/TShark may be used in an authorized Windows laboratory after availability/version checks. Do not invent commands for unimplemented capture importers or schemas.
+Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [SECURITY.md](../../../SECURITY.md) and the [research workflow](../../../docs/reverse-engineering/research-workflow.md). Captures serve only authorized interoperability study; keep originals local, never upload automatically, and stop for human review when purpose/authorization is unknown. DRA is planned, not currently implemented. USBPcap plus Wireshark/TShark may be used in an authorized Windows laboratory after availability/version checks. Do not invent commands for unimplemented capture importers or schemas.
 
 ## Procedure
 
@@ -31,4 +31,4 @@ Ignored local session/captures, an action timeline, sanitized normalized evidenc
 
 ## Stop conditions
 
-Stop on missing consent/elevation approval, unrelated sensitive capture, uncertain command safety, unexpected behavior, ambiguous interface, or unavailable parser/backend. Never replay unknown packets, execute vendor binaries automatically, or write firmware/persistent memory. Completion requires traceable correlation and reviewed exports, not a complete protocol claim.
+Stop on missing consent/elevation approval, any prohibited activity, unknown purpose/authorization requiring human review, unrelated sensitive capture, uncertain command safety, unexpected behavior, ambiguous interface, or unavailable parser/backend. Never replay unknown packets, execute vendor binaries automatically, or write firmware/persistent memory. Completion requires traceable correlation and reviewed exports, not a complete protocol claim.

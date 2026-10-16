@@ -1,0 +1,24 @@
+# Standalone manifest: the Tauri shell is intentionally NOT a member of the
+# root Cargo workspace. Building it requires Tauri system dependencies (for
+# example webkit2gtk/gtk on Linux, WebView2 on Windows), which are not present
+# in every development environment. The root workspace therefore stays
+# buildable with `cargo check --workspace` without a webview.
+[workspace]
+
+[package]
+name = "peripheral-hub-desktop"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+description = "Peripheral Hub desktop Tauri bridge (restricted same-user daemon client)."
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+peripheral-hub-ipc = { path = "../../../crates/ipc" }

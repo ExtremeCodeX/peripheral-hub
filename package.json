@@ -1,0 +1,18 @@
+{
+  "name": "peripheral-hub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Peripheral Hub pnpm workspace root. Rust crates build with Cargo; the desktop app uses pnpm.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "desktop:dev": "pnpm --filter @peripheral-hub/desktop dev",
+    "desktop:build": "pnpm --filter @peripheral-hub/desktop build",
+    "desktop:typecheck": "pnpm --filter @peripheral-hub/desktop typecheck",
+    "desktop:test": "pnpm --filter @peripheral-hub/desktop test"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

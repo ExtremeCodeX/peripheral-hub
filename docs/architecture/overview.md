@@ -1,6 +1,6 @@
 # Architecture overview
 
-**Status: SDK foundation and Phase 2 HID/IPC/daemon implemented; desktop remains planned.** This document follows the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md). See [SDK reference](sdk.md), [daemon guide](daemon.md) and [validation ledger](implementation-status.md).
+**Status: SDK foundation, HID/IPC/daemon, SQLite profile persistence and the desktop frontend/bridge are implemented as software; the Tauri shell is not built or run here and physical drivers remain unimplemented.** This document follows the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md). See [SDK reference](sdk.md), [daemon guide](daemon.md), [desktop reference](desktop.md), [ADR 0004](decisions/0004-storage-and-profiles.md), [ADR 0005](decisions/0005-desktop-ui.md) and [validation ledger](implementation-status.md).
 
 ## Layers and trust boundaries
 
@@ -27,12 +27,13 @@ The frontend must not access USB/HID or submit arbitrary packets. The daemon own
 
 | Path | Planned responsibility | Current state |
 | --- | --- | --- |
-| `apps/desktop/` | Tauri 2 + React/TypeScript/Vite interface | Empty package/config placeholders and directories |
+| `apps/desktop/` | Tauri 2 + React/TypeScript/Vite interface | React UI, restricted Tauri bridge source and pnpm workspace; shell not built here (webview deps absent) |
 | `apps/daemon/` | User-session runtime, lifecycle, simulation and IPC diagnostics | Implemented binary/library and software integration tests |
 | `apps/device-research-assistant/` | Rust research CLI | Empty manifest/source placeholder |
 | `crates/core`, `crates/device-sdk`, `crates/device-registry` | Inventory, versioned contracts, explicit factory matching | Implemented libraries with unit tests |
 | `crates/transport-hid`, `crates/ipc` | Real hidapi discovery/report transport and protected local IPC | Implemented, with Linux software/runtime and Windows static evidence distinguished |
-| Other `crates/` directories | Transports, domains, IPC, storage, research | Directories only |
+| `crates/storage`, `crates/profiles` | SQLite connection/migrations and versioned profile persistence | Implemented libraries with unit tests; profile IPC wired into the daemon |
+| Other `crates/` directories | Transports, domains, research, desktop bridges | Directories only |
 | `devices/` | Community evidence and implemented support | Empty manufacturer/model placeholders |
 | `schemas/` | Versioned interchange validation | Empty JSON files |
 | `examples/`, `tools/`, `tests/` | Future real examples, utilities, and tests | Directories only |
@@ -41,7 +42,7 @@ The frontend must not access USB/HID or submit arbitrary packets. The daemon own
 | `.github/` | Future templates, CI, and ownership | Empty placeholders; no active CI |
 | `config/agents/` | Optional REA/MCP example | Empty placeholder; not usable configuration |
 
-Cargo membership follows six implemented crates. Rust 1.99.0 is pinned and `Cargo.lock` is generated. Desktop/DRA/Node manifests remain empty. Existing organization is preserved; SDK/Core/Registry sources are unchanged by Phase 2.
+Cargo membership follows eight implemented members (SDK, Registry, Core, HID transport, IPC, storage, profiles and the daemon app); the Tauri shell is a standalone manifest excluded from the workspace. Rust 1.99.0 is pinned and `Cargo.lock` is generated. The pnpm workspace builds the desktop frontend. DRA manifests remain empty. Existing organization is preserved; SDK/Core/Registry sources remain unchanged.
 
 ## Contract requirements
 

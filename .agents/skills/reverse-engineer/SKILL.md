@@ -12,7 +12,7 @@ Vendor artifact source, authorization, local path, SHA-256, version, target devi
 
 ## Tools
 
-Read [SECURITY.md](../../../SECURITY.md) and the [research procedure](../../../docs/reverse-engineering/research-workflow.md). Use locally available metadata, hash, string/import inspection, or decompilation tools. [REA](https://github.com/morluto/rea) is optional. Verify its current installation and startup instructions before MCP use; the empty repository example is not configured.
+Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [SECURITY.md](../../../SECURITY.md) and the [research procedure](../../../docs/reverse-engineering/research-workflow.md). This skill exists only for authorized interoperability work: prioritize static/passive analysis, never bypass protections, extract secrets, develop exploits, access systems without authorization or reproduce proprietary source. Stop and request human review when purpose or authorization is unknown. Use locally available metadata, hash, string/import inspection, or decompilation tools. [REA](https://github.com/morluto/rea) is optional. Verify its current installation and startup instructions before MCP use; the empty repository example is not configured.
 
 ## Procedure
 
@@ -30,4 +30,4 @@ An analysis summary with non-sensitive provenance, artifact hash/version, tool v
 
 ## Stop conditions
 
-Stop on missing legal authorization, required external upload, unapproved execution/elevation, unsafe hardware actions, or insufficient tool support. No invented packet formats or physical compatibility claims. Completion means the scoped questions have documented evidence or explicit unresolved status, not a guarantee that a driver can be built.
+Stop on missing legal authorization, any prohibited activity (bypass, secret extraction, exploitation, unauthorized access, proprietary source reproduction), unknown purpose/authorization requiring human review, required external upload, unapproved execution/elevation, unsafe hardware actions, or insufficient tool support. No invented packet formats or physical compatibility claims. Completion means the scoped questions have documented evidence or explicit unresolved status, not a guarantee that a driver can be built.

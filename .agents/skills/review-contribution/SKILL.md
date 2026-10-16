@@ -12,7 +12,7 @@ Requested review scope, actual change set/base when Git is available, contributi
 
 ## Tools
 
-Read [CONTRIBUTING.md](../../../CONTRIBUTING.md), [SECURITY.md](../../../SECURITY.md), [AGENTS.md](../../../AGENTS.md), and the [status ledger](../../../docs/architecture/implementation-status.md). Inspect files/diffs, real tests/validators, and artifact provenance. Verify the current Git state rather than relying on the original pre-Git documentary audit; the canonical repository now has history and an `origin` remote.
+Read the binding [responsible research policy](../../../docs/reverse-engineering/responsible-research.md), [CONTRIBUTING.md](../../../CONTRIBUTING.md), [SECURITY.md](../../../SECURITY.md), [AGENTS.md](../../../AGENTS.md), and the [status ledger](../../../docs/architecture/implementation-status.md). Inspect files/diffs, real tests/validators, and artifact provenance. Verify the current Git state rather than relying on the original pre-Git documentary audit; the canonical repository now has history and an `origin` remote.
 
 ## Procedure
 
@@ -30,4 +30,4 @@ A review summary, prioritized findings, actual validation record, capability/evi
 
 ## Stop conditions
 
-Withhold acceptance for fabricated results, missing required evidence, exposed private data, unsafe execution, unresolved license/provenance, or unauthorized scope. If Git/tools are unavailable, report the exact review limitation rather than inventing a diff or CI result. Opening a PR, pushing, or publishing requires explicit authorization.
+Withhold acceptance for fabricated results, missing required evidence, exposed private data, unsafe execution, unresolved license/provenance, unauthorized scope, or any prohibited reverse-engineering activity (bypass, secret extraction, exploitation, unauthorized access, proprietary source reproduction). If Git/tools are unavailable, report the exact review limitation rather than inventing a diff or CI result. Opening a PR, pushing, or publishing requires explicit authorization.

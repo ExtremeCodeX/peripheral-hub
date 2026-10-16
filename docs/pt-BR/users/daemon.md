@@ -1,6 +1,6 @@
-# Daemon e diagnóstico — Fase 2
+# Daemon, perfis e diagnóstico
 
-A [referência técnica em inglês](../../architecture/daemon.md) detalha os contratos e limitações. O desktop da Fase 3 ainda não foi implementado.
+A [referência técnica em inglês](../../architecture/daemon.md) detalha os contratos e limitações. Perfis persistentes e suas operações IPC estão implementados; o frontend desktop e a ponte Tauri existem como código (veja o [guia do desktop](desktop.md)), mas o shell Tauri não é compilado/iniciado neste ambiente.
 
 ## Preparação e uso simulado
 
@@ -39,6 +39,19 @@ cargo run -p peripheral-hub-daemon -- simulate-present
 
 O modelo é fictício e todos os resultados são rotulados `simulated`. Relatórios JSON permanecem em memória; não são pacotes de fabricante nem capturas físicas. A simulação nunca é habilitada automaticamente após uma falha HID.
 
+## Perfis
+
+Perfis são registros versionados (nome, modelo opcional e preferência de iluminação opcional) validados e persistidos em SQLite por usuário. O caminho padrão é `peripheral-hub/profiles.sqlite` sob os dados do usuário; `--profiles PATH` substitui esse caminho no `serve` e nos comandos de cliente. Salvar/enumerar perfis não abre dispositivos nem envia relatórios.
+
+```sh
+cargo run -p peripheral-hub-daemon -- profile-save gaming Gaming 255 0 0
+cargo run -p peripheral-hub-daemon -- profiles
+cargo run -p peripheral-hub-daemon -- profile-get gaming
+cargo run -p peripheral-hub-daemon -- profile-delete gaming
+```
+
+Perfis persistem entre reinícios. Dados inválidos, versão de esquema desconhecida e ids ausentes retornam falha tipada, nunca sucesso. Import/export como comando do daemon e aplicação automática por modelo continuam pendentes; a interface desktop consome essas operações pela ponte Tauri.
+
 ## Descoberta física
 
 ```sh
@@ -56,4 +69,4 @@ IPC é local e versionado, sem listener de rede ou elevação automática. Unix 
 
 Ctrl+C e SIGTERM no Unix encerram o daemon e fecham conexões. Instância duplicada no mesmo endpoint é recusada. Mensagens, clientes, fila, taxa, eventos e deadlines são limitados. Operações que excedem o deadline não são repetidas automaticamente: uma escrita nativa já iniciada pode não ser cancelável pelo `hidapi`, e seu resultado é desconhecido, nunca sucesso presumido.
 
-Os testes Linux usam sockets reais e simulação; a enumeração física foi verificada separadamente. Verificações estáticas Windows não comprovam DACL/runtime ou hardware Windows. Não foram executados relatórios físicos, firmware, bootloader, escrita persistente ou captura USB. Perfis/SQLite/DRA/desktop/CI continuam pendentes. Consulte o [registro de evidências](../../architecture/implementation-status.md).
+Os testes Linux usam sockets reais, simulação e persistência SQLite; a enumeração física foi verificada separadamente. Verificações estáticas Windows não comprovam DACL/runtime ou hardware Windows. Não foram executados relatórios físicos, firmware, bootloader, escrita persistente de hardware ou captura USB. O frontend desktop é verificado por typecheck/testes/build de pnpm; DRA/CI/empacotamento continuam pendentes. Consulte o [registro de evidências](../../architecture/implementation-status.md).
