@@ -1,14 +1,18 @@
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_profiles::*;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 /// Implemented IPC wire contract; independent from SDK 1.0.
 ///
 /// Version 2 extends version 1 with typed profile operations.
 /// Version 3 adds the profile-application operation.
-pub const IPC_VERSION: u16 = 3;
+/// Version 4 adds the generic multi-zone lighting-scene operation.
+pub const IPC_VERSION: u16 = 4;
 /// Maximum live interfaces exposed by this bounded daemon.
 pub const MAX_INTERFACES: usize = 256;
+/// Maximum zones in one generic lighting scene (matches the capability ceiling).
+pub const MAX_SCENE_ZONES: usize = 256;
 
 /// Caller request with explicit version and correlation token.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,6 +24,34 @@ pub struct Request {
     pub request_id: u64,
     /// Typed operation. No raw reports or executable commands are accepted.
     pub operation: Operation,
+}
+
+/// A generic multi-zone lighting request over the SDK `LightingCommand`.
+///
+/// Shape validation (count and unique zones) runs before capability gating; the
+/// daemon then checks every zone, effect and brightness against the open
+/// driver's declared capabilities before any report is written.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LightingScene {
+    /// One command per target zone; zones must be unique and 1..=256 entries.
+    pub commands: Vec<LightingCommand>,
+}
+
+impl LightingScene {
+    /// Validate only the wire shape, without device capabilities.
+    pub fn validate(&self) -> Result<(), Fault> {
+        if self.commands.is_empty() || self.commands.len() > MAX_SCENE_ZONES {
+            return Err(Fault::InvalidArgument);
+        }
+        let mut zones = BTreeSet::new();
+        for command in &self.commands {
+            if !zones.insert(command.zone.as_str()) {
+                return Err(Fault::InvalidArgument);
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Allowed user-session operations. No raw reports or executable commands exist.
@@ -61,6 +93,16 @@ pub enum Operation {
         interface_id: DeviceInterfaceId,
         /// Lighting parameters.
         command: LightingCommand,
+    },
+    /// Generic multi-zone lighting scene applied to one open driver.
+    ///
+    /// Every entry is capability-validated before any report is written, so an
+    /// unsupported zone rejects the whole scene instead of partially applying it.
+    SetLightingScene {
+        /// Opaque endpoint token of an already connected device.
+        interface_id: DeviceInterfaceId,
+        /// Per-zone lighting commands.
+        scene: LightingScene,
     },
     /// Query actual driver state.
     ReadState {

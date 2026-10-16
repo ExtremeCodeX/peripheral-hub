@@ -17,6 +17,7 @@ fn help() {
       health|list|events [--endpoint PATH]\n\
       get|connect|disconnect|capabilities|state ID [--endpoint PATH]\n\
       lighting ID R G B [--endpoint PATH]  Typed request; hardware needs a reviewed driver\n\
+      lighting-scene ID ZONE:R:G:B [ZONE:R:G:B ...] [--endpoint PATH]  Multi-zone scene\n\
       simulate-present|simulate-absent [--endpoint PATH]\n\
       profiles [--endpoint PATH]        List stored profile summaries\n\
       profile-get ID [--endpoint PATH]\n\
@@ -81,6 +82,28 @@ fn profile_from(
         name: name.into(),
         device_model: None,
         lighting,
+    })
+}
+
+/// Parse one diagnostic `ZONE:RED:GREEN:BLUE` token into a static lighting command.
+fn lighting_scene_command(target: &str) -> Result<LightingCommand, Box<dyn std::error::Error>> {
+    let invalid = "lighting-scene target must be ZONE:RED:GREEN:BLUE";
+    let mut parts = target.split(':');
+    let zone = parts
+        .next()
+        .filter(|zone| !zone.is_empty())
+        .ok_or(invalid)?;
+    let red = parts.next().ok_or(invalid)?.parse()?;
+    let green = parts.next().ok_or(invalid)?.parse()?;
+    let blue = parts.next().ok_or(invalid)?.parse()?;
+    if parts.next().is_some() {
+        return Err(invalid.into());
+    }
+    Ok(LightingCommand {
+        zone: zone.into(),
+        color: RgbColor { red, green, blue },
+        brightness: None,
+        effect: LightingEffect::Static,
     })
 }
 
@@ -273,6 +296,17 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
                 effect: LightingEffect::Static,
             },
         },
+        ("lighting-scene", [id, targets @ ..]) if !targets.is_empty() => {
+            Operation::SetLightingScene {
+                interface_id: DeviceInterfaceId::new(id.clone())?,
+                scene: LightingScene {
+                    commands: targets
+                        .iter()
+                        .map(|target| lighting_scene_command(target))
+                        .collect::<Result<_, _>>()?,
+                },
+            }
+        }
         ("profiles", []) => Operation::ListProfiles,
         ("profile-get", [id]) => Operation::GetProfile {
             profile_id: ProfileId::new(id.clone()).map_err(|_| "invalid profile id")?,

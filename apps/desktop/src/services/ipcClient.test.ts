@@ -71,6 +71,31 @@ describe("IpcClient", () => {
     });
   });
 
+  it("sends typed parameters for set_lighting_scene", async () => {
+    const { transport, calls } = fakeDaemon(() => ({ result: "outcome", data: { mode: "simulated" } }));
+    const client = new IpcClient(transport);
+    await expect(
+      client.setLightingScene("iface-1", {
+        commands: [
+          { zone: "whole-device", color: { red: 1, green: 2, blue: 3 }, brightness: 50, effect: "static" },
+          { zone: "logo", color: { red: 4, green: 5, blue: 6 }, brightness: null, effect: "static" },
+        ],
+      }),
+    ).resolves.toEqual({ mode: "simulated" });
+    expect(calls[0]).toEqual({
+      operation: "set_lighting_scene",
+      parameters: {
+        interface_id: "iface-1",
+        scene: {
+          commands: [
+            { zone: "whole-device", color: { red: 1, green: 2, blue: 3 }, brightness: 50, effect: "static" },
+            { zone: "logo", color: { red: 4, green: 5, blue: 6 }, brightness: null, effect: "static" },
+          ],
+        },
+      },
+    });
+  });
+
   it("sends typed parameters for apply_profile", async () => {
     const { transport, calls } = fakeDaemon(() => ({ result: "outcome", data: { mode: "simulated" } }));
     const client = new IpcClient(transport);

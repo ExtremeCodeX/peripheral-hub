@@ -8,6 +8,7 @@ import {
   type EventBatch,
   type Health,
   type LightingCommand,
+  type LightingScene,
   type Operation,
   type Profile,
   type ProfileSummary,
@@ -119,6 +120,17 @@ export class IpcClient {
     const reply = await this.send({
       operation: "set_lighting",
       parameters: { interface_id: interfaceId, command },
+    });
+    if (isReply(reply, "outcome")) {
+      return reply.data;
+    }
+    throw unexpected("outcome", reply.result);
+  }
+
+  async setLightingScene(interfaceId: string, scene: LightingScene): Promise<CommandOutcome> {
+    const reply = await this.send({
+      operation: "set_lighting_scene",
+      parameters: { interface_id: interfaceId, scene },
     });
     if (isReply(reply, "outcome")) {
       return reply.data;

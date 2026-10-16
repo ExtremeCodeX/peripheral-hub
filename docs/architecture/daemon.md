@@ -67,11 +67,14 @@ Copy an actual `interface_id` from `list` and replace `INTERFACE_ID` below; this
 cargo run -p peripheral-hub-daemon -- connect INTERFACE_ID
 cargo run -p peripheral-hub-daemon -- capabilities INTERFACE_ID
 cargo run -p peripheral-hub-daemon -- lighting INTERFACE_ID 255 0 0
+cargo run -p peripheral-hub-daemon -- lighting-scene INTERFACE_ID whole-device:255:0:0 logo:0:0:255
 cargo run -p peripheral-hub-daemon -- state INTERFACE_ID
 cargo run -p peripheral-hub-daemon -- disconnect INTERFACE_ID
 cargo run -p peripheral-hub-daemon -- simulate-absent
 cargo run -p peripheral-hub-daemon -- simulate-present
 ```
+
+`lighting-scene INTERFACE_ID ZONE:R:G:B [...]` sends one multi-zone scene in a single request. Each `ZONE:R:G:B` target sets a solid color on that declared zone; the whole scene is shape-validated (1..256 unique zones) and every command is pre-validated against the device capabilities before any report is written, so an unsupported zone, effect or brightness fails the entire request without a partial update.
 
 Profiles persist across daemon restarts in the default per-user database (`--profiles PATH` overrides it, on both `serve` and the client commands):
 
@@ -110,4 +113,4 @@ cargo run -p peripheral-hub-daemon -- serve --simulate --manifests examples/decl
 
 The daemon/client choose the same per-user endpoint by default. `--endpoint PATH` overrides it for each process; Unix parent directories must be owned by the effective user and mode 0700, while Windows custom names must retain the validated local prefix and current SID suffix. No administrator elevation is requested. Ctrl+C (and Unix SIGTERM) stops the daemon and closes handles; a second server on the same endpoint is refused. Run only one default endpoint per user; custom endpoints are explicit separate development instances.
 
-The desktop frontend and its restricted Tauri bridge are implemented as source under `apps/desktop` (see the [desktop reference](desktop.md)); the Tauri shell is not built or launched in this environment, and no DRA launch command exists yet. SQLite-backed profiles, their IPC operations, schema-versioned JSON import/export and model-driven application of a profile to a connected device (`profile-apply`) are implemented. Declarative manifests load only from an explicit `--manifests` directory and execute only bounded volatile-lighting operations. Exact IPC framing and authorization are in [IPC reference](ipc.md), decisions in [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), [ADR 0004](decisions/0004-storage-and-profiles.md), [ADR 0005](decisions/0005-desktop-ui.md), [ADR 0006](decisions/0006-declarative-drivers.md) and [ADR 0007](decisions/0007-profile-application.md), and actual tests/platform evidence in the [ledger](implementation-status.md).
+The desktop frontend and its restricted Tauri bridge are implemented as source under `apps/desktop` (see the [desktop reference](desktop.md)); the Tauri shell is not built or launched in this environment, and no DRA launch command exists yet. SQLite-backed profiles, their IPC operations, schema-versioned JSON import/export and model-driven application of a profile to a connected device (`profile-apply`) are implemented. Generic multi-zone lighting is implemented through `SetLightingScene`/`lighting-scene`. Declarative manifests load only from an explicit `--manifests` directory and execute only bounded volatile-lighting operations. Exact IPC framing and authorization are in [IPC reference](ipc.md), decisions in [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), [ADR 0004](decisions/0004-storage-and-profiles.md), [ADR 0005](decisions/0005-desktop-ui.md), [ADR 0006](decisions/0006-declarative-drivers.md), [ADR 0007](decisions/0007-profile-application.md) and [ADR 0008](decisions/0008-generic-multi-zone-lighting.md), and actual tests/platform evidence in the [ledger](implementation-status.md).

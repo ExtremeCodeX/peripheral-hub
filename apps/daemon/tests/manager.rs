@@ -345,6 +345,114 @@ fn apply_profile_enforces_binding_capability_and_live_connection() {
 }
 
 #[test]
+fn lighting_scenes_are_capability_gated_and_shape_validated() {
+    let mut manager =
+        DeviceManager::new(simulated_registry(), Box::new(SimulatedSource::default()));
+    manager.refresh().unwrap();
+    let id = first_id(&mut manager);
+    manager
+        .handle(Operation::Connect {
+            interface_id: id.clone(),
+        })
+        .unwrap();
+
+    // One-zone scene succeeds with explicit simulated provenance.
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: id.clone(),
+            scene: LightingScene {
+                commands: vec![lighting()]
+            },
+        }),
+        Ok(Reply::Outcome(outcome)) if outcome.mode == ExecutionMode::Simulated
+    ));
+
+    // Empty and duplicate-zone scenes are wire-shape rejections.
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: id.clone(),
+            scene: LightingScene { commands: vec![] },
+        }),
+        Err(Fault::InvalidArgument)
+    ));
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: id.clone(),
+            scene: LightingScene {
+                commands: vec![lighting(), lighting()]
+            },
+        }),
+        Err(Fault::InvalidArgument)
+    ));
+
+    // Undeclared zones and out-of-range brightness fail capability gating.
+    let mut wrong_zone = lighting();
+    wrong_zone.zone = "side-panel".into();
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: id.clone(),
+            scene: LightingScene {
+                commands: vec![wrong_zone]
+            },
+        }),
+        Err(Fault::Device(DeviceError::InvalidArgument(_)))
+    ));
+    let mut too_bright = lighting();
+    too_bright.brightness = Some(101);
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: id.clone(),
+            scene: LightingScene {
+                commands: vec![too_bright]
+            },
+        }),
+        Err(Fault::Device(DeviceError::InvalidArgument(_)))
+    ));
+
+    // An undeclared effect is NotSupported, never a fabricated success.
+    let mut breathing = lighting();
+    breathing.effect = LightingEffect::Breathing;
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: id.clone(),
+            scene: LightingScene {
+                commands: vec![breathing]
+            },
+        }),
+        Err(Fault::Device(DeviceError::NotSupported))
+    ));
+
+    // An oversized scene is rejected by shape validation before any I/O.
+    let oversized = (0..=MAX_SCENE_ZONES)
+        .map(|index| {
+            let mut command = lighting();
+            command.zone = format!("zone-{index}");
+            command
+        })
+        .collect();
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: id.clone(),
+            scene: LightingScene {
+                commands: oversized
+            },
+        }),
+        Err(Fault::InvalidArgument)
+    ));
+
+    // A scene on a non-open interface fails without a fabricated success.
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: DeviceInterfaceId::new("not-live").unwrap(),
+            scene: LightingScene {
+                commands: vec![lighting()]
+            },
+        }),
+        Err(Fault::Device(DeviceError::NotConnected))
+    ));
+}
+
+#[test]
 fn unknown_interfaces_are_not_opened_and_initialization_failure_stays_physical() {
     let mut manager =
         DeviceManager::new(DriverRegistry::new(), Box::new(SimulatedSource::default()));

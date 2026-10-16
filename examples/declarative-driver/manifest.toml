@@ -24,7 +24,7 @@ usage = { page = 0xFF00, usage = 1 }
 product = "Fictitious example keyboard"
 
 [capabilities.lighting]
-zones = ["whole-device"]
+zones = ["whole-device", "logo"]
 brightness = true
 effects = ["static"]
 
@@ -63,3 +63,32 @@ source = "brightness"
 [operations.report.effect]
 offset = 5
 values = [{ effect = "static", value = 1 }]
+
+# A second, independent zone shows the generic multi-zone scene path: each zone
+# has its own bounded report and the interpreter maps a command to its zone.
+[[operations]]
+kind = "set_lighting"
+zone = "logo"
+
+[operations.report]
+kind = "output"
+report_id = 0
+length = 4
+timeout_ms = 100
+max_rate_per_second = 20
+
+[[operations.report.fields]]
+offset = 0
+fill = 0x22
+
+[[operations.report.fields]]
+offset = 1
+source = "red"
+
+[[operations.report.fields]]
+offset = 2
+source = "green"
+
+[[operations.report.fields]]
+offset = 3
+source = "blue"

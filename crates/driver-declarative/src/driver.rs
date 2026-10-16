@@ -1,5 +1,6 @@
 //! Bounded declarative interpreter: a manifest becomes a reviewed factory.
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -55,7 +56,7 @@ impl DriverFactory for DeclarativeFactory {
             manifest: Arc::clone(&self.manifest),
             mode: self.mode,
             transport: None,
-            last_sent: None,
+            last_sent: BTreeMap::new(),
         }))
     }
 }
@@ -64,7 +65,8 @@ struct DeclarativeDriver {
     manifest: Arc<Manifest>,
     mode: ExecutionMode,
     transport: Option<Box<dyn Transport>>,
-    last_sent: Option<Instant>,
+    /// Last accepted write per zone; each zone has its own declared report rate.
+    last_sent: BTreeMap<String, Instant>,
 }
 
 impl DeviceDriver for DeclarativeDriver {
@@ -88,13 +90,13 @@ impl DeviceDriver for DeclarativeDriver {
             }
         }
         self.transport = Some(transport);
-        self.last_sent = None;
+        self.last_sent.clear();
         Ok(())
     }
 
     fn close(&mut self) -> DeviceResult<()> {
         self.transport.take().ok_or(DeviceError::NotConnected)?;
-        self.last_sent = None;
+        self.last_sent.clear();
         Ok(())
     }
 
@@ -117,7 +119,7 @@ impl DeviceDriver for DeclarativeDriver {
         let report = &operation.report;
         let minimum_interval =
             std::time::Duration::from_secs_f64(1.0 / f64::from(report.max_rate_per_second));
-        if let Some(last) = self.last_sent
+        if let Some(last) = self.last_sent.get(&request.zone)
             && last.elapsed() < minimum_interval
         {
             return Err(DeviceError::ProtocolError(
@@ -132,7 +134,7 @@ impl DeviceDriver for DeclarativeDriver {
                 "incomplete declarative report write".into(),
             ));
         }
-        self.last_sent = Some(Instant::now());
+        self.last_sent.insert(request.zone.clone(), Instant::now());
         Ok(CommandOutcome { mode: self.mode })
     }
 }

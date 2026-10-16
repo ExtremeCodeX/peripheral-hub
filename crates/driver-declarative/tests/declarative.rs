@@ -112,9 +112,8 @@ fn shipped_example_identifies_and_executes_a_bounded_report() {
             .lighting
             .as_ref()
             .unwrap()
-            .zones
-            .len(),
-        1
+            .zones,
+        vec!["whole-device".to_string(), "logo".to_string()]
     );
 
     let outcome = driver
@@ -152,6 +151,14 @@ fn capabilities_gate_commands_and_rate_limits_are_enforced() {
         driver.execute(&DeviceCommand::SetLighting(lighting(Some(50)))),
         Err(DeviceError::ProtocolError(_))
     ));
+
+    // The rate limit is per zone: a different declared zone is independent, so a
+    // multi-zone scene is not blocked by another zone's recent write.
+    let mut other_zone = lighting(None);
+    other_zone.zone = "logo".into();
+    driver
+        .execute(&DeviceCommand::SetLighting(other_zone))
+        .unwrap();
 }
 
 #[test]

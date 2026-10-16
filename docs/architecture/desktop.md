@@ -9,7 +9,7 @@ apps/desktop/src            React/TypeScript UI (no USB/HID, no socket)
         ↓ invoke("daemon_call", { operation })
 apps/desktop/src-tauri      single Tauri command, typed Operation → Response
         ↓ Endpoint::default_for_user(), 5 s client deadline
-peripheral-hub-ipc          same-user local framed IPC (IPC version 3)
+peripheral-hub-ipc          same-user local framed IPC (IPC version 4)
         ↓
 peripheral-hub-daemon       lifecycle, profiles/storage, registry, drivers
 ```
@@ -34,7 +34,7 @@ The UI submits a typed `Operation` and receives the daemon's versioned `Response
 
 - **Devices:** discovered devices, connection status, product/manufacturer/VID:PID, matched model, and simulation-vs-physical mode. Unknown models are shown as read-only and are never opened.
 - **Device details:** explicit capability rows (including "not declared"), connection controls, and support/partial-support warnings.
-- **Lighting:** color/brightness/effect controls only when the daemon reports the capability; success and error messages come from the daemon; a simulated operation is labeled as simulated.
+- **Lighting:** color/brightness/effect controls only when the daemon reports the capability; one or more declared zones can be selected and applied together as a scene (`set_lighting_scene`), so a multi-zone device updates in a single request. Success and error messages come from the daemon; a simulated operation is labeled as simulated.
 - **Profiles:** create/rename/edit/save/apply/delete over the real profile operations, plus client-side versioned JSON import/export. Applying targets an explicitly selected connected device, honors the profile's optional model binding, and reports the actual `simulated`/`physical` provenance. Invalid data is rejected with typed faults.
 - **Macros:** editing, validation, versioned persistence and a descriptive simulation trace only; the UI states that no input was injected.
 - **Displays:** declared display contract and a placeholder preview; no frame is transmitted, and effective control is only for a driver with validated display support.

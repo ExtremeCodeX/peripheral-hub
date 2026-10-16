@@ -291,13 +291,20 @@ impl DeviceManager {
                         &interface_id,
                         DeviceError::ProtocolError("driver mode mismatch".into()),
                     )),
-                    Err(error) => self.operation_error(&interface_id, error),
+                    Err(error) => Err(self.operation_error(&interface_id, error)),
                 }
             }
             Operation::SetLighting {
                 interface_id,
                 command,
             } => self.execute_lighting(&interface_id, command),
+            Operation::SetLightingScene {
+                interface_id,
+                scene,
+            } => {
+                scene.validate()?;
+                self.execute_scene(&interface_id, &scene.commands)
+            }
             Operation::Events { after } => {
                 if after > self.sequence {
                     return Err(Fault::InvalidArgument);
@@ -348,7 +355,9 @@ impl DeviceManager {
                 let Some(command) = profile.lighting else {
                     return Err(DeviceError::NotSupported.into());
                 };
-                self.execute_lighting(&interface_id, command)
+                // Profiles integrate with the generic lighting engine: a stored
+                // single-zone preference is applied as a one-entry scene.
+                self.execute_scene(&interface_id, &[command])
             }
         }
     }
@@ -357,31 +366,53 @@ impl DeviceManager {
         id: &DeviceInterfaceId,
         command: LightingCommand,
     ) -> Result<Reply, Fault> {
+        self.run_lighting(id, command).map(Reply::Outcome)
+    }
+    /// Apply one capability-gated command and return the driver's real outcome.
+    fn run_lighting(
+        &mut self,
+        id: &DeviceInterfaceId,
+        command: LightingCommand,
+    ) -> Result<CommandOutcome, Fault> {
         let request = DeviceCommand::SetLighting(command);
         let driver = self.driver(id)?;
         driver.capabilities()?.validate_command(&request)?;
         let result = driver.execute(&request);
         match result {
-            Ok(outcome) if outcome.mode == self.mode() => Ok(Reply::Outcome(outcome)),
+            Ok(outcome) if outcome.mode == self.mode() => Ok(outcome),
             Ok(_) => Err(self.failed(
                 id,
                 DeviceError::ProtocolError("driver mode mismatch".into()),
             )),
-            Err(error) => self.operation_error(id, error),
+            Err(error) => Err(self.operation_error(id, error)),
         }
     }
-    fn operation_error(
+    /// Apply a multi-zone scene, validating every entry before any I/O so an
+    /// unsupported zone rejects the whole scene rather than half-applying it.
+    fn execute_scene(
         &mut self,
         id: &DeviceInterfaceId,
-        error: DeviceError,
+        commands: &[LightingCommand],
     ) -> Result<Reply, Fault> {
+        let capabilities = self.driver(id)?.capabilities()?;
+        capabilities.validate()?;
+        for command in commands {
+            capabilities.validate_command(&DeviceCommand::SetLighting(command.clone()))?;
+        }
+        let mut outcome = None;
+        for command in commands {
+            outcome = Some(self.run_lighting(id, command.clone())?);
+        }
+        outcome.map(Reply::Outcome).ok_or(Fault::InvalidArgument)
+    }
+    fn operation_error(&mut self, id: &DeviceInterfaceId, error: DeviceError) -> Fault {
         if matches!(
             error,
             DeviceError::NotSupported | DeviceError::InvalidArgument(_)
         ) {
-            Err(error.into())
+            error.into()
         } else {
-            Err(self.failed(id, error))
+            self.failed(id, error)
         }
     }
     /// Close every managed driver on shutdown, retaining the first real cleanup error.

@@ -4,7 +4,7 @@ Last updated: 2026-10-16. English is the technical reference. This ledger distin
 
 ## Authorized scope
 
-The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application** (their "Fase 5", which is the master's out-of-scope DRA). No commit, push or PR is authorized; DRA, packaging/release and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
+The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application** and continuing with **generic multi-zone RGB lighting** (their "Fase 5", which is the master's out-of-scope DRA). No commit, push or PR is authorized; DRA, packaging/release and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
 
 ### Active Phase 2 plan
 
@@ -553,3 +553,54 @@ All tests use the explicit software simulator, an in-memory profile store and lo
 ### Relevant files and decisions
 
 Updated `crates/ipc/src/protocol.rs`, `apps/daemon/src/{manager.rs,main.rs}`, `apps/daemon/tests/manager.rs`, `apps/desktop/src/types/ipc.ts`, `apps/desktop/src/services/{ipcClient.ts,daemonController.ts}`, `apps/desktop/src/features/profiles/ProfilesScreen.tsx`, `apps/desktop/src/services/{ipcClient.test.ts,daemonController.test.ts}` and `apps/desktop/src/features/screens.test.tsx`; added [ADR 0007](decisions/0007-profile-application.md) and updated the [IPC](ipc.md)/[daemon](daemon.md)/[desktop](desktop.md) references and [ADR 0004](decisions/0004-storage-and-profiles.md). SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## Domain features §4.6: generic multi-zone RGB lighting (continuation of user "Fase 5")
+
+After profile application, the user asked to proceed with the next §4.6 increment only: a generic RGB lighting system (their "Fase 5"; the master's own Fase 5 is the out-of-scope DRA). Multi-zone lighting was the explicit remaining §4.6 gap recorded above. It reuses the SDK lighting DTOs, the capability-gated path shared with profiles, and the declarative interpreter, without inventing any proprietary protocol. Macros and displays were left untouched, and no commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| IPC contract | Completed (concluído) | `IPC_VERSION` raised 3 → 4 with `Operation::SetLightingScene { interface_id, scene }` and `LightingScene { commands }`; `MAX_SCENE_ZONES = 256`; `LightingScene::validate()` rejects empty, oversized and duplicate-zone scenes before transport |
+| Daemon manager | Completed (concluído) | New `execute_scene` pre-validates all commands against the driver capabilities before any write, then executes in order; `ApplyProfile` now routes its resolved command through the same path; `operation_error` returns the typed `Fault` |
+| Declarative driver | Completed (concluído) | Rate limit trackers are now per zone (`BTreeMap<String, Instant>`, cleared on open/close); the example manifest declares a second `logo` zone so multi-zone scenes are exercised end to end |
+| Daemon CLI | Completed (concluído) | `lighting-scene INTERFACE_ID ZONE:R:G:B [...]` plus help text |
+| Desktop | Completed (concluído) | `src/types/ipc.ts` bumped to `IPC_VERSION = 4` with `LightingScene`; `ipcClient.setLightingScene`/`DaemonController.setLightingScene`; the Lighting screen selects one or more declared zones and applies them as a single scene, with a clear-all/select-all toggle and an "Apply to N zones" action |
+| Tests | Completed (concluído) | IPC `codec` shape test; daemon `manager` capability-gate test (valid, empty/duplicate/oversized shape, undeclared zone/brightness/effect, non-open interface); daemon `declarative` multi-zone scene test; declarative crate per-zone independence assertion → Rust **85 → 88 passed**; frontend `set_lighting_scene` parameter test → **57 → 58 passed** |
+| Documentation | Completed (concluído) | New [ADR 0008](decisions/0008-generic-multi-zone-lighting.md); updated [IPC](ipc.md), [daemon](daemon.md), [desktop](desktop.md), [driver system](driver-system.md) and this ledger |
+
+SDK 1.0/Core/Registry contracts, the storage/profiles libraries, the profile schema version and the declarative manifest schema are unchanged. The physical registry remains empty and no hardware compatibility is claimed.
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`) and the local Node/pnpm under `target/phase4-node`.
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or warning suppressions |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **88 passed / 0 failed / 0 ignored** (+1 ipc, +1 daemon manager, +1 daemon declarative) |
+| `pnpm --filter @peripheral-hub/desktop typecheck` | Passed, exit 0 |
+| `pnpm --filter @peripheral-hub/desktop test` | Passed: **58 passed / 0 failed** across 9 files (+1 ipcClient) |
+| `pnpm --filter @peripheral-hub/desktop build` | Passed, exit 0 (Vite production build) |
+
+All tests use the explicit software simulator, an in-memory profile store, the fictitious declarative example and local IPC doubles; no physical device was enumerated, opened or written.
+
+### Failures corrected and design review
+
+- The declarative interpreter tracked a single `last_sent: Option<Instant>` for the whole driver, so a multi-zone scene written back-to-back was rejected as a rate violation and could tear down the session. It now tracks one timestamp per zone, matching the one-report-per-operation model, so independent zones no longer interfere.
+
+### Limitations and pending priorities
+
+1. **Declared zones only:** a scene can only target zones the driver declares; an undeclared zone fails the whole scene with `InvalidArgument`/`NotSupported` rather than being ignored.
+2. **Volatile lighting only:** scenes are still bounded volatile-lighting writes; effects remain the SDK's fixed enum and no persistent-memory or firmware operation exists.
+3. **Simulated evidence:** all new paths are exercised against the simulator and the fictitious declarative example; no physical device validated them.
+4. **Remaining §4.6 work:** macro persistence/limits in the daemon and the display contract/preview remain pending.
+5. **Later scope/governance:** DRA, packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending.
+6. **Windows evidence is static:** as before, the Windows target checks are compilation evidence only.
+
+### Relevant files and decisions
+
+Updated `crates/ipc/src/protocol.rs`, `crates/ipc/tests/codec.rs`, `crates/driver-declarative/src/driver.rs`, `crates/driver-declarative/tests/declarative.rs`, `apps/daemon/src/{manager.rs,main.rs}`, `apps/daemon/tests/{manager.rs,declarative.rs}`, `examples/declarative-driver/manifest.toml`, `apps/desktop/src/types/ipc.ts`, `apps/desktop/src/services/{ipcClient.ts,daemonController.ts,ipcClient.test.ts}` and `apps/desktop/src/features/lighting/LightingScreen.tsx`; added [ADR 0008](decisions/0008-generic-multi-zone-lighting.md) and updated the [IPC](ipc.md)/[daemon](daemon.md)/[desktop](desktop.md)/[driver system](driver-system.md) references. SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.

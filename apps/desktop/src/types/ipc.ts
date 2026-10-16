@@ -1,11 +1,11 @@
-// TypeScript mirror of the daemon's typed local IPC contract (IPC_VERSION = 3).
+// TypeScript mirror of the daemon's typed local IPC contract (IPC_VERSION = 4).
 //
 // These shapes are intentionally a faithful copy of `crates/ipc/src/protocol.rs`
 // and the SDK DTOs it re-uses. The frontend never talks to USB/HID; it only
 // builds these typed operations, and the restricted Tauri bridge performs the
 // local IPC call. Keep this file in sync when the wire version changes.
 
-export const IPC_VERSION = 3;
+export const IPC_VERSION = 4;
 
 export type ExecutionMode = "simulated" | "physical";
 
@@ -38,6 +38,12 @@ export interface LightingCommand {
   color: RgbColor;
   brightness: number | null;
   effect: LightingEffect;
+}
+
+// A multi-zone lighting scene; the wire enforces at most MAX_SCENE_ZONES unique
+// zones and rejects duplicates before any device access.
+export interface LightingScene {
+  commands: LightingCommand[];
 }
 
 export interface LightingCapabilities {
@@ -183,6 +189,10 @@ export type Operation =
   | {
       operation: "set_lighting";
       parameters: { interface_id: string; command: LightingCommand };
+    }
+  | {
+      operation: "set_lighting_scene";
+      parameters: { interface_id: string; scene: LightingScene };
     }
   | { operation: "read_state"; parameters: { interface_id: string } }
   | { operation: "events"; parameters: { after: number } }

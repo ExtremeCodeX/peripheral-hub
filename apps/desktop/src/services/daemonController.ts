@@ -5,6 +5,7 @@ import type {
   DeviceState,
   DeviceSummary,
   LightingCommand,
+  LightingScene,
   Profile,
 } from "../types/ipc";
 import { BridgeError, DaemonFaultError } from "./errors";
@@ -100,6 +101,10 @@ export class DaemonController {
 
   setLighting(interfaceId: string, command: LightingCommand): Promise<CommandOutcome> {
     return this.client.setLighting(interfaceId, command);
+  }
+
+  setLightingScene(interfaceId: string, scene: LightingScene): Promise<CommandOutcome> {
+    return this.client.setLightingScene(interfaceId, scene);
   }
 
   getProfile(profileId: string): Promise<Profile> {

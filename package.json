@@ -14,8 +14,5 @@
     "desktop:build": "pnpm --filter @peripheral-hub/desktop build",
     "desktop:typecheck": "pnpm --filter @peripheral-hub/desktop typecheck",
     "desktop:test": "pnpm --filter @peripheral-hub/desktop test"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
   }
 }

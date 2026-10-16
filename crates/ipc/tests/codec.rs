@@ -1,4 +1,5 @@
 //! Frame/schema rejection without any hardware or external service.
+use peripheral_hub_device_sdk::{LightingCommand, LightingEffect, RgbColor};
 use peripheral_hub_ipc::*;
 use tokio::io::{AsyncWriteExt, duplex};
 
@@ -47,6 +48,45 @@ async fn malformed_unknown_operations_and_truncated_frames_are_rejected() {
         read_frame::<Request>(&mut b).await,
         Err(IpcError::Io(_))
     ));
+}
+
+#[test]
+fn lighting_scene_shape_is_validated() {
+    let command = |zone: &str| LightingCommand {
+        zone: zone.into(),
+        color: RgbColor {
+            red: 1,
+            green: 2,
+            blue: 3,
+        },
+        brightness: None,
+        effect: LightingEffect::Static,
+    };
+    assert!(
+        LightingScene {
+            commands: vec![command("whole-device")]
+        }
+        .validate()
+        .is_ok()
+    );
+    assert!(LightingScene { commands: vec![] }.validate().is_err());
+    assert!(
+        LightingScene {
+            commands: vec![command("a"), command("a")]
+        }
+        .validate()
+        .is_err()
+    );
+    let oversized: Vec<_> = (0..=MAX_SCENE_ZONES)
+        .map(|index| command(&format!("z{index}")))
+        .collect();
+    assert!(
+        LightingScene {
+            commands: oversized
+        }
+        .validate()
+        .is_err()
+    );
 }
 
 #[test]
