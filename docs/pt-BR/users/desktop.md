@@ -1,6 +1,6 @@
 # Interface desktop (Tauri 2 + React/TypeScript)
 
-A [referência técnica em inglês](../../architecture/desktop.md) detalha arquitetura, telas e limitações. O frontend e a ponte Tauri existem como código; a ponte não é compilada nem executada no ambiente atual (faltam dependências de webview). Veja o [ADR 0005](../../architecture/decisions/0005-desktop-ui.md) e o [registro de evidências](../../architecture/implementation-status.md).
+A [referência técnica em inglês](../../architecture/desktop.md) detalha arquitetura, telas e limitações. O frontend, a ponte Tauri e o shell nativo existem como código; o shell compila e roda em uma máquina com as dependências de webview instaladas (não no sandbox de validação automática). Veja o [ADR 0005](../../architecture/decisions/0005-desktop-ui.md) e o [registro de evidências](../../architecture/implementation-status.md).
 
 ## O que já existe
 
@@ -10,12 +10,22 @@ A [referência técnica em inglês](../../architecture/desktop.md) detalha arqui
 - Macros apenas editam, validam, persistem e geram um **trace de simulação descritivo**; nada é injetado no sistema.
 - Displays mostram o contrato declarado e um preview; nenhum frame é transmitido.
 
+## Dependências nativas
+
+O frontend React só precisa de Node 20+ e pnpm. Para compilar e abrir o shell Tauri, instale também o webview do sistema e um compilador C:
+
+- **Arch Linux:** `sudo pacman -S --needed base-devel pkgconf gtk3 webkit2gtk-4.1` (`librsvg` só ao empacotar ícones).
+- **Debian/Ubuntu:** `build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libssl-dev`.
+- **Windows:** ferramentas de build C++ (MSVC) e o runtime WebView2.
+
+Sem esses pacotes, a compilação falha dentro de `gtk-sys`/`webkit2gtk-sys` (falta o pacote `pkg-config` `gtk+-3.0`/`webkit2gtk-4.1`), não no código deste projeto.
+
 ## Compilação e testes do frontend
 
 Instale Node 20+ e pnpm. Na raiz:
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 pnpm --filter @peripheral-hub/desktop typecheck
 pnpm --filter @peripheral-hub/desktop test
 pnpm --filter @peripheral-hub/desktop build
@@ -34,6 +44,7 @@ Para desenvolvimento com recarregamento do Vite, adicione `"devUrl": "http://loc
 
 ## Limitações
 
-- A ponte Tauri (`apps/desktop/src-tauri`) tem manifesto próprio e depende de webview do sistema (webkit2gtk/GTK no Linux, WebView2 no Windows). Neste ambiente ela **não** foi compilada nem iniciada; não há instalador, runtime desktop nem evidência ponta a ponta.
+- A ponte Tauri (`apps/desktop/src-tauri`) tem manifesto próprio e depende de webview do sistema (webkit2gtk/GTK no Linux, WebView2 no Windows). No sandbox de validação ela **não** foi compilada (faltam `pkg-config`/GTK/WebKit); em uma máquina com essas dependências ela compila e roda, e, contra um daemon `serve --simulate`, lista o dispositivo simulado, aplica iluminação simulada e persiste um perfil após reiniciar o daemon.
+- Não há instalador, instância única nem auto-start do daemon: os dois processos são iniciados manualmente.
 - Windows permanece apenas com evidência estática de compilação.
 - Não há DRA, schemas de manifesto, CI, empacotamento, releases assinadas, drivers físicos ou aplicação automática de um perfil a um dispositivo. Não trate esta camada como comprovação de controle físico.

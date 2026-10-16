@@ -22,6 +22,8 @@ fn help() {
       profile-get ID [--endpoint PATH]\n\
       profile-save ID NAME [R G B] [--endpoint PATH]\n\
       profile-delete ID [--endpoint PATH]\n\
+      profile-export ID [PATH] [--endpoint PATH]  Write versioned profile JSON\n\
+      profile-import PATH [--endpoint PATH]       Import versioned profile JSON\n\
       --help\n\
       Profiles persist in a local SQLite file; default is under the user data directory\n\
       (override with --profiles PATH on serve, or PERIPHERAL_HUB_DATA).\n\
@@ -176,6 +178,46 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             let _ = tokio::signal::ctrl_c().await;
         })
         .await?;
+        return Ok(());
+    }
+    if command == "profile-export" {
+        let (id, path) = match args.as_slice() {
+            [id] => (id.clone(), None),
+            [id, path] => (id.clone(), Some(PathBuf::from(path))),
+            _ => return Err("profile-export needs ID [PATH]".into()),
+        };
+        let profile_id = ProfileId::new(id).map_err(|_| "invalid profile id")?;
+        let response = Client::new(endpoint, Duration::from_secs(5))?
+            .call(Operation::GetProfile { profile_id })
+            .await?;
+        let profile = match response.result {
+            Ok(Reply::Profile(profile)) => profile,
+            Ok(_) => return Err("unexpected daemon reply".into()),
+            Err(fault) => return Err(format!("profile export failed: {fault}").into()),
+        };
+        let json = profile.to_json()?;
+        match path {
+            Some(path) => {
+                std::fs::write(&path, json.as_bytes())?;
+                eprintln!("wrote {}", path.display());
+            }
+            None => println!("{json}"),
+        }
+        return Ok(());
+    }
+    if command == "profile-import" {
+        let [path] = args.as_slice() else {
+            return Err("profile-import needs PATH".into());
+        };
+        let profile = import_profile(std::path::Path::new(path))?;
+        let response = Client::new(endpoint, Duration::from_secs(5))?
+            .call(Operation::SaveProfile { profile })
+            .await?;
+        let failed = response.result.is_err();
+        println!("{}", serde_json::to_string_pretty(&response)?);
+        if failed {
+            return Err("daemon returned a structured failure (see JSON)".into());
+        }
         return Ok(());
     }
     let operation = match (command.as_str(), args.as_slice()) {

@@ -374,6 +374,24 @@ The sandbox here cannot build the shell (`pkg-config`, `gtk+-3.0` and `webkit2gt
 
 The daemon's per-second `inventory_replaced` line was confirmed to be the normal 1 s enumeration heartbeat, not a fault. To keep terminals usable it now logs at `INFO` only when the inventory actually changes (added/removed/updated non-zero) and at `debug` otherwise; `cargo fmt`, `clippy -D warnings` and the workspace tests (including `structured_logging.rs`, which exercises the change case) still pass.
 
+### Follow-up validation session
+
+A later request to "conclude Phase 3 by implementing the desktop app" was reconciled against the master: in this repository the desktop is **Fase 4** and Fase 3 is daemon/IPC/profiles, and the desktop under `apps/desktop/` is already implemented and committed (`c93025b` on `feat/desktop-complete`, tree clean). No desktop implementation was missing, so this session only re-ran validation and tightened documentation rather than rewriting existing work.
+
+| Command / action | Outcome |
+| --- | --- |
+| `pnpm install --frozen-lockfile` (pnpm 10.34.7) | Passed; lockfile up to date, esbuild postinstall ran. Needed `CI=true` only because a non-TTY purge of the existing `node_modules` was pending |
+| pnpm config audit | `pnpm-workspace.yaml` `allowBuilds: {esbuild: true}` is the current pnpm syntax (maps to `onlyBuiltDependencies`); `package.json` `pnpm.onlyBuiltDependencies` is the older equivalent. No obsolete keys. `minimumReleaseAge` is **not** configured anywhere |
+| `pnpm build` / `pnpm test` | Added root convenience scripts (`build`/`test`/`typecheck`) since `pnpm build` previously failed with no root script. Build passed; **53 tests / 9 files** pass |
+| `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0 |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **69 passed / 0 failed / 0 ignored** |
+| `cargo build --workspace --locked` | Passed, exit 0 |
+| Native-prerequisite probe (sandbox) | `pkg-config`/`pkgconf`, `cc`/`gcc` and any distro package manager are absent; `gtk+-3.0`, `webkit2gtk-4.1`, `javascriptcoregtk-4.1`, `libsoup-3.0` all missing. Native Tauri build is impossible in this sandbox and is documented as such |
+
+The required Arch Linux host packages are documented in [desktop.md](desktop.md) (`base-devel`, `pkgconf`, `gtk3`, `webkit2gtk-4.1`).
+
 ### Failures corrected and design review
 
 - The tracked `pnpm-lock.yaml` was an empty placeholder that pnpm reported as broken; it was regenerated rather than fabricated.
@@ -398,3 +416,41 @@ The daemon's per-second `inventory_replaced` line was confirmed to be the normal
 ### Relevant files and decisions
 
 Added `package.json` (root, with pnpm build approvals), `pnpm-workspace.yaml`, regenerated `pnpm-lock.yaml`, and `apps/desktop/{package.json,tsconfig.json,vite.config.ts,index.html,src/}` (types, services, stores, hooks, components, features and Vitest tests, including `src/services/daemonController.test.ts` and `src/features/screens.test.tsx`) plus `apps/desktop/src-tauri/{Cargo.toml,build.rs,tauri.conf.json,capabilities/default.json,src/main.rs}`. Updated root `Cargo.toml` (`exclude`). Documentation: [ADR 0005](decisions/0005-desktop-ui.md), `desktop.md`, pt-BR `users/desktop.md`, `overview.md`, `ipc.md`, `daemon.md`, READMEs, project-status pages, `AGENTS.md`, `CONTRIBUTING.md`, pt-BR daemon guide, `develop-feature` skill and this ledger. SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor binary execution, raw capture, firmware action or external evidence upload occurred.
+
+## Fase 3 audit session: profile JSON import/export
+
+The user asked to audit the master document's **Fase 3 ("Daemon, IPC e perfis")** against the implementation. The audit confirmed the Fase 3 acceptance criteria are met: the user-session daemon runs, the typed versioned IPC client answers all listed operations (`health`, `list_devices`, `get_device`, `get_capabilities`, `get_profile`, `save_profile`, `set_lighting`, connection events/status), profiles persist in SQLite with schema-versioned JSON, duplicate daemons are refused, and the integration tests pass. One master §4.6 item was only library-level: profiles supported `to_json`/`from_json` but there was **no user-facing import/export command** (recorded as a limitation in ADR 0004, `daemon.md` and the profiles section above). That gap was closed in this session.
+
+### Actual delivery
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| Profile file import/export | Completed (concluído) | New `peripheral_hub_daemon::{export_profile, import_profile}` helpers wrap `Profile::to_json`/`from_json` and local file I/O only; the file path is a client argument, never a wire field |
+| Diagnostic CLI | Completed (concluído) | `profile-export ID [PATH]` (stdout when `PATH` omitted) and `profile-import PATH` on the daemon client; import validates before `SaveProfile`, so unknown versions/malformed files are rejected, not stored |
+| Automated tests | Completed (concluído) | New `apps/daemon/tests/profile_files.rs` (2 tests): export→import→repository round-trip and rejection of future-version/malformed/missing files. Suite grew 69 → **71 passed / 0 failed / 0 ignored** |
+
+No IPC wire change was needed: export uses `GetProfile`, import uses `SaveProfile`, both already in the v2 contract. No new dependency was added (`std::fs` only).
+
+### Commands and actual outcomes
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0 |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **71 passed / 0 failed / 0 ignored** (+2 from `profile_files.rs`) |
+| `cargo build --workspace --locked` | Passed, exit 0 |
+| Real daemon/client smoke (`serve --simulate` on a private temp socket + profile DB) | Passed: `profile-save gaming Gaming 255 0 0` → `profile-export gaming FILE` wrote the `profile_schema_version` 1 document → `profile-delete` → `profile-import FILE` restored it → `profile-get gaming` returned the same RGB; a bumped `profile_schema_version` was rejected with "unsupported profile schema version" (exit 1); SIGTERM removed the socket |
+
+The smoke test used only the explicit software simulator and a temporary local file/socket; no physical device, vendor binary, capture or external service was involved.
+
+### Limitations
+
+1. **File path is client-side:** import/export read/write a local path chosen by the caller; the daemon never receives a path over IPC and there is no file picker (the desktop keeps its own client-side import/export in TypeScript).
+2. **No data migration beyond forward-only:** only `profile_schema_version` 1 exists, so no re-encode of older stored rows is implemented; a future version bump would need an explicit migration rather than the current reject-on-read behavior.
+3. **Model-driven application still pending:** applying a saved profile to a connected device remains unimplemented; profiles record intent only.
+4. **Windows evidence remains static:** the Windows target check/Clippy are compilation evidence only, not runtime/DACL validation.
+
+### Relevant files
+
+Added `apps/daemon/src/profile_files.rs` and `apps/daemon/tests/profile_files.rs`; updated `apps/daemon/src/{lib.rs,main.rs}`. Documentation: `daemon.md`, pt-BR `users/daemon.md`, [ADR 0004](decisions/0004-storage-and-profiles.md) and this ledger. IPC protocol, SDK/Core/Registry contracts, storage/profiles libraries, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.

@@ -50,7 +50,16 @@ cargo run -p peripheral-hub-daemon -- profile-get gaming
 cargo run -p peripheral-hub-daemon -- profile-delete gaming
 ```
 
-Perfis persistem entre reinícios. Dados inválidos, versão de esquema desconhecida e ids ausentes retornam falha tipada, nunca sucesso. Import/export como comando do daemon e aplicação automática por modelo continuam pendentes; a interface desktop consome essas operações pela ponte Tauri.
+Import/export usam o envelope JSON versionado (`profile_schema_version`). `profile-export ID [PATH]` grava o documento validado (em stdout quando `PATH` é omitido); `profile-import PATH` faz parse e valida antes de `SaveProfile`, então versão desconhecida ou documento malformado é rejeitado em vez de gravado:
+
+```sh
+cargo run -p peripheral-hub-daemon -- profile-export gaming gaming.json
+cargo run -p peripheral-hub-daemon -- profile-import gaming.json
+```
+
+O caminho do arquivo é apenas um argumento do cliente; ele nunca cruza a fronteira IPC e perfis não carregam relatórios crus nem payloads de fabricante.
+
+Perfis persistem entre reinícios. Dados inválidos, versão de esquema desconhecida e ids ausentes retornam falha tipada, nunca sucesso. Import/export JSON versionado estão implementados como comandos do daemon; aplicação automática por modelo continua pendente. A interface desktop consome essas operações pela ponte Tauri.
 
 ## Descoberta física
 

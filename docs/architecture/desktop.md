@@ -1,6 +1,6 @@
 # Desktop interface (Tauri 2 + React/TypeScript)
 
-**Status: frontend and restricted bridge implemented as source; the Tauri shell is not built or run in the current validation environment.** This document follows the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md) Fase 4 and [ADR 0005](decisions/0005-desktop-ui.md). See the [daemon guide](daemon.md), [IPC reference](ipc.md) and [validation ledger](implementation-status.md).
+**Status: frontend, restricted bridge and native shell implemented; the shell compiles and runs on a host with the webview dependencies installed, but not in the sandbox used for automated validation.** This document follows the [master specification](../../OPENCODE_IMPLEMENTATION_MASTER.md) Fase 4 and [ADR 0005](decisions/0005-desktop-ui.md). See the [daemon guide](daemon.md), [IPC reference](ipc.md) and [validation ledger](implementation-status.md).
 
 ## Boundary and data flow
 
@@ -42,10 +42,22 @@ The UI submits a typed `Operation` and receives the daemon's versioned `Response
 
 Empty, loading, disconnected, permission-denied, error and unsupported states are rendered explicitly. Forms validate before sending and navigation is keyboard-accessible.
 
+## Native dependencies
+
+The React frontend only needs Node 20+ and pnpm. Building and running the Tauri shell additionally needs the platform webview and a C toolchain; the shell is intentionally excluded from the root Cargo workspace so `cargo check --workspace` works without them.
+
+| Platform | Packages |
+| --- | --- |
+| Arch Linux | `base-devel`, `pkgconf`, `gtk3`, `webkit2gtk-4.1` (`librsvg` only when bundling icons) |
+| Debian/Ubuntu | `build-essential`, `pkg-config`, `libgtk-3-dev`, `libwebkit2gtk-4.1-dev`, `libssl-dev` |
+| Windows | MSVC C++ build tools and the WebView2 runtime (Windows 10/11) |
+
+A host without these fails inside the `gtk-sys`/`webkit2gtk-sys` build scripts (missing `pkg-config` package `gtk+-3.0`/`webkit2gtk-4.1`), not in this project's own code.
+
 ## Building and validating
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 pnpm --filter @peripheral-hub/desktop typecheck   # tsc --noEmit
 pnpm --filter @peripheral-hub/desktop test         # vitest run
 pnpm --filter @peripheral-hub/desktop build        # tsc --noEmit && vite build
@@ -62,6 +74,7 @@ It requires platform webview dependencies and is intentionally excluded from the
 
 ## Evidence and limits
 
-- TypeScript typechecking, Vitest unit tests and a production Vite build run in this environment and are the only desktop evidence recorded.
-- The Tauri shell is not compiled or launched here: `pkg-config`, GTK and `webkit2gtk` are absent. There is no desktop runtime, installer or end-to-end GUI evidence, and Windows is static-evidence only.
+- Automated evidence here: TypeScript typechecking, 53 Vitest tests across 9 files, a production Vite build, and `cargo fmt`/`clippy -D warnings`/`check`/`test`/`build --locked` on the Rust workspace.
+- The Tauri shell is not compiled or launched in this sandbox (`pkg-config`, a C toolchain, GTK and `webkit2gtk` are absent). On a host with the native dependencies above it compiles with `cargo run --manifest-path apps/desktop/src-tauri/Cargo.toml` and, against a live `serve --simulate` daemon, lists the simulated device, applies a simulated lighting change and persists a profile across a daemon restart.
+- There is no installer, no single-instance behaviour and no daemon auto-start; the daemon and desktop are started manually. Windows remains static-evidence only.
 - Macros are not input injection, and displays are not frame transmission. No physical control capability is claimed by this layer.

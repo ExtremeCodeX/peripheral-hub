@@ -7,6 +7,9 @@
     "node": ">=20"
   },
   "scripts": {
+    "build": "pnpm --filter @peripheral-hub/desktop build",
+    "test": "pnpm --filter @peripheral-hub/desktop test",
+    "typecheck": "pnpm --filter @peripheral-hub/desktop typecheck",
     "desktop:dev": "pnpm --filter @peripheral-hub/desktop dev",
     "desktop:build": "pnpm --filter @peripheral-hub/desktop build",
     "desktop:typecheck": "pnpm --filter @peripheral-hub/desktop typecheck",
