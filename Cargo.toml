@@ -13,6 +13,7 @@ members = [
     "examples/native-driver",
     "apps/daemon",
     "apps/device-research-assistant",
+    "tools/agent-handoff",
 ]
 # The Tauri shell has its own workspace and requires platform webview
 # dependencies; it is not built by the root workspace.

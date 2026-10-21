@@ -6,7 +6,7 @@
 
 ## Project status
 
-Peripheral Hub has an implemented **Rust foundation and daemon**: SDK 1.0, Registry, Core, real `hidapi` discovery/report transport, versioned local IPC, connection management, explicit software simulation, generic multi-zone lighting scenes, SQLite-backed profile and macro persistence with typed IPC plus import/export, model-bound profile application to a connected device, a local display contract/preview with no frame transmission, a bounded declarative driver interpreter (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) and a React/Tauri desktop frontend over the daemon. The Rust daemon and diagnostic client run independently of a GUI. A standalone DRA MVP provides local research sessions, a stable JSON capture import, deterministic offset analysis with inferred/unverified labels, sanitized Markdown/JSON reports and a fully commented scaffold. pcap/pcapng import, REA integration and physical protocol validation remain unimplemented, as do proprietary physical drivers, the remaining interchange schemas, packaging and CI; no physical control capability is validated.
+Peripheral Hub has an implemented **Rust foundation and daemon**: SDK 1.0, Registry, Core, real `hidapi` discovery/report transport, versioned local IPC, connection management, explicit software simulation, generic multi-zone lighting scenes, SQLite-backed profile and macro persistence with typed IPC plus import/export, model-bound profile application to a connected device, a local display contract/preview with no frame transmission, a bounded declarative driver interpreter (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) and a React/Tauri desktop frontend over the daemon. The Rust daemon and diagnostic client run independently of a GUI. A standalone DRA MVP provides local research sessions, a stable JSON capture import, deterministic offset analysis with inferred/unverified labels, sanitized Markdown/JSON reports and a fully commented scaffold, plus a local `dra-agent` gate that validates a report, preserves its SHA-256 and writes a traceable non-loadable contribution handoff. pcap/pcapng import, REA integration and physical protocol validation remain unimplemented, as do proprietary physical drivers, the remaining interchange schemas, packaging and CI; no physical control capability is validated.
 
 **No device compatibility or physical functionality is currently claimed.** The existing `devices/manufacturer/device-model/` directory is a structural placeholder, not a supported product. The project specification is [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md); the [status ledger](docs/architecture/implementation-status.md) distinguishes delivered documentation from future software milestones.
 
@@ -87,9 +87,12 @@ cargo run -p device-research-assistant -- capture import --session <id> --input 
 cargo run -p device-research-assistant -- analyze --session <id>
 cargo run -p device-research-assistant -- report --session <id>
 cargo run -p device-research-assistant -- scaffold --session <id>
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- inspect --report <id>/report.json
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- create --report <id>/report.json --output local-data/handoff/<id>
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- verify --handoff local-data/handoff/<id>
 ```
 
-It does not run vendor executables, send or replay packets, or parse pcap/pcapng. The scaffold is a commented template, not a driver. See the [DRA reference](docs/architecture/dra.md).
+It does not run vendor executables, send or replay packets, or parse pcap/pcapng. The scaffold is a commented template, not a driver. `dra-agent` copies only a validated sanitized report, records its digest and writes a non-loadable review skeleton; manifest validation is structural only. See the [DRA reference](docs/architecture/dra.md) and [agent integration](docs/architecture/agent-integration.md).
 
 The desktop frontend (React/TypeScript) is a pnpm workspace member. Install Node 20+/pnpm, then:
 

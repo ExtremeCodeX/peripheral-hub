@@ -1,0 +1,439 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://peripheral-hub.invalid/schemas/research-handoff.schema.json",
+  "title": "Peripheral Hub agent handoff",
+  "description": "Documentary schema for a sanitized DRA report handoff. Rust typed checks in dra-agent are authoritative; schema validation alone never proves device support.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "handoff_schema_version",
+    "created_at_unix",
+    "source",
+    "device",
+    "captures",
+    "assessment",
+    "manifest",
+    "safety"
+  ],
+  "properties": {
+    "handoff_schema_version": {
+      "const": 1
+    },
+    "created_at_unix": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "device": {
+      "$ref": "#/$defs/device"
+    },
+    "captures": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/capture"
+      }
+    },
+    "assessment": {
+      "$ref": "#/$defs/assessment"
+    },
+    "manifest": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/manifest"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "safety": {
+      "$ref": "#/$defs/safety"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "report_file",
+        "report_sha256",
+        "report_schema_version",
+        "session_schema_version",
+        "session_created_at_unix",
+        "analysis_generated_at_unix",
+        "report_generated_at_unix",
+        "handoff_schema_version"
+      ],
+      "properties": {
+        "report_file": {
+          "const": "evidence/report.json"
+        },
+        "report_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "report_schema_version": {
+          "const": 1
+        },
+        "session_schema_version": {
+          "const": 1
+        },
+        "session_created_at_unix": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "analysis_generated_at_unix": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "report_generated_at_unix": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "handoff_schema_version": {
+          "const": 1
+        }
+      }
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "firmware"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "firmware": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 128
+        }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "source",
+        "description",
+        "event_count",
+        "reordered",
+        "imported_at_unix"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^capture-[0-9]{4}\\.json$"
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        },
+        "event_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20000
+        },
+        "reordered": {
+          "type": "boolean"
+        },
+        "imported_at_unix": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confirmed_on_hardware",
+        "inferred",
+        "unverified"
+      ],
+      "properties": {
+        "confirmed_on_hardware": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inferred": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unverified": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direction",
+        "transfer",
+        "interface",
+        "report_id",
+        "payload_len"
+      ],
+      "properties": {
+        "direction": {
+          "enum": [
+            "in",
+            "out"
+          ]
+        },
+        "transfer": {
+          "enum": [
+            "control",
+            "interrupt",
+            "bulk"
+          ]
+        },
+        "interface": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "report_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 255
+        },
+        "payload_len": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        }
+      }
+    },
+    "hypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confidence",
+        "kind",
+        "statement",
+        "group",
+        "offset"
+      ],
+      "properties": {
+        "confidence": {
+          "enum": [
+            "confirmed_on_hardware",
+            "inferred",
+            "unverified"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "action_offset",
+            "variable_offset",
+            "repeated_payload"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "group": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/group"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "offset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 4095
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "report_sha256",
+        "session_id",
+        "readiness",
+        "counts",
+        "hypotheses",
+        "required_experiments",
+        "warnings"
+      ],
+      "properties": {
+        "report_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "readiness": {
+          "enum": [
+            "insufficient",
+            "needs_more_evidence",
+            "scaffold_ready",
+            "hardware_review"
+          ]
+        },
+        "counts": {
+          "$ref": "#/$defs/counts"
+        },
+        "hypotheses": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/hypothesis"
+          }
+        },
+        "required_experiments": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "model_id",
+        "display_name",
+        "match_rule_count",
+        "operation_count",
+        "sdk_major",
+        "sdk_minor",
+        "validation_note"
+      ],
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "match_rule_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "operation_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sdk_major": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "sdk_minor": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "validation_note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "driver_code_generated",
+        "loadable_manifest_generated",
+        "hardware_access_performed",
+        "vendor_execution_performed",
+        "packet_replay_performed",
+        "raw_capture_included",
+        "full_payloads_included",
+        "notes"
+      ],
+      "properties": {
+        "driver_code_generated": {
+          "const": false
+        },
+        "loadable_manifest_generated": {
+          "const": false
+        },
+        "hardware_access_performed": {
+          "const": false
+        },
+        "vendor_execution_performed": {
+          "const": false
+        },
+        "packet_replay_performed": {
+          "const": false
+        },
+        "raw_capture_included": {
+          "const": false
+        },
+        "full_payloads_included": {
+          "const": false
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        }
+      }
+    }
+  }
+}

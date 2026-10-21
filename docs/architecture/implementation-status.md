@@ -4,7 +4,7 @@ Last updated: 2026-10-21. English is the technical reference. This ledger distin
 
 ## Authorized scope
 
-The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application**, continuing with **generic multi-zone RGB lighting**, **macro persistence and editing** and **display contract/preview** (their "Fase 5", which is the master's out-of-scope DRA), together with a **pnpm configuration correction**. The §4.6 domain surface is now covered at the editing/persistence/contract/preview level; real device behavior remains limited to the software simulator. A later explicit authorization allowed the **Phase 5 DRA MVP** (standalone local sessions, bounded JSON capture import, analysis, sanitized reports and a commented scaffold) **without hardware, capture, vendor execution, packet replay or external data sharing**. The user's **Phase 6 recovery** restores the DRA implementation, schemas and missing documentation from `backup/fases-5-6` (`25a07f2`) while preserving the integrated Phase 1–5 code; it does not copy the backup's Phase 5 domain changes or add hardware/capture support. No commit, push or PR is authorized; packaging/release, CI and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
+The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application**, continuing with **generic multi-zone RGB lighting**, **macro persistence and editing** and **display contract/preview** (their "Fase 5", which is the master's out-of-scope DRA), together with a **pnpm configuration correction**. The §4.6 domain surface is now covered at the editing/persistence/contract/preview level; real device behavior remains limited to the software simulator. A later explicit authorization allowed the **Phase 5 DRA MVP** (standalone local sessions, bounded JSON capture import, analysis, sanitized reports and a commented scaffold) **without hardware, capture, vendor execution, packet replay or external data sharing**. The current authorization adds the **Phase 7 AI-agent/DRA integration**: typed report validation, SHA-256 provenance, a non-loadable handoff and structural manifest checks, still without hardware, capture, vendor execution, packet replay or external data sharing. The user's **Phase 6 recovery** restores the DRA implementation, schemas and missing documentation from `backup/fases-5-6` (`25a07f2`) while preserving the integrated Phase 1–5 code; it does not copy the backup's Phase 5 domain changes or add hardware/capture support. No commit, push or PR is authorized; packaging/release, CI and hardware operations remain unauthorized. The user's Phase 7 is this integration scope, not the master document's release-preparation Phase 7. Phase 1–3 and documentary records below are historical evidence.
 
 ### Active Phase 2 plan
 
@@ -739,7 +739,7 @@ After the §4.6 display increment, the user explicitly authorized the **master's
 | Reports | Completed (concluído) | Sanitized `report.md` and typed `report.json` schema `1`; no raw payloads, input paths, serials or private locators; report recomputes analysis instead of trusting stale derived data; typed `ReportDocument::validate` |
 | Scaffold | Completed (concluído) | Only with hypotheses; `README.md`, fully commented `manifest.toml.example` (not loadable), `tests/README.md` and `hypotheses.json`; no capture files, driver code or capability declaration; refuses non-empty directories without `--force` |
 | Inventory | Completed (concluído) | `devices list` uses non-destructive `HidDiscovery::scan`, removes serials/paths and reports only sanitized fields/error codes; it opens no handle or report stream. It was **not executed** during validation; a synthetic descriptor test covers sanitization |
-| Schemas | Reference only (referência) | `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` were filled; the Rust semantic validator/serializer is authoritative. No external JSON Schema validator dependency exists, and no schema-validation pass is claimed |
+| Schemas | Reference only (referência) | `schemas/research-capture.schema.json`, `schemas/research-report.schema.json` and `schemas/research-handoff.schema.json` are documented; Rust typed/semantic validation is authoritative. No external JSON Schema validator dependency exists, and no schema-validation pass is claimed |
 | Tests | Completed (concluído) | `apps/device-research-assistant/tests/synthetic.rs`: **8 passed**; current integrated workspace **111 passed / 0 failed**; synthetic happy path plus rejection, consent/id, normalization, inventory sanitization, schema parsing and scaffold safety |
 | Documentation | Completed (concluído) | Recovered [DRA reference](dra.md) and [ADR 0011](decisions/0011-dra-mvp.md); existing [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), READMEs, AGENTS and skills were checked against the restored commands |
 
@@ -793,3 +793,63 @@ The recovery did not add an external JSON Schema validator; the two schema files
 ### Relevant files and decisions
 
 Recovered `apps/device-research-assistant/` (`Cargo.toml`, `src/{lib,main,cli,error,model,paths,session,capture,analysis,report,scaffold,inventory}.rs`, `tests/synthetic.rs`), [dra.md](dra.md), [ADR 0011](decisions/0011-dra-mvp.md), `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` from `25a07f2`. The integrated root `Cargo.toml`/`Cargo.lock` already referenced the DRA member and dependencies, so no Phase 5 domain source was copied or changed; the existing [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), `README.md`, `README.pt-BR.md`, `AGENTS.md`, public status pages and skills were checked for the restored commands. SDK/Core/Registry contracts, IPC version 5, daemon behavior, macros, profiles, lighting and desktop code are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## Phase 7: AI agent and DRA integration (implemented as software, synthetic validation 2026-10-21)
+
+The user authorized the project's **Phase 7 AI-agent integration**, not the master document's release-preparation Phase 7. The scope is to connect the existing DRA to executable agent skills through a validated evidence handoff, without hardware, capture, vendor execution, packet replay or external data sharing. Packaging, release, CI and GitHub publication remain unauthorized.
+
+### Plan and acceptance criteria
+
+1. Audit the real DRA commands, report models, schemas, declarative manifest validator, current skills and REA availability — completed read-only.
+2. Add a separate agent handoff tool that consumes only a validated DRA `report.json`, computes provenance, assesses readiness, requests additional experiments when evidence is insufficient, and writes a contribution skeleton without generating a loadable driver or capability claim — completed.
+3. Validate candidate declarative manifests with the existing `peripheral-hub-driver-declarative` typed/semantic validator; record the manifest hash and never treat validation as hardware proof — completed.
+4. Add automated synthetic tests for real DRA command invocation, invalid reports, insufficient evidence, generated structures, manifest validation and skill/frontmatter command compatibility — completed.
+5. Update the six requested skills, contribution guides, reverse-engineering flow, DRA reference, overview and this ledger with exact commands, failure handling and evidence boundaries — completed.
+6. Document optional REA use only from verified official sources; do not add a usable MCP registration in this environment — completed.
+7. Run the full Rust and frontend validation sequence and record exact outcomes. No commit, push, PR or Phase 8 work — completed without commit/push.
+
+### Audit facts
+
+- Real DRA commands are `devices list`, `session create|list|show`, `capture import`, `analyze`, `report` and `scaffold`; the existing CLI source, help text and tests were inspected. `devices list` is the only hardware-touching path and is non-destructive enumeration only.
+- `report.json` is a typed, versioned `ReportDocument` with `deny_unknown_fields`; Rust semantic validation is authoritative. There is no external JSON Schema validator dependency.
+- The declarative manifest parser is `peripheral_hub_driver_declarative::{parse_manifest,load_manifest_file,Manifest}` and already rejects unknown fields, unsupported versions, weak matching, input reports, bad bounds and unmodeled operations.
+- No `rea` executable or OpenCode CLI is on `PATH`; `config/agents/rea-mcp.example.json` is empty. Official REA documentation was read, but no installation, MCP registration or proprietary-artifact execution was performed.
+
+### Implementation and evidence
+
+The new member `tools/agent-handoff` builds the `dra-agent` binary and library. It depends on the DRA and the real declarative validator; it has no network, hardware, capture, daemon or desktop dependency. Commands are `inspect`, `create`, `verify` and `validate-manifest`, each with `--json`; `create` requires `--force` for a non-empty output directory.
+
+Implemented files:
+
+- `tools/agent-handoff/src/{lib,main,error,model,report_gate,manifest,handoff,cli}.rs`
+- `tools/agent-handoff/tests/{agent_flow,skills}.rs`
+- `schemas/research-handoff.schema.json`
+- `docs/architecture/agent-integration.md`
+- `docs/reverse-engineering/agent-contribution-workflow.md`
+- `docs/architecture/decisions/0012-agent-dra-handoff.md`
+
+The tool validates the typed `ReportDocument` plus timestamp ordering, capture event totals, hypothesis/group references, duplicate or contradictory hypothesis keys, variable-offset values and outbound direction, repeated-payload summaries, and payload bounds. It computes a deterministic readiness state, copies only the sanitized report, records exact SHA-256 provenance, escapes report-derived Markdown text, writes a fully commented manifest example and refuses `insufficient` evidence. `verify` recomputes the digest and complete assessment. Optional manifest validation uses `peripheral-hub-driver-declarative` and remains structural only.
+
+The handoff output contains `handoff.json`, `AGENT_HANDOFF.md`, `protocol.md`, `validation.md`, `tests/README.md`, `fixtures/README.md`, `manifest.toml.example`, and `evidence/{report.json,report.md}`. It contains no driver code, test, raw capture, full payload, loadable manifest or capability claim.
+
+The six requested skills now contain frontmatter, the common headings, a shared workflow link, executable DRA/`dra-agent` commands, failure handling and stop conditions. `tests/skills.rs` checks that structure and every referenced Cargo package. `tests/agent_flow.rs` invokes the real DRA CLI for synthetic sessions and tests valid/tampered/contradictory reports, insufficient/unverified evidence, forced/non-empty output and real manifest validation. Optional REA remains uninstalled and unconfigured; the empty example was not filled.
+
+### Phase 7 validation (2026-10-21)
+
+| Command / check | Actual outcome |
+| --- | --- |
+| `cargo fmt --all --check` | Passed |
+| `cargo clippy --workspace --all-targets --offline -- -D warnings` | Passed (temporary Rust 1.99.0/Zig toolchain) |
+| `cargo check --workspace --locked --offline` | Passed |
+| `cargo test --workspace --locked --offline` | **119 passed, 0 failed, 0 ignored**; 111 previous plus 8 new (6 handoff integration + 2 skill/schema checks) |
+| `cargo test -p device-research-assistant` | 8 passed, unchanged |
+| Synthetic CLI smoke | DRA created/imported/reported; `dra-agent inspect` reported `scaffold-ready`; `create` wrote 9 files; `verify` matched SHA-256 `00dbd5b8…abd0`; real example manifest validated structurally |
+| `pnpm install --frozen-lockfile` | Passed with `CI=true`; lockfile already current |
+| `pnpm --dir apps/desktop typecheck` | Passed |
+| `pnpm --dir apps/desktop test` | **75 passed** in 10 files |
+| `pnpm --dir apps/desktop build` | Passed |
+| Relative-link check | 439 checked, 0 missing (Python local script) |
+| `git diff --check` | Passed |
+| `git status` / commit / push | Worktree contains Phase 7 changes; no commit, push or PR performed |
+
+**Limits:** the integration suite proves local parsing, consistency, generated structures, manifest structure and CLI behavior only. It does not validate a protocol, device, firmware, manifest match or hardware capability. No hardware was enumerated or opened, no vendor executable ran, no packet was sent/replayed, and no evidence left the machine. The optional REA installation/MCP path remains unverified.

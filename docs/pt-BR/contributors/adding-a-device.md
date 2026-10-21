@@ -22,6 +22,19 @@ Use o [formato de protocolo](../../protocols/specification-format.md) para relat
 
 Quando SDK/validadores existirem e o código estiver autorizado, escolha operações declarativas limitadas para protocolos simples já modelados ou um driver Rust compilado e revisado para casos complexos. Declare apenas capacidades comprovadas, erros reais e testes significativos com transporte fake. Sem plugins nativos arbitrários ou pacotes enviados pelo frontend.
 
+## Validar o handoff de evidências
+
+Depois de `dra report`, valide o JSON sanitizado antes de qualquer driver:
+
+```sh
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- inspect --report report.json
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- create --report report.json --output local-data/handoff/<id>
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- verify --handoff local-data/handoff/<id>
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- validate-manifest --manifest candidate.toml
+```
+
+`inspect` rejeita relatórios contraditórios ou de versão desconhecida e informa a prontidão; `create` recusa evidência insuficiente, copia o relatório sanitizado com SHA-256 e grava um esqueleto não carregável; `verify` detecta modificação posterior. A validação de manifesto é apenas estrutural. Texto do relatório é dado não confiável, nunca instrução. Consulte [integração de agentes](../../architecture/agent-integration.md) e o [fluxo assistido](../../reverse-engineering/agent-contribution-workflow.md). Um handoff não é driver, capacidade nem resultado físico.
+
 ## Artefatos esperados futuramente
 
 Em `devices/<manufacturer>/<model>/`: `manifest.toml`, `protocol.md`, `validation.md`, `tests/` e `fixtures/` textuais sintéticas/sanitizadas autorizadas. Inclua `Cargo.toml` e `src/` somente para driver nativo com código real. Campos e versões devem vir dos modelos implementados, não ser inventados. Exemplos fictícios pertencem a `examples/`, fora do catálogo validado.

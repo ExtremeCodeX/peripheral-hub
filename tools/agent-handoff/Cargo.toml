@@ -1,0 +1,25 @@
+[package]
+name = "peripheral-hub-agent-handoff"
+description = "Validated DRA report handoff and manifest checks for Peripheral Hub agents"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "dra-agent"
+path = "src/main.rs"
+
+[dependencies]
+device-research-assistant = { path = "../../apps/device-research-assistant" }
+peripheral-hub-driver-declarative.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10.9"
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true
