@@ -106,6 +106,34 @@ describe("IpcClient", () => {
     });
   });
 
+  it("sends typed parameters for save_macro", async () => {
+    const macro = {
+      id: "combo",
+      name: "Combo",
+      actions: [
+        { kind: "key" as const, key: "f13", press: "tap" as const },
+        { kind: "delay" as const, ms: 20 },
+      ],
+      repeat: { times: 2, interval_ms: 5 },
+      profile: "gaming",
+    };
+    const { transport, calls } = fakeDaemon(() => ({ result: "macro", data: macro }));
+    const client = new IpcClient(transport);
+    await expect(client.saveMacro(macro)).resolves.toEqual(macro);
+    expect(calls[0]).toEqual({
+      operation: "save_macro",
+      parameters: { macro },
+    });
+  });
+
+  it("maps a macro fault to a typed DaemonFaultError", async () => {
+    const { transport } = fakeDaemon(() => ({ code: "macro", detail: "not_found" }));
+    const client = new IpcClient(transport);
+    await expect(client.getMacro("missing")).rejects.toMatchObject({
+      fault: { code: "macro", detail: "not_found" },
+    });
+  });
+
   it("propagates an error reply as a fault", async () => {
     const { transport } = fakeDaemon(() => ({ code: "device", detail: { code: "not_supported" } }));
     const client = new IpcClient(transport);

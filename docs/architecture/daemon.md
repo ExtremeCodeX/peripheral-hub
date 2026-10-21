@@ -1,10 +1,10 @@
-# Daemon, HID transport, profiles and diagnostic client
+# Daemon, HID transport, profiles, macros and diagnostic client
 
 ## Delivered boundaries
 
-The workspace adds `peripheral-hub-transport-hid`, `peripheral-hub-ipc`, `peripheral-hub-storage`, `peripheral-hub-profiles`, and `peripheral-hub-daemon` to the three Phase 1 libraries. SDK 1.0 and Core/Registry source contracts are preserved. The daemon owns lifecycle state; a serialized 32-item manager queue keeps blocking enumeration/driver operations off async IPC tasks. Tokio provides local socket/pipe I/O, deadlines, bounded clients, polling and signal shutdown.
+The workspace adds `peripheral-hub-transport-hid`, `peripheral-hub-ipc`, `peripheral-hub-storage`, `peripheral-hub-profiles`, `peripheral-hub-macros`, and `peripheral-hub-daemon` to the three Phase 1 libraries. SDK 1.0 and Core/Registry source contracts are preserved. The daemon owns lifecycle state; a serialized 32-item manager queue keeps blocking enumeration/driver operations off async IPC tasks. Tokio provides local socket/pipe I/O, deadlines, bounded clients, polling and signal shutdown.
 
-Profile persistence uses the validated SQLite repository from `peripheral-hub-storage`/`peripheral-hub-profiles` (see [ADR 0004](decisions/0004-storage-and-profiles.md)). The store is edited through typed IPC only; there is no raw SQL, arbitrary query or file path in the wire contract.
+Profile and macro persistence use the validated SQLite repositories from `peripheral-hub-storage` and their feature crates (see [ADR 0004](decisions/0004-storage-and-profiles.md) and [ADR 0009](decisions/0009-macro-persistence.md)). Each store is edited through typed IPC only; there is no raw SQL, arbitrary query or file path in the wire contract.
 
 The physical registry is empty: no proprietary protocol is known or registered. Real HID interfaces remain visible as unknown/discovered. Opening is explicit and requires a matching reviewed driver and a source-provided policy; the default physical source refuses unknown opening. No raw packet IPC/CLI exists.
 
@@ -30,7 +30,9 @@ Enumeration failure retains last-known Core records internally but returns an er
 
 Profiles are model-agnostic, schema-versioned `Profile` records: a stable `ProfileId`, a bounded name, an optional bound `DeviceId` model and an optional typed `LightingCommand`. `SaveProfile` validates and upserts a row; `ListProfiles` returns summaries; `GetProfile`/`DeleteProfile` operate by id and report `NotFound` rather than succeeding silently. Reads re-validate stored data and reject unknown schema versions. The database is a single per-user SQLite file (default `peripheral-hub/profiles.sqlite`; override with `--profiles PATH`). Migration state uses `PRAGMA user_version` with forward-only migrations; a newer on-disk schema is refused, not downgraded. Profiles record intent only: saving or listing them does not open a device or send any report.
 
-## Explicit simulator
+## Macro persistence
+
+Macros are validated, schema-versioned `Macro` records: a stable `MacroId`, a bounded name, an ordered list of bounded `key`/`delay` actions, a finite `repeat` (times and pause) and an optional advisory link to a stored `ProfileId`. `SaveMacro` validates the payload and, when a profile link is present, confirms the referenced profile exists before upserting; `ListMacros` returns summaries; `GetMacro`/`DeleteMacro` operate by id and report `NotFound` rather than succeeding silently. Reads re-validate stored data and reject unknown schema versions. Macros use their **own** per-user SQLite file (default `peripheral-hub/macros.sqlite`; override with `--macros PATH`) because the storage `Database` tracks a single global `PRAGMA user_version` that the profile migration stream already owns; the macro stream is forward-only and a newer on-disk schema is refused. Bounds (`1..=4096` actions, `1..=60000` ms delays, `1..=1000` repeats, `0..=60000` ms pauses, bounded iteration/total duration) are enforced before any write. **Saved macros record intent only and are never executed:** storing, listing or importing a macro does not open a device, send any report, hook input or run on load.
 
 Only `serve --simulate` registers the fictitious `simulation:peripheral` model. Its synthetic VID/PID, descriptors, JSON memory reports and lighting state are not a vendor protocol or compatibility entry. All summaries/state/outcomes identify `simulated`. The real daemon never falls back to this source after HID failure. Simulation supports controlled presence changes, capability validation, lighting/state, reconnects, and injected transport errors in tests. It performs no global input injection or hardware writes.
 
@@ -101,6 +103,22 @@ cargo run -p peripheral-hub-daemon -- profile-import gaming.json
 
 The file path is a client-side argument only; it never crosses the IPC boundary and profiles never carry raw reports or vendor payloads.
 
+Macros persist across daemon restarts in a separate per-user database (`--macros PATH` overrides it, on both `serve` and the client commands). `macro-save` stores a simple tap sequence from the given key names; richer sequences and repeats are edited in the desktop UI or imported from JSON:
+
+```sh
+cargo run -p peripheral-hub-daemon -- macro-save combo Combo f13 f14
+cargo run -p peripheral-hub-daemon -- macros
+cargo run -p peripheral-hub-daemon -- macro-get combo
+cargo run -p peripheral-hub-daemon -- macro-delete combo
+```
+
+Import/export use the schema-versioned JSON envelope (`macro_schema_version`). `macro-export ID [PATH]` writes the validated document (stdout when `PATH` is omitted); `macro-import PATH` parses and validates the file before `SaveMacro`, so an unknown version or malformed document is rejected rather than stored. Stored macros are never executed automatically:
+
+```sh
+cargo run -p peripheral-hub-daemon -- macro-export combo combo.json
+cargo run -p peripheral-hub-daemon -- macro-import combo.json
+```
+
 For non-destructive physical enumeration: `cargo run -p peripheral-hub-daemon -- enumerate`. For a physical discovery daemon: `cargo run -p peripheral-hub-daemon -- serve`. No physical lighting driver is bundled, so real device commands are unsupported. This enumeration command does not validate I/O or device compatibility.
 
 To exercise declarative manifest loading (validates and registers the fictitious example; the synthetic `0xF0F0:0x0001` device is only produced by a matching test source, so no real hardware is implied):
@@ -113,4 +131,4 @@ cargo run -p peripheral-hub-daemon -- serve --simulate --manifests examples/decl
 
 The daemon/client choose the same per-user endpoint by default. `--endpoint PATH` overrides it for each process; Unix parent directories must be owned by the effective user and mode 0700, while Windows custom names must retain the validated local prefix and current SID suffix. No administrator elevation is requested. Ctrl+C (and Unix SIGTERM) stops the daemon and closes handles; a second server on the same endpoint is refused. Run only one default endpoint per user; custom endpoints are explicit separate development instances.
 
-The desktop frontend and its restricted Tauri bridge are implemented as source under `apps/desktop` (see the [desktop reference](desktop.md)); the Tauri shell is not built or launched in this environment, and no DRA launch command exists yet. SQLite-backed profiles, their IPC operations, schema-versioned JSON import/export and model-driven application of a profile to a connected device (`profile-apply`) are implemented. Generic multi-zone lighting is implemented through `SetLightingScene`/`lighting-scene`. Declarative manifests load only from an explicit `--manifests` directory and execute only bounded volatile-lighting operations. Exact IPC framing and authorization are in [IPC reference](ipc.md), decisions in [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), [ADR 0004](decisions/0004-storage-and-profiles.md), [ADR 0005](decisions/0005-desktop-ui.md), [ADR 0006](decisions/0006-declarative-drivers.md), [ADR 0007](decisions/0007-profile-application.md) and [ADR 0008](decisions/0008-generic-multi-zone-lighting.md), and actual tests/platform evidence in the [ledger](implementation-status.md).
+The desktop frontend and its restricted Tauri bridge are implemented as source under `apps/desktop` (see the [desktop reference](desktop.md)); the Tauri shell is not built or launched in this environment. The DRA is a separate standalone CLI outside the daemon/IPC path (see the [DRA reference](dra.md)). SQLite-backed profiles and macros, their IPC operations, schema-versioned JSON import/export and model-driven application of a profile to a connected device (`profile-apply`) are implemented. Generic multi-zone lighting is implemented through `SetLightingScene`/`lighting-scene`. Macros are persisted, edited and simulated only; execution is not implemented. Declarative manifests load only from an explicit `--manifests` directory and execute only bounded volatile-lighting operations. Exact IPC framing and authorization are in [IPC reference](ipc.md), decisions in [ADR 0003](decisions/0003-hid-daemon-local-ipc.md), [ADR 0004](decisions/0004-storage-and-profiles.md), [ADR 0005](decisions/0005-desktop-ui.md), [ADR 0006](decisions/0006-declarative-drivers.md), [ADR 0007](decisions/0007-profile-application.md), [ADR 0008](decisions/0008-generic-multi-zone-lighting.md) and [ADR 0009](decisions/0009-macro-persistence.md), and actual tests/platform evidence in the [ledger](implementation-status.md).

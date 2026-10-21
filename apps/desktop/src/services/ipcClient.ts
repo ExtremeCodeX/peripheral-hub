@@ -9,6 +9,8 @@ import {
   type Health,
   type LightingCommand,
   type LightingScene,
+  type Macro,
+  type MacroSummary,
   type Operation,
   type Profile,
   type ProfileSummary,
@@ -204,5 +206,46 @@ export class IpcClient {
       return reply.data;
     }
     throw unexpected("outcome", reply.result);
+  }
+
+  async listMacros(): Promise<MacroSummary[]> {
+    const reply = await this.send({ operation: "list_macros" });
+    if (isReply(reply, "macros")) {
+      return reply.data;
+    }
+    throw unexpected("macros", reply.result);
+  }
+
+  async getMacro(macroId: string): Promise<Macro> {
+    const reply = await this.send({
+      operation: "get_macro",
+      parameters: { macro_id: macroId },
+    });
+    if (isReply(reply, "macro")) {
+      return reply.data;
+    }
+    throw unexpected("macro", reply.result);
+  }
+
+  async saveMacro(macro: Macro): Promise<Macro> {
+    const reply = await this.send({
+      operation: "save_macro",
+      parameters: { macro },
+    });
+    if (isReply(reply, "macro")) {
+      return reply.data;
+    }
+    throw unexpected("macro", reply.result);
+  }
+
+  async deleteMacro(macroId: string): Promise<void> {
+    const reply = await this.send({
+      operation: "delete_macro",
+      parameters: { macro_id: macroId },
+    });
+    if (isReply(reply, "ack")) {
+      return;
+    }
+    throw unexpected("ack", reply.result);
   }
 }

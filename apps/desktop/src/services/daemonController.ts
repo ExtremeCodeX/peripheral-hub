@@ -6,6 +6,7 @@ import type {
   DeviceSummary,
   LightingCommand,
   LightingScene,
+  Macro,
   Profile,
 } from "../types/ipc";
 import { BridgeError, DaemonFaultError } from "./errors";
@@ -46,6 +47,7 @@ export class DaemonController {
     }
     await this.refreshDevices();
     await this.refreshProfiles();
+    await this.refreshMacros();
   }
 
   async refreshHealth(): Promise<void> {
@@ -68,6 +70,15 @@ export class DaemonController {
       this.store.dispatch({ type: "profiles", profiles });
     } catch (error) {
       this.store.dispatch({ type: "profilesError", message: errorMessage(error) });
+    }
+  }
+
+  async refreshMacros(): Promise<void> {
+    try {
+      const macros = await this.client.listMacros();
+      this.store.dispatch({ type: "macros", macros });
+    } catch (error) {
+      this.store.dispatch({ type: "macrosError", message: errorMessage(error) });
     }
   }
 
@@ -124,5 +135,20 @@ export class DaemonController {
 
   applyProfile(interfaceId: string, profileId: string): Promise<CommandOutcome> {
     return this.client.applyProfile(interfaceId, profileId);
+  }
+
+  getMacro(macroId: string): Promise<Macro> {
+    return this.client.getMacro(macroId);
+  }
+
+  async saveMacro(macro: Macro): Promise<Macro> {
+    const saved = await this.client.saveMacro(macro);
+    await this.refreshMacros();
+    return saved;
+  }
+
+  async deleteMacro(macroId: string): Promise<void> {
+    await this.client.deleteMacro(macroId);
+    await this.refreshMacros();
   }
 }

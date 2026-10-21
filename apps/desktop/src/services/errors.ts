@@ -1,4 +1,4 @@
-import type { DeviceError, Fault, ProfileFault } from "../types/ipc";
+import type { DeviceError, Fault, MacroFault, ProfileFault } from "../types/ipc";
 
 /** A structured daemon fault preserved from the wire contract. */
 export class DaemonFaultError extends Error {
@@ -24,6 +24,13 @@ const PROFILE_TEXT: Record<ProfileFault, string> = {
   unsupported_version: "This profile uses a newer, unsupported schema version.",
   not_found: "The profile was not found.",
   storage: "The local profile store could not be read or written.",
+};
+
+const MACRO_TEXT: Record<MacroFault, string> = {
+  invalid: "The macro data is invalid.",
+  unsupported_version: "This macro uses a newer, unsupported schema version.",
+  not_found: "The macro was not found.",
+  storage: "The local macro store could not be read or written.",
 };
 
 export function describeDeviceError(error: DeviceError): string {
@@ -63,6 +70,8 @@ export function describeFault(fault: Fault): string {
       return describeDeviceError(fault.detail);
     case "profile":
       return PROFILE_TEXT[fault.detail];
+    case "macro":
+      return MACRO_TEXT[fault.detail];
   }
 }
 

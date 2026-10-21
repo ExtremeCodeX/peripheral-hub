@@ -34,6 +34,8 @@ const device: DeviceSummary = {
 
 const profile: ProfileSummary = { id: "gaming", name: "Gaming", device_model: null };
 
+const macroSummary = { id: "combo", name: "Combo", action_count: 2, profile: "gaming" };
+
 function connectedStore(): DaemonStore {
   const store = createDaemonStore();
   store.dispatch({ type: "connected" });
@@ -41,7 +43,7 @@ function connectedStore(): DaemonStore {
 }
 
 describe("DaemonController", () => {
-  it("initializes from health, devices and profiles in order", async () => {
+  it("initializes from health, devices, profiles and macros in order", async () => {
     const seen: string[] = [];
     const { transport } = fakeDaemon((operation: Operation): Reply | Fault => {
       seen.push(operation.operation);
@@ -52,6 +54,8 @@ describe("DaemonController", () => {
           return { result: "devices", data: [device] };
         case "list_profiles":
           return { result: "profiles", data: [profile] };
+        case "list_macros":
+          return { result: "macros", data: [macroSummary] };
         default:
           return { code: "internal" };
       }
@@ -59,11 +63,12 @@ describe("DaemonController", () => {
     const store = createDaemonStore();
     await new DaemonController(new IpcClient(transport), store).initialize();
 
-    expect(seen).toEqual(["health", "list_devices", "list_profiles"]);
+    expect(seen).toEqual(["health", "list_devices", "list_profiles", "list_macros"]);
     expect(store.getState().connection).toBe("ready");
     expect(store.getState().health).toEqual(health);
     expect(store.getState().devices).toHaveLength(1);
     expect(store.getState().profiles).toHaveLength(1);
+    expect(store.getState().macros).toHaveLength(1);
   });
 
   it("records a connection failure without listing", async () => {
@@ -136,6 +141,30 @@ describe("DaemonController", () => {
     });
     expect(saved.id).toBe("gaming");
     expect(store.getState().profiles).toEqual([profile]);
+  });
+
+  it("refreshes macros after saving", async () => {
+    const macro = {
+      id: "combo",
+      name: "Combo",
+      actions: [{ kind: "key" as const, key: "f13", press: "tap" as const }],
+      repeat: { times: 1, interval_ms: 0 },
+      profile: null,
+    };
+    const { transport } = fakeDaemon((operation: Operation): Reply | Fault => {
+      switch (operation.operation) {
+        case "save_macro":
+          return { result: "macro", data: { ...operation.parameters.macro } };
+        case "list_macros":
+          return { result: "macros", data: [macroSummary] };
+        default:
+          return { code: "internal" };
+      }
+    });
+    const store = connectedStore();
+    const saved = await new DaemonController(new IpcClient(transport), store).saveMacro(macro);
+    expect(saved.id).toBe("combo");
+    expect(store.getState().macros).toEqual([macroSummary]);
   });
 
   it("forwards a profile-apply outcome", async () => {

@@ -4,13 +4,35 @@ import { EmptyNotice, ErrorNotice, UnsupportedNotice } from "../../components/St
 import { useDaemon } from "../../hooks/useDaemon";
 import { errorMessage } from "../../services/daemonController";
 import { deviceTitle } from "../../services/viewModel";
-import type { DisplayCapabilities } from "../../types/ipc";
+import type { DisplayCapabilities, PixelFormat } from "../../types/ipc";
+import {
+  DISPLAY_PATTERNS,
+  type DisplayPattern,
+  type FrameSelection,
+  defaultSelection,
+  previewFrame,
+  validateFrame,
+} from "./displayModel";
+
+const FORMAT_LABEL: Record<PixelFormat, string> = {
+  rgb888: "RGB888 (3 bytes/pixel)",
+  rgb565: "RGB565 (2 bytes/pixel)",
+};
+
+function clampByte(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) {
+    return 0;
+  }
+  return Math.min(255, Math.max(0, parsed));
+}
 
 export function DisplaysScreen() {
   const { state, controller } = useDaemon();
   const connected = state.devices.filter((device) => device.status === "connected");
   const [selected, setSelected] = useState<string | null>(null);
   const [display, setDisplay] = useState<DisplayCapabilities | null>(null);
+  const [selection, setSelection] = useState<FrameSelection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -18,6 +40,7 @@ export function DisplaysScreen() {
 
   useEffect(() => {
     setDisplay(null);
+    setSelection(null);
     setError(null);
     setLoaded(false);
   }, [activeId]);
@@ -30,11 +53,22 @@ export function DisplaysScreen() {
     try {
       const capabilities = await controller.getCapabilities(activeId);
       setDisplay(capabilities.display);
+      setSelection(capabilities.display ? defaultSelection(capabilities.display) : null);
       setLoaded(true);
     } catch (cause) {
       setError(errorMessage(cause));
       setLoaded(true);
     }
+  }
+
+  function setColor(channel: "red" | "green" | "blue", value: string): void {
+    if (!selection) {
+      return;
+    }
+    setSelection({
+      ...selection,
+      color: { ...selection.color, [channel]: clampByte(value) },
+    });
   }
 
   if (connected.length === 0) {
@@ -45,6 +79,9 @@ export function DisplaysScreen() {
       />
     );
   }
+
+  const problems = display && selection ? validateFrame(display, selection.format) : [];
+  const preview = display && selection ? previewFrame(display, selection) : null;
 
   return (
     <section>
@@ -70,7 +107,7 @@ export function DisplaysScreen() {
 
       {loaded && !error && !display ? <UnsupportedNotice feature="Display" /> : null}
 
-      {display ? (
+      {display && selection && preview ? (
         <>
           <table className="capabilities">
             <tbody>
@@ -82,7 +119,7 @@ export function DisplaysScreen() {
               </tr>
               <tr>
                 <th scope="row">Formats</th>
-                <td>{display.formats.join(", ")}</td>
+                <td>{display.formats.map((format) => FORMAT_LABEL[format]).join(", ")}</td>
               </tr>
               <tr>
                 <th scope="row">Max frame rate</th>
@@ -94,15 +131,100 @@ export function DisplaysScreen() {
               </tr>
             </tbody>
           </table>
+
+          <h3>Local preview</h3>
+          <div className="form">
+            <label className="field">
+              <span>Format</span>
+              <select
+                value={selection.format}
+                onChange={(event) =>
+                  setSelection({ ...selection, format: event.target.value as PixelFormat })
+                }
+              >
+                {display.formats.map((format) => (
+                  <option key={format} value={format}>
+                    {FORMAT_LABEL[format]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Pattern</span>
+              <select
+                value={selection.pattern}
+                onChange={(event) =>
+                  setSelection({ ...selection, pattern: event.target.value as DisplayPattern })
+                }
+              >
+                {DISPLAY_PATTERNS.map((pattern) => (
+                  <option key={pattern} value={pattern}>
+                    {pattern}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Red</span>
+              <input
+                type="number"
+                min={0}
+                max={255}
+                value={selection.color.red}
+                onChange={(event) => setColor("red", event.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>Green</span>
+              <input
+                type="number"
+                min={0}
+                max={255}
+                value={selection.color.green}
+                onChange={(event) => setColor("green", event.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>Blue</span>
+              <input
+                type="number"
+                min={0}
+                max={255}
+                value={selection.color.blue}
+                onChange={(event) => setColor("blue", event.target.value)}
+              />
+            </label>
+          </div>
+
+          {problems.length > 0 ? (
+            <div className="notice notice-error" role="alert">
+              <p className="notice-title">Frame does not fit the declared contract</p>
+              <ul>
+                {problems.map((problem) => (
+                  <li key={problem}>{problem}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           <div
             className="display-preview"
-            style={{ aspectRatio: `${display.width} / ${display.height}` }}
-            aria-label="Display preview placeholder"
+            style={{
+              aspectRatio: `${display.width} / ${display.height}`,
+              background: preview.background,
+            }}
+            role="img"
+            aria-label={preview.label}
           >
-            <span>Preview only — no frame is transmitted</span>
+            <span className="display-preview-label">
+              {display.width}×{display.height} · {preview.format} · {preview.bytes} bytes
+            </span>
           </div>
+
           <p className="notice-hint">
-            Sending frames requires a driver with a validated display protocol; it is not implemented.
+            This preview is rendered locally in this window. No frame is encoded or transmitted;
+            effective display control requires a driver with a validated display protocol, which is
+            not implemented.
           </p>
         </>
       ) : null}

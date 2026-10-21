@@ -4,6 +4,7 @@ use peripheral_hub_daemon::*;
 use peripheral_hub_device_registry::DriverRegistry;
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_macros::{KeyPress, Macro, MacroAction, MacroId, MacroRepeat, MacroRepository};
 use peripheral_hub_profiles::{Profile, ProfileId, ProfileRepository};
 use peripheral_hub_transport_hid::{DeviceSource, HidDiscovery, simulated::SimulatedSource};
 use std::path::PathBuf;
@@ -26,13 +27,45 @@ fn help() {
       profile-apply ID INTERFACE_ID [--endpoint PATH]  Apply a stored profile to a connected device\n\
       profile-export ID [PATH] [--endpoint PATH]  Write versioned profile JSON\n\
       profile-import PATH [--endpoint PATH]       Import versioned profile JSON\n\
+      macros [--endpoint PATH]          List stored macro summaries\n\
+      macro-get ID [--endpoint PATH]\n\
+      macro-save ID NAME KEY [KEY ...] [--endpoint PATH]  Save a tap sequence macro\n\
+      macro-delete ID [--endpoint PATH]\n\
+      macro-export ID [PATH] [--endpoint PATH]    Write versioned macro JSON\n\
+      macro-import PATH [--endpoint PATH]         Import versioned macro JSON\n\
       --help\n\
       Profiles persist in a local SQLite file; default is under the user data directory\n\
       (override with --profiles PATH on serve, or PERIPHERAL_HUB_DATA).\n\
+      Macros persist in a separate local SQLite file; default is under the same\n\
+      directory (override with --macros PATH on serve, or PERIPHERAL_HUB_DATA).\n\
+      Stored macros are never executed automatically; execution is not implemented.\n\
       --manifests DIR loads reviewed declarative TOML drivers for this run; invalid\n\
       manifests abort startup and no manifest is fetched or loaded at runtime.\n\
       Simulation is explicit software-only; no physical driver is bundled."
     );
+}
+
+/// Per-user database path for macros; never inside the repository.
+fn default_macros_path() -> PathBuf {
+    let base = std::env::var_os("PERIPHERAL_HUB_DATA")
+        .map(PathBuf::from)
+        .or_else(|| {
+            #[cfg(windows)]
+            {
+                std::env::var_os("LOCALAPPDATA").map(PathBuf::from)
+            }
+            #[cfg(not(windows))]
+            {
+                std::env::var_os("XDG_DATA_HOME")
+                    .map(PathBuf::from)
+                    .or_else(|| {
+                        std::env::var_os("HOME")
+                            .map(|home| PathBuf::from(home).join(".local/share"))
+                    })
+            }
+        })
+        .unwrap_or_else(std::env::temp_dir);
+    base.join("peripheral-hub").join("macros.sqlite")
 }
 
 /// Per-user database path; never inside the repository or a public location.
@@ -107,6 +140,24 @@ fn lighting_scene_command(target: &str) -> Result<LightingCommand, Box<dyn std::
     })
 }
 
+/// Build a simple tap-sequence macro from diagnostic arguments; single iteration.
+fn macro_from(id: &str, name: &str, keys: &[String]) -> Result<Macro, Box<dyn std::error::Error>> {
+    let actions = keys
+        .iter()
+        .map(|key| MacroAction::Key {
+            key: key.clone(),
+            press: KeyPress::Tap,
+        })
+        .collect();
+    Ok(Macro {
+        id: MacroId::new(id)?,
+        name: name.into(),
+        actions,
+        repeat: MacroRepeat::default(),
+        profile: None,
+    })
+}
+
 #[tokio::main]
 async fn main() {
     let subscriber = tracing_subscriber::fmt()
@@ -146,6 +197,16 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+    let macros_path = if let Some(index) = args.iter().position(|arg| arg == "--macros") {
+        if index + 1 >= args.len() {
+            return Err("--macros needs a local path".into());
+        }
+        let path = args.remove(index + 1);
+        args.remove(index);
+        Some(PathBuf::from(path))
+    } else {
+        None
+    };
     let manifests_dir = if let Some(index) = args.iter().position(|arg| arg == "--manifests") {
         if index + 1 >= args.len() {
             return Err("--manifests needs a local directory path".into());
@@ -164,7 +225,11 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("--manifests is only valid with serve".into());
     }
     if command == "enumerate" {
-        if !args.is_empty() || endpoint.is_some() || profiles_path.is_some() {
+        if !args.is_empty()
+            || endpoint.is_some()
+            || profiles_path.is_some()
+            || macros_path.is_some()
+        {
             return Err("enumerate accepts no extra arguments".into());
         }
         let mut manager =
@@ -210,8 +275,14 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         let profiles = ProfileRepository::open_file(&profiles_path)?;
         tracing::info!(event = "profiles_opened");
+        let macros_path = macros_path.unwrap_or_else(default_macros_path);
+        if let Some(parent) = macros_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let macros = MacroRepository::open_file(&macros_path)?;
+        tracing::info!(event = "macros_opened");
         let manager = ManagerHandle::start(
-            DeviceManager::with_profiles(registry, source, profiles)?,
+            DeviceManager::with_stores(registry, source, profiles, macros)?,
             Duration::from_secs(2),
         )?;
         tracing::info!(event = "daemon_started", simulated);
@@ -259,6 +330,46 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         let profile = import_profile(std::path::Path::new(path))?;
         let response = Client::new(endpoint, Duration::from_secs(5))?
             .call(Operation::SaveProfile { profile })
+            .await?;
+        let failed = response.result.is_err();
+        println!("{}", serde_json::to_string_pretty(&response)?);
+        if failed {
+            return Err("daemon returned a structured failure (see JSON)".into());
+        }
+        return Ok(());
+    }
+    if command == "macro-export" {
+        let (id, path) = match args.as_slice() {
+            [id] => (id.clone(), None),
+            [id, path] => (id.clone(), Some(PathBuf::from(path))),
+            _ => return Err("macro-export needs ID [PATH]".into()),
+        };
+        let macro_id = MacroId::new(id).map_err(|_| "invalid macro id")?;
+        let response = Client::new(endpoint, Duration::from_secs(5))?
+            .call(Operation::GetMacro { macro_id })
+            .await?;
+        let macro_value = match response.result {
+            Ok(Reply::Macro(macro_value)) => macro_value,
+            Ok(_) => return Err("unexpected daemon reply".into()),
+            Err(fault) => return Err(format!("macro export failed: {fault}").into()),
+        };
+        let json = macro_value.to_json()?;
+        match path {
+            Some(path) => {
+                std::fs::write(&path, json.as_bytes())?;
+                eprintln!("wrote {}", path.display());
+            }
+            None => println!("{json}"),
+        }
+        return Ok(());
+    }
+    if command == "macro-import" {
+        let [path] = args.as_slice() else {
+            return Err("macro-import needs PATH".into());
+        };
+        let macro_value = import_macro(std::path::Path::new(path))?;
+        let response = Client::new(endpoint, Duration::from_secs(5))?
+            .call(Operation::SaveMacro { macro_value })
             .await?;
         let failed = response.result.is_err();
         println!("{}", serde_json::to_string_pretty(&response)?);
@@ -323,6 +434,16 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         },
         ("profile-save", [id, name, red, green, blue]) => Operation::SaveProfile {
             profile: profile_from(id, name, Some((red, green, blue)))?,
+        },
+        ("macros", []) => Operation::ListMacros,
+        ("macro-get", [id]) => Operation::GetMacro {
+            macro_id: MacroId::new(id.clone()).map_err(|_| "invalid macro id")?,
+        },
+        ("macro-delete", [id]) => Operation::DeleteMacro {
+            macro_id: MacroId::new(id.clone()).map_err(|_| "invalid macro id")?,
+        },
+        ("macro-save", [id, name, keys @ ..]) if !keys.is_empty() => Operation::SaveMacro {
+            macro_value: macro_from(id, name, keys)?,
         },
         _ => return Err("unknown command or invalid arguments; see --help".into()),
     };

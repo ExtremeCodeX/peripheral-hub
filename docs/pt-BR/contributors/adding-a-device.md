@@ -2,7 +2,7 @@
 
 [English](../../en/contributors/adding-a-device.md)
 
-**Etapa atual:** [SDK 1.0, Registry e Core](../../architecture/sdk.md) são preservados; a [Fase 2](../users/daemon.md) implementa descoberta/transporte HID real, IPC protegido, daemon e simulação explícita, e o [sistema de drivers](../../architecture/driver-system.md) adiciona um interpretador declarativo limitado (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) que cobre apenas iluminação volátil. DRA, scaffold e drivers físicos proprietários continuam pendentes. Um driver real exige escopo autorizado, política/protocolo comprovados e validação física por capacidade; enumeração bem-sucedida não basta.
+**Etapa atual:** [SDK 1.0, Registry e Core](../../architecture/sdk.md) são preservados; a [Fase 2](../users/daemon.md) implementa descoberta/transporte HID real, IPC protegido, daemon e simulação explícita, e o [sistema de drivers](../../architecture/driver-system.md) adiciona um interpretador declarativo limitado (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) que cobre apenas iluminação volátil. Um MVP de DRA independente oferece sessões locais, importação limitada de capturas textuais, análise, relatórios sanitizados e scaffold comentado sem hardware; drivers físicos proprietários continuam pendentes. Um driver real exige escopo autorizado, política/protocolo comprovados e validação física por capacidade; enumeração bem-sucedida não basta.
 
 ## Identidade e objetivo limitado
 
@@ -30,7 +30,7 @@ Em `validation.md`, registre SO, firmware/revisão, revisão do driver, capacida
 
 ## Com IA
 
-Leia [AGENTS.md](../../../AGENTS.md) e use [add-device](../../../.agents/skills/add-device/SKILL.md) e as skills correspondentes. Elas orientam, mas não autorizam execução, operações físicas ou publicação. Não envie evidências proprietárias a serviços externos de IA. Verifique comandos em ferramentas instaladas; os comandos DRA do documento mestre ainda são propostas.
+Leia [AGENTS.md](../../../AGENTS.md) e use [add-device](../../../.agents/skills/add-device/SKILL.md) e as skills correspondentes. Elas orientam, mas não autorizam execução, operações físicas ou publicação. Não envie evidências proprietárias a serviços externos de IA. Verifique comandos em ferramentas instaladas; consulte a [referência do DRA](../../architecture/dra.md) para o subconjunto implementado e não apresente parsing pcap, captura ao vivo ou execução em hardware como disponíveis.
 
 ## Sem IA
 

@@ -3,6 +3,7 @@ use peripheral_hub_daemon::*;
 use peripheral_hub_device_registry::DriverRegistry;
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_macros::{KeyPress, Macro, MacroAction, MacroId, MacroRepeat};
 use peripheral_hub_profiles::{Profile, ProfileId};
 use peripheral_hub_transport_hid::{DeviceSource, simulated::*};
 
@@ -84,6 +85,31 @@ fn simulated_disconnect_reconnect_and_bounded_event_history() {
         }),
         Err(Fault::InvalidArgument)
     ));
+}
+
+#[test]
+fn simulated_device_declares_a_display_contract_without_a_frame_operation() {
+    let mut manager =
+        DeviceManager::new(simulated_registry(), Box::new(SimulatedSource::default()));
+    manager.refresh().unwrap();
+    let id = first_id(&mut manager);
+    manager
+        .handle(Operation::Connect {
+            interface_id: id.clone(),
+        })
+        .unwrap();
+    let Reply::Capabilities(capabilities) = manager
+        .handle(Operation::GetCapabilities { interface_id: id })
+        .unwrap()
+    else {
+        panic!("capabilities")
+    };
+    let display = capabilities.display.expect("simulated display contract");
+    assert_eq!((display.width, display.height), (64, 32));
+    assert_eq!(display.max_frames_per_second, 30);
+    assert_eq!(display.max_frame_bytes, 64 * 32 * 3);
+    assert!(display.formats.contains(&PixelFormat::Rgb888));
+    assert!(display.formats.contains(&PixelFormat::Rgb565));
 }
 
 struct ErrorSource {
@@ -449,6 +475,105 @@ fn lighting_scenes_are_capability_gated_and_shape_validated() {
             },
         }),
         Err(Fault::Device(DeviceError::NotConnected))
+    ));
+}
+
+#[test]
+fn macros_are_validated_and_persisted_through_the_manager() {
+    let mut manager =
+        DeviceManager::new(simulated_registry(), Box::new(SimulatedSource::default()));
+    let profile = Profile {
+        id: ProfileId::new("gaming").unwrap(),
+        name: "Gaming".into(),
+        device_model: None,
+        lighting: Some(lighting()),
+    };
+    manager
+        .handle(Operation::SaveProfile {
+            profile: profile.clone(),
+        })
+        .unwrap();
+
+    let macro_value = Macro {
+        id: MacroId::new("combo").unwrap(),
+        name: "Combo".into(),
+        actions: vec![
+            MacroAction::Key {
+                key: "f13".into(),
+                press: KeyPress::Tap,
+            },
+            MacroAction::Delay { ms: 10 },
+        ],
+        repeat: MacroRepeat {
+            times: 2,
+            interval_ms: 5,
+        },
+        profile: Some(ProfileId::new("gaming").unwrap()),
+    };
+    let Reply::Macro(saved) = manager
+        .handle(Operation::SaveMacro {
+            macro_value: macro_value.clone(),
+        })
+        .unwrap()
+    else {
+        panic!("save macro")
+    };
+    assert_eq!(saved, macro_value);
+
+    let Reply::Macros(list) = manager.handle(Operation::ListMacros).unwrap() else {
+        panic!("list macros")
+    };
+    assert_eq!(list.len(), 1);
+    assert_eq!(list[0].id.as_str(), "combo");
+    assert_eq!(list[0].action_count, 2);
+
+    let Reply::Macro(fetched) = manager
+        .handle(Operation::GetMacro {
+            macro_id: MacroId::new("combo").unwrap(),
+        })
+        .unwrap()
+    else {
+        panic!("get macro")
+    };
+    assert_eq!(fetched, macro_value);
+
+    // A link to a profile that does not exist is rejected and never stored.
+    let mut orphan = macro_value.clone();
+    orphan.id = MacroId::new("orphan").unwrap();
+    orphan.profile = Some(ProfileId::new("missing").unwrap());
+    assert!(matches!(
+        manager.handle(Operation::SaveMacro {
+            macro_value: orphan
+        }),
+        Err(Fault::Macro(MacroFault::Invalid))
+    ));
+    assert!(matches!(
+        manager.handle(Operation::GetMacro {
+            macro_id: MacroId::new("orphan").unwrap()
+        }),
+        Err(Fault::Macro(MacroFault::NotFound))
+    ));
+
+    // Invalid macro contracts are rejected, not silently stored.
+    let mut invalid = macro_value.clone();
+    invalid.name = String::new();
+    assert!(matches!(
+        manager.handle(Operation::SaveMacro {
+            macro_value: invalid
+        }),
+        Err(Fault::Macro(MacroFault::Invalid))
+    ));
+
+    manager
+        .handle(Operation::DeleteMacro {
+            macro_id: MacroId::new("combo").unwrap(),
+        })
+        .unwrap();
+    assert!(matches!(
+        manager.handle(Operation::GetMacro {
+            macro_id: MacroId::new("combo").unwrap()
+        }),
+        Err(Fault::Macro(MacroFault::NotFound))
     ));
 }
 

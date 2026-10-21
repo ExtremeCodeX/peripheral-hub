@@ -121,6 +121,15 @@ describe("Lighting and Displays screens", () => {
       "No connected device",
     );
   });
+
+  it("offers capability loading for a connected display device", () => {
+    const html = renderScreen(<DisplaysScreen />, {
+      connection: "ready",
+      devices: [{ ...device, status: "connected" }],
+    });
+    expect(html).toContain("Load capabilities");
+    expect(html).toContain("K67");
+  });
 });
 
 describe("ProfilesScreen", () => {
@@ -177,9 +186,21 @@ describe("DiagnosticsScreen", () => {
 });
 
 describe("MacrosScreen", () => {
-  it("renders a standalone simulator without implying hardware control", () => {
-    const html = renderToStaticMarkup(<MacrosScreen />);
-    expect(html).toContain("Editing, validation and safe simulation only.");
-    expect(html).toContain("does not inject keystrokes");
+  it("shows an empty state, the create form and the no-execution notice", () => {
+    const html = renderScreen(<MacrosScreen />, { connection: "ready" });
+    expect(html).toContain("No macros yet");
+    expect(html).toContain("Save macro");
+    expect(html).toContain("Execution is not implemented");
+  });
+
+  it("lists stored macros with their action count and profile link", () => {
+    const html = renderScreen(<MacrosScreen />, {
+      connection: "ready",
+      macros: [{ id: "combo", name: "Combo", action_count: 3, profile: "gaming" }],
+    });
+    expect(html).toContain("Combo");
+    expect(html).toContain("combo");
+    expect(html).toContain("3 actions");
+    expect(html).toContain("gaming");
   });
 });

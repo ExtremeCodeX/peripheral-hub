@@ -1,4 +1,4 @@
-import type { DeviceSummary, Health, ProfileSummary } from "../types/ipc";
+import type { DeviceSummary, Health, MacroSummary, ProfileSummary } from "../types/ipc";
 
 export type ConnectionState = "idle" | "connecting" | "ready" | "error";
 
@@ -10,6 +10,8 @@ export interface DaemonState {
   devicesError: string | null;
   profiles: ProfileSummary[];
   profilesError: string | null;
+  macros: MacroSummary[];
+  macrosError: string | null;
 }
 
 export const initialDaemonState: DaemonState = {
@@ -20,6 +22,8 @@ export const initialDaemonState: DaemonState = {
   devicesError: null,
   profiles: [],
   profilesError: null,
+  macros: [],
+  macrosError: null,
 };
 
 export type DaemonAction =
@@ -30,7 +34,9 @@ export type DaemonAction =
   | { type: "devices"; devices: DeviceSummary[] }
   | { type: "devicesError"; message: string }
   | { type: "profiles"; profiles: ProfileSummary[] }
-  | { type: "profilesError"; message: string };
+  | { type: "profilesError"; message: string }
+  | { type: "macros"; macros: MacroSummary[] }
+  | { type: "macrosError"; message: string };
 
 /** Pure reducer; all transitions are covered and exhaustively typed. */
 export function daemonReducer(state: DaemonState, action: DaemonAction): DaemonState {
@@ -51,6 +57,10 @@ export function daemonReducer(state: DaemonState, action: DaemonAction): DaemonS
       return { ...state, profiles: action.profiles, profilesError: null };
     case "profilesError":
       return { ...state, profiles: [], profilesError: action.message };
+    case "macros":
+      return { ...state, macros: action.macros, macrosError: null };
+    case "macrosError":
+      return { ...state, macros: [], macrosError: action.message };
   }
 }
 

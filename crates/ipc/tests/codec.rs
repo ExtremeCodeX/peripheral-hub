@@ -1,6 +1,8 @@
 //! Frame/schema rejection without any hardware or external service.
 use peripheral_hub_device_sdk::{LightingCommand, LightingEffect, RgbColor};
 use peripheral_hub_ipc::*;
+use peripheral_hub_macros::{KeyPress, Macro, MacroAction, MacroId, MacroRepeat};
+use peripheral_hub_profiles::ProfileId;
 use tokio::io::{AsyncWriteExt, duplex};
 
 #[tokio::test]
@@ -87,6 +89,50 @@ fn lighting_scene_shape_is_validated() {
         .validate()
         .is_err()
     );
+}
+
+#[tokio::test]
+async fn macro_operations_roundtrip_through_the_frame() {
+    let macro_value = Macro {
+        id: MacroId::new("combo").unwrap(),
+        name: "Combo".into(),
+        actions: vec![
+            MacroAction::Key {
+                key: "f13".into(),
+                press: KeyPress::Tap,
+            },
+            MacroAction::Delay { ms: 20 },
+        ],
+        repeat: MacroRepeat {
+            times: 2,
+            interval_ms: 5,
+        },
+        profile: Some(ProfileId::new("gaming").unwrap()),
+    };
+    let request = Request {
+        version: IPC_VERSION,
+        request_id: 7,
+        operation: Operation::SaveMacro {
+            macro_value: macro_value.clone(),
+        },
+    };
+    let (mut a, mut b) = duplex(4096);
+    write_frame(&mut a, &request).await.unwrap();
+    let decoded: Request = read_frame(&mut b).await.unwrap();
+    match decoded.operation {
+        Operation::SaveMacro {
+            macro_value: decoded_macro,
+        } => assert_eq!(decoded_macro, macro_value),
+        _ => panic!("unexpected operation"),
+    }
+}
+
+#[test]
+fn macro_fault_is_a_stable_sanitized_code() {
+    let fault = Fault::from(peripheral_hub_macros::MacroError::NotFound);
+    assert_eq!(fault, Fault::Macro(MacroFault::NotFound));
+    let json = serde_json::to_string(&fault).unwrap();
+    assert!(json.contains("macro") && json.contains("not_found"));
 }
 
 #[test]

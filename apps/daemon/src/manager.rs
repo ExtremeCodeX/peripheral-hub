@@ -2,6 +2,7 @@ use peripheral_hub_core::{Identification, PeripheralCore};
 use peripheral_hub_device_registry::{DriverRegistry, RegistryError};
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_macros::MacroRepository;
 use peripheral_hub_profiles::ProfileRepository;
 use peripheral_hub_transport_hid::DeviceSource;
 use std::collections::{BTreeMap, VecDeque};
@@ -22,24 +23,29 @@ pub struct DeviceManager {
     sequence: u64,
     discovery_error: Option<DeviceError>,
     profiles: ProfileRepository,
+    macros: MacroRepository,
 }
 impl DeviceManager {
     /// Own an explicit registry/backend; physical mode never registers simulation.
     pub fn new(registry: DriverRegistry, source: Box<dyn DeviceSource>) -> Self {
         Self::try_new(registry, source).expect("daemon initialization failed")
     }
-    /// Fallible initialization with an ephemeral in-memory profile store.
+    /// Fallible initialization with ephemeral in-memory profile and macro stores.
     pub fn try_new(registry: DriverRegistry, source: Box<dyn DeviceSource>) -> DeviceResult<Self> {
         let profiles = ProfileRepository::open_in_memory().map_err(|_| {
             DeviceError::ProtocolError("profile storage initialization failed".into())
         })?;
-        Self::with_profiles(registry, source, profiles)
+        let macros = MacroRepository::open_in_memory().map_err(|_| {
+            DeviceError::ProtocolError("macro storage initialization failed".into())
+        })?;
+        Self::with_stores(registry, source, profiles, macros)
     }
-    /// Initialization with an explicit profile repository (for example file-backed).
-    pub fn with_profiles(
+    /// Initialization with explicit repositories (for example file-backed).
+    pub fn with_stores(
         registry: DriverRegistry,
         source: Box<dyn DeviceSource>,
         profiles: ProfileRepository,
+        macros: MacroRepository,
     ) -> DeviceResult<Self> {
         Ok(Self {
             session_id: peripheral_hub_transport_hid::session_epoch()?,
@@ -50,6 +56,7 @@ impl DeviceManager {
             sequence: 0,
             discovery_error: None,
             profiles,
+            macros,
         })
     }
     /// Actual source mode, never an automatic fallback from failed hardware discovery.
@@ -358,6 +365,23 @@ impl DeviceManager {
                 // Profiles integrate with the generic lighting engine: a stored
                 // single-zone preference is applied as a one-entry scene.
                 self.execute_scene(&interface_id, &[command])
+            }
+            Operation::ListMacros => Ok(Reply::Macros(self.macros.list()?)),
+            Operation::GetMacro { macro_id } => Ok(Reply::Macro(self.macros.get(&macro_id)?)),
+            Operation::SaveMacro { macro_value } => {
+                // Persisting a macro never executes it. An advisory profile link
+                // must reference an existing stored profile, or the write fails.
+                if let Some(profile_id) = &macro_value.profile {
+                    self.profiles
+                        .get(profile_id)
+                        .map_err(|_| Fault::Macro(MacroFault::Invalid))?;
+                }
+                self.macros.save(&macro_value)?;
+                Ok(Reply::Macro(macro_value))
+            }
+            Operation::DeleteMacro { macro_id } => {
+                self.macros.delete(&macro_id)?;
+                Ok(Reply::Ack)
             }
         }
     }

@@ -8,9 +8,11 @@ members = [
     "crates/ipc",
     "crates/storage",
     "crates/profiles",
+    "crates/macros",
     "crates/driver-declarative",
     "examples/native-driver",
     "apps/daemon",
+    "apps/device-research-assistant",
 ]
 # The Tauri shell has its own workspace and requires platform webview
 # dependencies; it is not built by the root workspace.
@@ -30,6 +32,7 @@ peripheral-hub-transport-hid = { path = "crates/transport-hid" }
 peripheral-hub-ipc = { path = "crates/ipc" }
 peripheral-hub-storage = { path = "crates/storage" }
 peripheral-hub-profiles = { path = "crates/profiles" }
+peripheral-hub-macros = { path = "crates/macros" }
 peripheral-hub-driver-declarative = { path = "crates/driver-declarative" }
 rusqlite = { version = "0.40", default-features = false, features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }
