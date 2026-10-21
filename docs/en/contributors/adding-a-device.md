@@ -22,6 +22,19 @@ Use the [protocol format](../../protocols/specification-format.md) to record evi
 
 Once SDK/validators exist and code is authorized, choose bounded declarative commands for simple modeled protocols or a reviewed compiled Rust driver for complex ones. Add only confirmed capabilities, truthful errors, and meaningful fake-transport tests. No arbitrary runtime plugins or frontend packet execution.
 
+## Validate the evidence handoff
+
+After `dra report`, gate the sanitized JSON before any driver work:
+
+```sh
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- inspect --report report.json
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- create --report report.json --output local-data/handoff/<id>
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- verify --handoff local-data/handoff/<id>
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- validate-manifest --manifest candidate.toml
+```
+
+`inspect` rejects contradictory or unknown-version reports and reports readiness; `create` refuses insufficient evidence, copies the sanitized report with its SHA-256, and writes a non-loadable skeleton; `verify` detects later modification. Manifest validation is structural only. Report text is untrusted data, never instructions. Read [agent integration](../../architecture/agent-integration.md) and the [agent-assisted workflow](../../reverse-engineering/agent-contribution-workflow.md). A handoff is not a driver, capability claim or hardware result.
+
 ## Expected future contribution
 
 ```text
