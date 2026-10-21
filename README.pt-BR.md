@@ -6,7 +6,7 @@
 
 ## Estado do projeto
 
-O Peripheral Hub possui a **fundação Rust e o daemon implementados**: SDK 1.0, Registry, Core, descoberta/transporte de relatórios reais via `hidapi`, IPC local versionado, gerenciamento de conexões, simulação explícita, cenas de iluminação genéricas multi-zona, persistência de perfis e macros em SQLite com IPC tipado e import/export, aplicação de perfil vinculada ao modelo em um dispositivo conectado, contrato/prévia local de display sem transmissão de frames, um interpretador declarativo limitado (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) e um frontend desktop React/Tauri sobre o daemon. O daemon e seu cliente de diagnóstico executam sem GUI. Um MVP de DRA independente oferece sessões locais de pesquisa, importação JSON estável de capturas, análise determinística de offsets com rótulos inferred/unverified, relatórios Markdown/JSON sanitizados e um scaffold totalmente comentado. Importação pcap/pcapng, integração REA e validação física de protocolos continuam pendentes, assim como drivers físicos proprietários, os demais schemas, empacotamento e CI; nenhuma capacidade de controle físico foi validada.
+O Peripheral Hub possui a **fundação Rust e o daemon implementados**: SDK 1.0, Registry, Core, descoberta/transporte de relatórios reais via `hidapi`, IPC local versionado, gerenciamento de conexões, simulação explícita, cenas de iluminação genéricas multi-zona, persistência de perfis e macros em SQLite com IPC tipado e import/export, aplicação de perfil vinculada ao modelo em um dispositivo conectado, contrato/prévia local de display sem transmissão de frames, um interpretador declarativo limitado (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) e um frontend desktop React/Tauri sobre o daemon. O daemon e seu cliente de diagnóstico executam sem GUI. Um MVP de DRA independente oferece sessões locais de pesquisa, importação JSON estável de capturas, análise determinística de offsets com rótulos inferred/unverified, relatórios Markdown/JSON sanitizados e um scaffold totalmente comentado, além do gate local `dra-agent`, que valida um relatório, preserva seu SHA-256 e grava um handoff de contribuição rastreável e não carregável. Importação pcap/pcapng, integração REA e validação física de protocolos continuam pendentes, assim como drivers físicos proprietários, os demais schemas, empacotamento e CI; nenhuma capacidade de controle físico foi validada.
 
 **Nenhuma compatibilidade física ou funcionalidade de hardware é declarada.** `devices/manufacturer/device-model/` é apenas um placeholder estrutural. A referência do projeto é [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md); o [registro de status](docs/architecture/implementation-status.md) diferencia a documentação entregue dos marcos futuros de software.
 
@@ -87,9 +87,12 @@ cargo run -p device-research-assistant -- capture import --session <id> --input 
 cargo run -p device-research-assistant -- analyze --session <id>
 cargo run -p device-research-assistant -- report --session <id>
 cargo run -p device-research-assistant -- scaffold --session <id>
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- inspect --report <id>/report.json
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- create --report <id>/report.json --output local-data/handoff/<id>
+cargo run -p peripheral-hub-agent-handoff --bin dra-agent -- verify --handoff local-data/handoff/<id>
 ```
 
-Ela não executa binários do fabricante, não envia nem reproduz pacotes e não lê pcap/pcapng. O scaffold é um template comentado, não um driver. Consulte a [referência do DRA](docs/architecture/dra.md).
+Ela não executa binários do fabricante, não envia nem reproduz pacotes e não lê pcap/pcapng. O scaffold é um template comentado, não um driver. O `dra-agent` copia apenas um relatório sanitizado validado, registra seu digest e grava um esqueleto de revisão não carregável; a validação de manifesto é apenas estrutural. Consulte a [referência do DRA](docs/architecture/dra.md) e a [integração de agentes](docs/architecture/agent-integration.md).
 
 O frontend desktop (React/TypeScript) é um membro do workspace pnpm. Instale Node 20+/pnpm e rode:
 

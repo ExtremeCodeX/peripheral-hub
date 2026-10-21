@@ -1,6 +1,6 @@
 # Device Research Assistant (DRA)
 
-**Status: standalone MVP implemented as software, recovered into the current branch and exercised with synthetic captures only.** The DRA imports authorized textual captures, groups repeated transfers, highlights varying payload offsets, correlates explicitly labeled actions, and exports sanitized Markdown/JSON reports plus a deliberately non-loadable driver scaffold. It does **not** execute vendor binaries, send or replay packets, parse pcap/pcapng, or control hardware. There is no physical validation claim. The original implementation was preserved in `backup/fases-5-6` at `25a07f2` and restored in the current Phase 6 branch without copying Phase 5 domain code. See [ADR 0011](decisions/0011-dra-mvp.md) and the [status ledger](implementation-status.md).
+**Status: standalone MVP and a validated agent handoff implemented as software, exercised with synthetic captures only.** The DRA imports authorized textual captures, groups repeated transfers, highlights varying payload offsets, correlates explicitly labeled actions, and exports sanitized Markdown/JSON reports plus a deliberately non-loadable driver scaffold. It does **not** execute vendor binaries, send or replay packets, parse pcap/pcapng, or control hardware. There is no physical validation claim. The original implementation was preserved in `backup/fases-5-6` at `25a07f2` and restored in the current Phase 6 branch without copying Phase 5 domain code. See [ADR 0011](decisions/0011-dra-mvp.md), [ADR 0012](decisions/0012-agent-dra-handoff.md), the [agent integration](agent-integration.md) and the [status ledger](implementation-status.md).
 
 The binding rules are in the [responsible research policy](../reverse-engineering/responsible-research.md) and [AGENTS.md](../../AGENTS.md). The DRA is a development tool, is absent from the shipped desktop/daemon runtime, and optional REA is not a dependency.
 
@@ -14,6 +14,8 @@ DRA JSON capture import (text, bounded)
 normalization → grouping → offset comparison → labeled hypotheses
         ↓
 sanitized Markdown/JSON report + commented scaffold
+        ↓
+dra-agent inspect/create/verify → traceable handoff
         ↓
 human review → separately authorized driver work
 ```
@@ -142,6 +144,21 @@ The analysis also records limitations: correlation-only evidence, no automatic h
 
 This is an evidence handoff, not driver generation. A driver still requires separate authorization, reviewed protocol facts, bounded implementation and hardware validation.
 
+## Agent handoff
+
+The separate `peripheral-hub-agent-handoff` crate provides `dra-agent`, which consumes a validated `report.json` and writes a traceable review directory. It does not generate driver code or a loadable manifest and does not access hardware or the network.
+
+```text
+dra-agent inspect --report report.json [--json]
+dra-agent create --report report.json --output DIR [--manifest FILE] [--force] [--json]
+dra-agent verify --handoff DIR [--json]
+dra-agent validate-manifest --manifest FILE [--json]
+```
+
+`inspect` applies the DRA typed validation plus cross-document consistency checks, computes a readiness state and lists required experiments. `create` refuses `insufficient` evidence and writes `handoff.json`, `AGENT_HANDOFF.md`, `protocol.md`, `validation.md`, test/fixture guidance, a fully commented manifest example, and an exact SHA-256-tracked copy of the sanitized report. `verify` recomputes the digest and assessment. Optional manifest validation uses the real declarative parser and proves structure only.
+
+See the [agent integration reference](agent-integration.md) and [agent-assisted workflow](../reverse-engineering/agent-contribution-workflow.md) for commands, readiness meanings and safety boundaries.
+
 ## Validation evidence
 
 Run from the repository root:
@@ -153,7 +170,7 @@ cargo check --workspace --locked
 cargo test --workspace --locked
 ```
 
-The DRA integration suite (`cargo test -p device-research-assistant`) covers: a synthetic session with an inferred offset and an unverified repeated payload; rejected future versions, malformed hex, unknown fields, unsafe source tokens, oversized payloads and empty events without session mutation; consent and path-safe id enforcement; out-of-order normalization; serial/path removal from inventory rows; schema-file parsing; and report/scaffold safety (no uncommented manifest lines, no payload or input-path leakage). The Phase 6 recovery rerun passed all **8 DRA tests** and the full workspace **111 tests**; a local CLI smoke run produced the synthetic report and commented scaffold without enumerating or opening a device. The full workspace result is recorded in the [status ledger](implementation-status.md).
+The DRA integration suite (`cargo test -p device-research-assistant`) covers: a synthetic session with an inferred offset and an unverified repeated payload; rejected future versions, malformed hex, unknown fields, unsafe source tokens, oversized payloads and empty events without session mutation; consent and path-safe id enforcement; out-of-order normalization; serial/path removal from inventory rows; schema-file parsing; and report/scaffold safety (no uncommented manifest lines, no payload or input-path leakage). The Phase 6 recovery rerun passed all **8 DRA tests** and the full workspace **111 tests**; a local CLI smoke run produced the synthetic report and commented scaffold without enumerating or opening a device. Phase 7 adds the handoff integration suite described in the [agent integration](agent-integration.md); exact workspace totals and the DRA rerun are recorded in the [status ledger](implementation-status.md).
 
 ## Limitations and pending work
 
@@ -162,7 +179,7 @@ The DRA integration suite (`cargo test -p device-research-assistant`) covers: a 
 3. **No hardware operation.** `devices list` enumerates non-destructively on demand; it was not run in this validation. No device was opened, written or replayed.
 4. **No confirmed-on-hardware generation.** A human must attach hardware evidence separately.
 5. **Heuristic analysis only.** It groups identical-shaped transfers and variable offsets; it does not model checksums, framing, timing, state machines or multi-packet transactions.
-6. **No driver generation.** The scaffold is a commented template designed to prevent accidental capability claims.
-7. **No packaging or CI.** The DRA runs from Cargo source; release packaging and automated CI remain out of scope.
+6. **No driver generation.** The scaffold and handoff are commented skeletons designed to prevent accidental capability claims. Manifest validation is structural only.
+7. **No packaging or CI.** The DRA and handoff run from Cargo source; release packaging and automated CI remain out of scope.
 
 See the [research workflow](../reverse-engineering/research-workflow.md) for the human procedure around these commands.

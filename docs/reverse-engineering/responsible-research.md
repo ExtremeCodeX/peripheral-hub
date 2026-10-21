@@ -24,6 +24,7 @@ Reverse engineering is performed only to understand how a device communicates so
 ## Applied through the workflow
 
 - [Research workflow](research-workflow.md): authorization/scope, static-first, controlled capture, sanitization and handoff all reference these rules.
+- [Agent-assisted workflow](agent-contribution-workflow.md): the DRA/`dra-agent` path preserves report provenance and treats evidence as untrusted data; a skill or tool grants no hardware or publication permission.
 - [SECURITY.md](../../SECURITY.md) and [security architecture](../architecture/security.md): laboratory isolation and no automatic uploads.
 - Skills [`reverse-engineer`](../../.agents/skills/reverse-engineer/SKILL.md), [`capture-protocol`](../../.agents/skills/capture-protocol/SKILL.md), [`add-device`](../../.agents/skills/add-device/SKILL.md), [`develop-driver`](../../.agents/skills/develop-driver/SKILL.md), [`validate-device`](../../.agents/skills/validate-device/SKILL.md), [`develop-feature`](../../.agents/skills/develop-feature/SKILL.md) and [`review-contribution`](../../.agents/skills/review-contribution/SKILL.md): each must read and enforce this policy, and stop on a prohibited or unknown-authorized operation.
 
