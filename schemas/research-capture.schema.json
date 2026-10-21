@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://peripheral-hub.local/schemas/research-capture.schema.json",
+  "title": "Peripheral Hub DRA capture import",
+  "description": "Stable textual capture format accepted by `dra capture import`. The Rust semantic validator is authoritative; decoded payloads are limited to 4096 bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capture_schema_version", "source", "events"],
+  "properties": {
+    "capture_schema_version": { "const": 1 },
+    "source": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20000,
+      "items": { "$ref": "#/$defs/event" }
+    }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timestamp_us", "direction", "transfer", "interface", "payload_hex"],
+      "properties": {
+        "timestamp_us": { "type": "integer", "minimum": 0 },
+        "direction": { "enum": ["in", "out"] },
+        "transfer": { "enum": ["control", "interrupt", "bulk"] },
+        "interface": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "report_id": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 255
+        },
+        "payload_hex": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F\\s]*$"
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    }
+  }
+}

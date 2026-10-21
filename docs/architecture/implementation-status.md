@@ -1,10 +1,10 @@
 # Implementation status and evidence ledger
 
-Last updated: 2026-10-20. English is the technical reference. This ledger distinguishes delivered documentation from working software.
+Last updated: 2026-10-21. English is the technical reference. This ledger distinguishes delivered documentation from working software.
 
 ## Authorized scope
 
-The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application**, continuing with **generic multi-zone RGB lighting**, **macro persistence and editing** and **display contract/preview** (their "Fase 5", which is the master's out-of-scope DRA), together with a **pnpm configuration correction**. The §4.6 domain surface is now covered at the editing/persistence/contract/preview level; real device behavior remains limited to the software simulator. A later explicit authorization allowed the **Phase 5 DRA MVP** (standalone local sessions, bounded JSON capture import, analysis, sanitized reports and a commented scaffold) **without hardware, capture, vendor execution, packet replay or external data sharing**. No commit, push or PR is authorized; packaging/release, CI and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
+The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application**, continuing with **generic multi-zone RGB lighting**, **macro persistence and editing** and **display contract/preview** (their "Fase 5", which is the master's out-of-scope DRA), together with a **pnpm configuration correction**. The §4.6 domain surface is now covered at the editing/persistence/contract/preview level; real device behavior remains limited to the software simulator. A later explicit authorization allowed the **Phase 5 DRA MVP** (standalone local sessions, bounded JSON capture import, analysis, sanitized reports and a commented scaffold) **without hardware, capture, vendor execution, packet replay or external data sharing**. The user's **Phase 6 recovery** restores the DRA implementation, schemas and missing documentation from `backup/fases-5-6` (`25a07f2`) while preserving the integrated Phase 1–5 code; it does not copy the backup's Phase 5 domain changes or add hardware/capture support. No commit, push or PR is authorized; packaging/release, CI and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
 
 ### Active Phase 2 plan
 
@@ -726,11 +726,13 @@ Added `apps/desktop/src/features/displays/displayModel.ts`, `apps/desktop/src/fe
 
 After the §4.6 display increment, the user explicitly authorized the **master's Phase 5 DRA MVP** with the constraint that it remain hardware-free, avoid vendor execution and packet replay, and avoid external data sharing. The implementation is a standalone Cargo member and CLI; it is not part of the daemon, IPC or shipped desktop runtime. It implements local research sessions, bounded textual JSON capture import, deterministic offset/action analysis, sanitized Markdown/JSON reports and a deliberately non-loadable scaffold. **No pcap/pcapng/TShark parser, capture backend, REA integration or hardware operation is implemented.** Raw files remain outside the repository, and the DRA has no network client.
 
+**Recovery note (2026-10-21):** the integrated Phase 5 revision contained the DRA documentation and workspace/lockfile configuration but not the DRA source or schema content. The original implementation was preserved in `backup/fases-5-6` at `25a07f2`. Phase 6 restored only the DRA package, its tests, `docs/architecture/dra.md`, ADR 0011 and the two research schemas, then validated them against the current Phase 5 workspace. No macros, profiles, RGB, display or daemon source was copied from the backup.
+
 ### Actual delivery and evidence levels
 
 | Component | State | Evidence and boundary |
 | --- | --- | --- |
-| Workspace member | Completed (concluído) | `apps/device-research-assistant` added as the twelfth Cargo member (`device-research-assistant`), with library, binary and integration tests; no daemon/IPC/desktop dependency |
+| Workspace member | Completed (concluído) | `apps/device-research-assistant` recovered as the twelfth Cargo member (`device-research-assistant`), with library, binary and integration tests; no daemon/IPC/desktop dependency |
 | Sessions and storage | Completed (concluído) | Versioned `session.json` schema `1` under the per-user DRA data root; `--consent` required; path-safe ids; exclusive directory creation; atomic same-directory JSON writes; no repository-local data by default |
 | Capture import | Completed (concluído) | Stable project JSON format, schema `1`, `deny_unknown_fields`, 16 MiB input, 20,000 events/capture, 32 captures/session, 4,096 payload bytes, tolerant hex whitespace, deterministic timestamp normalization and `reordered` metadata; pcap/pcapng and TShark inputs are rejected as unsupported formats |
 | Analysis | Completed (concluído) | Deterministic grouping by direction/transfer/interface/report id/length, outbound offset comparison and labeled action/value one-to-one checks; emits only `inferred`/`unverified` automatically; `confirmed-on-hardware` is never generated and is reserved for human evidence |
@@ -738,8 +740,8 @@ After the §4.6 display increment, the user explicitly authorized the **master's
 | Scaffold | Completed (concluído) | Only with hypotheses; `README.md`, fully commented `manifest.toml.example` (not loadable), `tests/README.md` and `hypotheses.json`; no capture files, driver code or capability declaration; refuses non-empty directories without `--force` |
 | Inventory | Completed (concluído) | `devices list` uses non-destructive `HidDiscovery::scan`, removes serials/paths and reports only sanitized fields/error codes; it opens no handle or report stream. It was **not executed** during validation; a synthetic descriptor test covers sanitization |
 | Schemas | Reference only (referência) | `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` were filled; the Rust semantic validator/serializer is authoritative. No external JSON Schema validator dependency exists, and no schema-validation pass is claimed |
-| Tests | Completed (concluído) | `apps/device-research-assistant/tests/synthetic.rs`: **8 passed**; full workspace **103 → 111 passed**; synthetic happy path plus rejection, consent/id, normalization, inventory sanitization, schema parsing and scaffold safety |
-| Documentation | Completed (concluído) | New [DRA reference](dra.md) and [ADR 0011](decisions/0011-dra-mvp.md); updated [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), READMEs, AGENTS and this ledger |
+| Tests | Completed (concluído) | `apps/device-research-assistant/tests/synthetic.rs`: **8 passed**; current integrated workspace **111 passed / 0 failed**; synthetic happy path plus rejection, consent/id, normalization, inventory sanitization, schema parsing and scaffold safety |
+| Documentation | Completed (concluído) | Recovered [DRA reference](dra.md) and [ADR 0011](decisions/0011-dra-mvp.md); existing [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), READMEs, AGENTS and skills were checked against the restored commands |
 
 ### Commands and actual outcomes
 
@@ -756,6 +758,26 @@ Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase
 
 All evidence is synthetic/software-only. No physical device was enumerated, opened or written; no vendor executable, packet replay or external service was used. The CLI smoke test proves local file/serialization behavior, not hardware compatibility.
 
+### Phase 6 recovery validation (2026-10-21)
+
+The restored files were validated in the integrated Phase 5 workspace with the existing temporary Rust 1.99.0/Zig and Node/pnpm tools. The CLI smoke test used a new temporary directory outside the repository (`/tmp/opencode/dra-recovery.iB8WvS`) and the synthetic seven-event RGB capture; it did not run `devices list`, access a device, execute vendor software, replay packets or share data.
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or suppressions |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **111 passed / 0 failed / 0 ignored**, including **8 DRA synthetic tests** |
+| `pnpm install --frozen-lockfile` | Passed with `CI=true` because the non-interactive shell required an explicit modules-directory recreation confirmation; 101 packages installed |
+| `pnpm --dir apps/desktop typecheck` | Passed, exit 0 |
+| `pnpm --dir apps/desktop test` | Passed: **75 passed / 0 failed** across 10 files |
+| `pnpm --dir apps/desktop build` | Passed, exit 0 (Vite production build) |
+| DRA CLI smoke: `session create --consent`, `capture import`, `analyze`, `report`, `scaffold`, `session list` | Passed; produced one `inferred` offset hypothesis and one `unverified` repeated-payload hypothesis, a sanitized report and a fully commented non-loadable manifest template |
+| Source parity with `25a07f2` | **16/18 files byte-identical** (package, tests and both schemas); only `docs/architecture/dra.md` and ADR 0011 differ, solely by the recovery/validation notes above |
+| `git diff --check` | Checked after documentation updates; no whitespace errors |
+
+The recovery did not add an external JSON Schema validator; the two schema files are parsed by the DRA test and remain documentary references, with Rust typed/semantic validation authoritative.
+
 ### Limitations and pending priorities
 
 1. **No capture backend/parser:** only textual project JSON is accepted; pcap/pcapng, TShark and live capture are not implemented or claimed.
@@ -766,7 +788,8 @@ All evidence is synthetic/software-only. No physical device was enumerated, open
 6. **Schema validation boundary:** schema files are documentary references; Rust typed validation is authoritative, and no external schema validator was run.
 7. **No packaging/CI:** the DRA runs from Cargo source; release packaging, CI, an installer and GUI integration remain out of scope.
 8. **REA remains optional/unconfigured:** no MCP configuration was invented; `config/agents/rea-mcp.example.json` remains an empty placeholder.
+9. **Recovery provenance:** the source was recovered from `25a07f2`; the current tests prove integration with the Phase 5 workspace, not a new protocol, device or hardware validation.
 
 ### Relevant files and decisions
 
-Added `apps/device-research-assistant/` (`Cargo.toml`, `src/{lib,main,cli,error,model,paths,session,capture,analysis,report,scaffold,inventory}.rs`, `tests/synthetic.rs`), [dra.md](dra.md), [ADR 0011](decisions/0011-dra-mvp.md), `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` content. Updated the root `Cargo.toml`/`Cargo.lock`, [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), `README.md`, `README.pt-BR.md`, `AGENTS.md`, public status pages and this ledger. SDK/Core/Registry contracts, IPC version 5, daemon behavior and the desktop frontend are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+Recovered `apps/device-research-assistant/` (`Cargo.toml`, `src/{lib,main,cli,error,model,paths,session,capture,analysis,report,scaffold,inventory}.rs`, `tests/synthetic.rs`), [dra.md](dra.md), [ADR 0011](decisions/0011-dra-mvp.md), `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` from `25a07f2`. The integrated root `Cargo.toml`/`Cargo.lock` already referenced the DRA member and dependencies, so no Phase 5 domain source was copied or changed; the existing [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), `README.md`, `README.pt-BR.md`, `AGENTS.md`, public status pages and skills were checked for the restored commands. SDK/Core/Registry contracts, IPC version 5, daemon behavior, macros, profiles, lighting and desktop code are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
