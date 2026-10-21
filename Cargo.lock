@@ -43,6 +43,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 
 [[package]]
+name = "device-research-assistant"
+version = "0.1.0"
+dependencies = [
+ "peripheral-hub-device-sdk",
+ "peripheral-hub-transport-hid",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "doctest-file"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -270,6 +282,7 @@ dependencies = [
  "peripheral-hub-device-sdk",
  "peripheral-hub-driver-declarative",
  "peripheral-hub-ipc",
+ "peripheral-hub-macros",
  "peripheral-hub-profiles",
  "peripheral-hub-storage",
  "peripheral-hub-transport-hid",
@@ -330,6 +343,7 @@ dependencies = [
  "interprocess",
  "nix",
  "peripheral-hub-device-sdk",
+ "peripheral-hub-macros",
  "peripheral-hub-profiles",
  "serde",
  "serde_json",
@@ -338,6 +352,19 @@ dependencies = [
  "thiserror",
  "tokio",
  "widestring",
+]
+
+[[package]]
+name = "peripheral-hub-macros"
+version = "0.1.0"
+dependencies = [
+ "peripheral-hub-profiles",
+ "peripheral-hub-storage",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]

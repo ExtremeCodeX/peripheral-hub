@@ -1,6 +1,6 @@
 # ADR 0004: Versioned SQLite storage and profile persistence
 
-- Status: implemented in the storage/profiles phase; the desktop binding and profile JSON import/export were added later in [ADR 0005](0005-desktop-ui.md), and a daemon-side `profile-import`/`profile-export` CLI command was added in the Fase 3 audit session; device-model-driven application and encryption remain pending.
+- Status: implemented in the storage/profiles phase; the desktop binding and profile JSON import/export were added later in [ADR 0005](0005-desktop-ui.md), a daemon-side `profile-import`/`profile-export` CLI command was added in the Fase 3 audit session, and device-model-driven application of profiles was added in [ADR 0007](0007-profile-application.md); encryption remains pending.
 - Date: 2026-10-15.
 
 ## Context
@@ -21,4 +21,4 @@ The daemon and IPC existed without persistence, and profile operations were expl
 
 Profiles are durable and validated across restart with real SQLite migrations on the existing same-user trust boundary. The storage crate is reusable but intentionally minimal; only the profile repository is wired today. A schema-versioned `profile-import`/`profile-export` CLI command reuses the library `to_json`/`from_json` envelope and the existing `SaveProfile`/`GetProfile` operations; the file path stays client-side and is not a wire field. No file locking beyond SQLite, no encryption, no migration tooling beyond forward-only `user_version`, and no schema for other future data is claimed. A single connection means concurrent multi-process writers to the same file are not a supported model. `ProfileFault` is a deliberate part of the v2 wire contract and must not be renumbered casually.
 
-The desktop binding and client-side profile JSON import/export were implemented in [ADR 0005](0005-desktop-ui.md); device-model-driven application of profiles and encryption/sanitization of stored data remain explicit follow-ups. See [daemon](../daemon.md), [IPC](../ipc.md), [desktop](../desktop.md), [ADR 0003](0003-hid-daemon-local-ipc.md) and the [status ledger](../implementation-status.md).
+The desktop binding and client-side profile JSON import/export were implemented in [ADR 0005](0005-desktop-ui.md); device-model-driven application of profiles was implemented in [ADR 0007](0007-profile-application.md) (`IPC_VERSION = 3`, `ApplyProfile`). Encryption/sanitization of stored data remains an explicit follow-up. See [daemon](../daemon.md), [IPC](../ipc.md), [desktop](../desktop.md), [ADR 0003](0003-hid-daemon-local-ipc.md) and the [status ledger](../implementation-status.md).

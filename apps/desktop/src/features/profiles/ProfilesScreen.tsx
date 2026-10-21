@@ -24,9 +24,15 @@ export function ProfilesScreen() {
   const [blue, setBlue] = useState("0");
   const [effect, setEffect] = useState<LightingEffect>("static");
   const [io, setIo] = useState("");
+  const [applyTarget, setApplyTarget] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const connected = state.devices.filter((device) => device.status === "connected");
+  const targetId = connected.some((device) => device.interface_id === applyTarget)
+    ? applyTarget
+    : (connected[0]?.interface_id ?? "");
 
   function buildProfile(): Profile {
     const model = draft.device_model?.trim() ?? "";
@@ -73,6 +79,24 @@ export function ProfilesScreen() {
       setMessage(`Deleted profile “${id}”.`);
     } catch (cause) {
       setError(errorMessage(cause));
+    }
+  }
+
+  async function apply(id: string): Promise<void> {
+    setError(null);
+    setMessage(null);
+    if (targetId.length === 0) {
+      setError("Connect a device before applying a profile.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const outcome = await controller.applyProfile(targetId, id);
+      setMessage(`Applied profile “${id}” (${outcome.mode}).`);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -137,6 +161,24 @@ export function ProfilesScreen() {
         </p>
       ) : null}
 
+      <div className="apply-target">
+        <label className="field">
+          <span>Apply to connected device</span>
+          <select
+            value={targetId}
+            onChange={(event) => setApplyTarget(event.target.value)}
+            disabled={connected.length === 0}
+          >
+            {connected.length === 0 ? <option value="">No connected device</option> : null}
+            {connected.map((device) => (
+              <option key={device.interface_id} value={device.interface_id}>
+                {device.product ?? device.interface_id}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
       {state.profiles.length === 0 ? (
         <EmptyNotice title="No profiles yet" hint="Create one with the form below." />
       ) : (
@@ -147,6 +189,13 @@ export function ProfilesScreen() {
               <span className="profile-id">{profile.id}</span>
               {profile.device_model ? <span className="profile-model">{profile.device_model}</span> : null}
               <span className="profile-actions">
+                <button
+                  type="button"
+                  disabled={busy || connected.length === 0}
+                  onClick={() => void apply(profile.id)}
+                >
+                  Apply
+                </button>
                 <button type="button" onClick={() => void editFromList(profile.id)}>
                   Edit
                 </button>

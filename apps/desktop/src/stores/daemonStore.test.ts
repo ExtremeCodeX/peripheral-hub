@@ -39,6 +39,17 @@ describe("daemonReducer", () => {
     expect(loaded.devices).toHaveLength(1);
   });
 
+  it("clears the macros error when macros arrive", () => {
+    const failed = daemonReducer(initialDaemonState, { type: "macrosError", message: "boom" });
+    expect(failed.macrosError).toBe("boom");
+    const loaded = daemonReducer(failed, {
+      type: "macros",
+      macros: [{ id: "combo", name: "Combo", action_count: 2, profile: null }],
+    });
+    expect(loaded.macrosError).toBeNull();
+    expect(loaded.macros).toHaveLength(1);
+  });
+
   it("notifies subscribers on real changes only", () => {
     const store = createDaemonStore();
     let notifications = 0;

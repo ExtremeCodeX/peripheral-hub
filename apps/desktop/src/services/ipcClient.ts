@@ -8,6 +8,9 @@ import {
   type EventBatch,
   type Health,
   type LightingCommand,
+  type LightingScene,
+  type Macro,
+  type MacroSummary,
   type Operation,
   type Profile,
   type ProfileSummary,
@@ -126,6 +129,17 @@ export class IpcClient {
     throw unexpected("outcome", reply.result);
   }
 
+  async setLightingScene(interfaceId: string, scene: LightingScene): Promise<CommandOutcome> {
+    const reply = await this.send({
+      operation: "set_lighting_scene",
+      parameters: { interface_id: interfaceId, scene },
+    });
+    if (isReply(reply, "outcome")) {
+      return reply.data;
+    }
+    throw unexpected("outcome", reply.result);
+  }
+
   async simulatePresence(present: boolean): Promise<void> {
     const reply = await this.send({ operation: "simulate_presence", parameters: { present } });
     if (isReply(reply, "ack")) {
@@ -176,6 +190,58 @@ export class IpcClient {
     const reply = await this.send({
       operation: "delete_profile",
       parameters: { profile_id: profileId },
+    });
+    if (isReply(reply, "ack")) {
+      return;
+    }
+    throw unexpected("ack", reply.result);
+  }
+
+  async applyProfile(interfaceId: string, profileId: string): Promise<CommandOutcome> {
+    const reply = await this.send({
+      operation: "apply_profile",
+      parameters: { interface_id: interfaceId, profile_id: profileId },
+    });
+    if (isReply(reply, "outcome")) {
+      return reply.data;
+    }
+    throw unexpected("outcome", reply.result);
+  }
+
+  async listMacros(): Promise<MacroSummary[]> {
+    const reply = await this.send({ operation: "list_macros" });
+    if (isReply(reply, "macros")) {
+      return reply.data;
+    }
+    throw unexpected("macros", reply.result);
+  }
+
+  async getMacro(macroId: string): Promise<Macro> {
+    const reply = await this.send({
+      operation: "get_macro",
+      parameters: { macro_id: macroId },
+    });
+    if (isReply(reply, "macro")) {
+      return reply.data;
+    }
+    throw unexpected("macro", reply.result);
+  }
+
+  async saveMacro(macro: Macro): Promise<Macro> {
+    const reply = await this.send({
+      operation: "save_macro",
+      parameters: { macro },
+    });
+    if (isReply(reply, "macro")) {
+      return reply.data;
+    }
+    throw unexpected("macro", reply.result);
+  }
+
+  async deleteMacro(macroId: string): Promise<void> {
+    const reply = await this.send({
+      operation: "delete_macro",
+      parameters: { macro_id: macroId },
     });
     if (isReply(reply, "ack")) {
       return;

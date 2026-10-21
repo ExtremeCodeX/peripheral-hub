@@ -26,7 +26,7 @@ export function LightingScreen({ interfaceId }: { interfaceId: string | null }) 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const [zone, setZone] = useState("");
+  const [selectedZones, setSelectedZones] = useState<string[]>([]);
   const [red, setRed] = useState("255");
   const [green, setGreen] = useState("0");
   const [blue, setBlue] = useState("0");
@@ -57,9 +57,7 @@ export function LightingScreen({ interfaceId }: { interfaceId: string | null }) 
     try {
       const result = await controller.getCapabilities(interfaceId);
       setCapabilities(result);
-      if (result.lighting && result.lighting.zones.length > 0) {
-        setZone(result.lighting.zones[0] as string);
-      }
+      setSelectedZones(result.lighting ? result.lighting.zones.slice(0, 1) : []);
       if (result.lighting && result.lighting.effects.length > 0) {
         setEffect(result.lighting.effects[0] as LightingEffect);
       }
@@ -70,23 +68,40 @@ export function LightingScreen({ interfaceId }: { interfaceId: string | null }) 
     }
   }
 
+  function toggleZone(zone: string): void {
+    setSelectedZones((current) =>
+      current.includes(zone) ? current.filter((entry) => entry !== zone) : [...current, zone],
+    );
+  }
+
   async function apply(): Promise<void> {
     if (!interfaceId) {
       return;
     }
     setError(null);
     setSuccess(null);
+    const lighting = capabilities?.lighting;
+    if (!lighting) {
+      return;
+    }
+    if (selectedZones.length === 0) {
+      setError("Select at least one zone to apply the scene.");
+      return;
+    }
     try {
-      const outcome = await controller.setLighting(interfaceId, {
-        zone,
-        color: { red: clampByte(red), green: clampByte(green), blue: clampByte(blue) },
-        brightness: capabilities?.lighting?.brightness ? clampByte(brightness) : null,
-        effect,
+      const outcome = await controller.setLightingScene(interfaceId, {
+        commands: selectedZones.map((zone) => ({
+          zone,
+          color: { red: clampByte(red), green: clampByte(green), blue: clampByte(blue) },
+          brightness: lighting.brightness ? clampByte(brightness) : null,
+          effect,
+        })),
       });
+      const zones = `${selectedZones.length} zone${selectedZones.length === 1 ? "" : "s"}`;
       setSuccess(
         outcome.mode === "simulated"
-          ? "Applied in simulation (no physical device was written)."
-          : "Lighting command reported as successful by the driver.",
+          ? `Applied ${zones} in simulation (no physical device was written).`
+          : `Lighting scene for ${zones} reported as successful by the driver.`,
       );
     } catch (cause) {
       setError(errorMessage(cause));
@@ -136,16 +151,30 @@ export function LightingScreen({ interfaceId }: { interfaceId: string | null }) 
             void apply();
           }}
         >
-          <label className="field">
-            <span>Zone</span>
-            <select value={zone} onChange={(event) => setZone(event.target.value)}>
-              {lighting.zones.map((candidate) => (
-                <option key={candidate} value={candidate}>
-                  {candidate}
-                </option>
-              ))}
-            </select>
-          </label>
+          <fieldset className="zones">
+            <legend>Zones</legend>
+            {lighting.zones.map((candidate) => (
+              <label key={candidate} className="field checkbox">
+                <input
+                  type="checkbox"
+                  checked={selectedZones.includes(candidate)}
+                  onChange={() => toggleZone(candidate)}
+                />
+                <span>{candidate}</span>
+              </label>
+            ))}
+            <button
+              type="button"
+              className="link"
+              onClick={() =>
+                setSelectedZones(
+                  selectedZones.length === lighting.zones.length ? [] : [...lighting.zones],
+                )
+              }
+            >
+              {selectedZones.length === lighting.zones.length ? "Clear all" : "Select all"}
+            </button>
+          </fieldset>
 
           <fieldset className="rgb">
             <legend>Color</legend>
@@ -187,7 +216,9 @@ export function LightingScreen({ interfaceId }: { interfaceId: string | null }) 
             </select>
           </label>
 
-          <button type="submit">Apply</button>
+          <button type="submit" disabled={selectedZones.length === 0}>
+            Apply to {selectedZones.length} zone{selectedZones.length === 1 ? "" : "s"}
+          </button>
         </form>
       ) : null}
     </section>

@@ -1,4 +1,7 @@
 packages:
   - "apps/desktop"
+
+minimumReleaseAge: 1440
+
 allowBuilds:
   esbuild: true

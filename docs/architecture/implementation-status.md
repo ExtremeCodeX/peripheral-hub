@@ -1,10 +1,10 @@
 # Implementation status and evidence ledger
 
-Last updated: 2026-10-16. English is the technical reference. This ledger distinguishes delivered documentation from working software.
+Last updated: 2026-10-20. English is the technical reference. This ledger distinguishes delivered documentation from working software.
 
 ## Authorized scope
 
-The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers). No commit, push or PR is authorized; Phase 5 (DRA), packaging/release and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
+The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application**, continuing with **generic multi-zone RGB lighting**, **macro persistence and editing** and **display contract/preview** (their "Fase 5", which is the master's out-of-scope DRA), together with a **pnpm configuration correction**. The §4.6 domain surface is now covered at the editing/persistence/contract/preview level; real device behavior remains limited to the software simulator. A later explicit authorization allowed the **Phase 5 DRA MVP** (standalone local sessions, bounded JSON capture import, analysis, sanitized reports and a commented scaffold) **without hardware, capture, vendor execution, packet replay or external data sharing**. No commit, push or PR is authorized; packaging/release, CI and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
 
 ### Active Phase 2 plan
 
@@ -340,7 +340,7 @@ The current user authorized the master document's Fase 4: a React/Tauri 2 deskto
 
 | Component | State | Evidence and boundary |
 | --- | --- | --- |
-| pnpm workspace | Completed (concluído) | Root `package.json`, `pnpm-workspace.yaml` and `@peripheral-hub/desktop`; `pnpm-lock.yaml` regenerated (the tracked file was an empty placeholder); esbuild build scripts approved via `pnpm.onlyBuiltDependencies` |
+| pnpm workspace | Completed (concluído) | Root `package.json`, `pnpm-workspace.yaml` and `@peripheral-hub/desktop`; `pnpm-lock.yaml` regenerated (the tracked file was an empty placeholder); esbuild build scripts approved via `allowBuilds` (the current pnpm syntax; maps to `onlyBuiltDependencies`) |
 | Frontend types/services | Completed (concluído) | `src/types/ipc.ts` mirrors IPC v2; `DaemonTransport`/`TauriTransport`, `IpcClient` (version check, `Ok`/`Err` unwrap, discriminant assertions), typed errors, view models and `DaemonController` |
 | State and screens | Completed (concluído) | Observable store + `useSyncExternalStore` hook with injectable transport; devices, details, lighting, profiles, macros, displays and diagnostics screens with empty/loading/error/unsupported states |
 | Profile and macro logic | Completed (concluído) | Versioned profile JSON import/export and macro validate/serialize/simulate in pure TypeScript; macros never inject input and displays never transmit frames |
@@ -357,7 +357,7 @@ Session Node/pnpm were installed under ignored `target/phase4-node` (Node v24.22
 
 | Command / action | Outcome |
 | --- | --- |
-| `pnpm install` | First run ignored the empty tracked lockfile; after adding `pnpm.onlyBuiltDependencies`, esbuild 0.21.5/0.25.12 postinstall succeeded and the lockfile was written |
+| `pnpm install` | First run ignored the empty tracked lockfile; after approving the esbuild build script (originally written as `pnpm.onlyBuiltDependencies`, later folded into the current `allowBuilds` syntax), esbuild 0.21.5/0.25.12 postinstall succeeded and the lockfile was written |
 | Align Vite/Vitest | Initial `vite ^6` conflicted with `vitest 2.1.8` (duplicate Vite 5/6 types broke `tsc`); pinned `vite ^5.4.11`, after which typecheck passed |
 | `pnpm --filter @peripheral-hub/desktop typecheck` | Passed, exit 0 (`tsc --noEmit`) |
 | `pnpm --filter @peripheral-hub/desktop test` | Passed: **50 tests / 8 files** (viewModel 6, profileFile 5, macroModel 6, daemonStore 4, ipcClient 6, daemonController 7, screens 13, Badge 3) |
@@ -381,7 +381,7 @@ A later request to "conclude Phase 3 by implementing the desktop app" was reconc
 | Command / action | Outcome |
 | --- | --- |
 | `pnpm install --frozen-lockfile` (pnpm 10.34.7) | Passed; lockfile up to date, esbuild postinstall ran. Needed `CI=true` only because a non-TTY purge of the existing `node_modules` was pending |
-| pnpm config audit | `pnpm-workspace.yaml` `allowBuilds: {esbuild: true}` is the current pnpm syntax (maps to `onlyBuiltDependencies`); `package.json` `pnpm.onlyBuiltDependencies` is the older equivalent. No obsolete keys. `minimumReleaseAge` is **not** configured anywhere |
+| pnpm config audit | `pnpm-workspace.yaml` `allowBuilds: {esbuild: true}` is the current pnpm syntax (maps to `onlyBuiltDependencies`); `package.json` `pnpm.onlyBuiltDependencies` is the older equivalent. No obsolete keys. Correction (2026-10-16): this row originally stated that `minimumReleaseAge` was not configured; it is now configured as `minimumReleaseAge: 1440` in `pnpm-workspace.yaml`, so that earlier statement is stale |
 | `pnpm build` / `pnpm test` | Added root convenience scripts (`build`/`test`/`typecheck`) since `pnpm build` previously failed with no root script. Build passed; **53 tests / 9 files** pass |
 | `cargo fmt --all --check` | Passed, exit 0 |
 | `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0 |
@@ -448,7 +448,7 @@ The smoke test used only the explicit software simulator and a temporary local f
 
 1. **File path is client-side:** import/export read/write a local path chosen by the caller; the daemon never receives a path over IPC and there is no file picker (the desktop keeps its own client-side import/export in TypeScript).
 2. **No data migration beyond forward-only:** only `profile_schema_version` 1 exists, so no re-encode of older stored rows is implemented; a future version bump would need an explicit migration rather than the current reject-on-read behavior.
-3. **Model-driven application still pending:** applying a saved profile to a connected device remains unimplemented; profiles record intent only.
+3. **Model-driven application still pending:** applying a saved profile to a connected device remains unimplemented; profiles record intent only. *(Superseded by the profile-application session below.)*
 4. **Windows evidence remains static:** the Windows target check/Clippy are compilation evidence only, not runtime/DACL validation.
 
 ### Relevant files
@@ -505,3 +505,268 @@ The tests use synthetic descriptors and in-memory transports only; no physical d
 ### Relevant files and decisions
 
 Added `crates/driver-declarative/{Cargo.toml,src/,tests/declarative.rs}`, `examples/declarative-driver/manifest.toml`, `examples/native-driver/{Cargo.toml,src/,tests/}`, `schemas/device-manifest.schema.json`, `apps/daemon/src/manifests.rs`, `apps/daemon/tests/declarative.rs` and [ADR 0006](decisions/0006-declarative-drivers.md). Updated root `Cargo.toml`/`Cargo.lock`, `apps/daemon/{Cargo.toml,src/lib.rs,src/main.rs}`, the [driver system](driver-system.md)/[SDK](sdk.md)/[daemon](daemon.md) references, this ledger and the `develop-driver`/`add-device`/`validate-device` skills. SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## Domain features §4.6: profile application (user "Fase 5")
+
+The user asked to start "Fase 5 — RGB, macros, displays e aplicação de perfis". In the master document Fase 5 is the out-of-scope DRA; the requested substance is §4.6 "Recursos de domínio". After explicit confirmation, this execution implements the first domain increment, **profile application**, and leaves RGB (already modeled), macros and displays for later increments. Phase 1–3, storage/profiles, desktop and the driver-system records above are preserved historical evidence. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| IPC contract | Completed (concluído) | `IPC_VERSION` raised 2 → 3 with `Operation::ApplyProfile { interface_id, profile_id }`; replies with the existing `Reply::Outcome`. Older clients are rejected by the incompatible-version path |
+| Daemon manager | Completed (concluído) | `ApplyProfile` loads the profile, enforces the optional `device_model` binding (`NotSupported` on mismatch), requires an open driver, and reuses the extracted `execute_lighting` capability-gated path shared with `SetLighting`; a profile with no `lighting` returns `NotSupported`. No raw report or new device operation |
+| Daemon CLI | Completed (concluído) | `profile-apply ID INTERFACE_ID` plus help text |
+| Desktop | Completed (concluído) | `src/types/ipc.ts` bumped to `IPC_VERSION = 3` with the new operation; `ipcClient.applyProfile` and `DaemonController.applyProfile`; the Profiles screen gained an apply target listing connected devices, a per-row Apply action, and reports the actual mode |
+| Tests | Completed (concluído) | Daemon `tests/manager.rs` adds one end-to-end test (success, unbound apply, model mismatch, no-lighting, not-connected) → Rust **84 → 85 passed**; frontend `ipcClient`, `daemonController` and `screens` tests added → **53 → 57 passed** |
+| Documentation | Completed (concluído) | New [ADR 0007](decisions/0007-profile-application.md); updated [IPC](ipc.md), [daemon](daemon.md), [desktop](desktop.md), [ADR 0004](decisions/0004-storage-and-profiles.md) and this ledger |
+
+SDK 1.0/Core/Registry contracts, the storage/profiles libraries and the profile schema version are unchanged. The physical registry remains empty and no hardware compatibility is claimed.
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`) and the local Node/pnpm under `target/phase4-node`.
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or warning suppressions |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **85 passed / 0 failed / 0 ignored** (+1 daemon `manager`) |
+| `pnpm --filter @peripheral-hub/desktop typecheck` | Passed, exit 0 |
+| `pnpm --filter @peripheral-hub/desktop test` | Passed: **57 passed / 0 failed** across 9 files (+2 ipcClient/controller, +2 screens) |
+
+All tests use the explicit software simulator, an in-memory profile store and local IPC doubles; no physical device was enumerated, opened or written.
+
+### Failures corrected and design review
+
+- The `SetLighting` execution body was duplicated logic; it was extracted into a private `execute_lighting` helper so `ApplyProfile` cannot drift from the capability/mode checks. No behavior changed.
+
+### Limitations and pending priorities
+
+1. **Apply needs an open driver:** `ApplyProfile` targets an already connected interface; it does not auto-connect or auto-discover. The desktop surface lists connected devices for that reason.
+2. **Volatile lighting only:** a profile can only carry a lighting preference today, so applying performs no display/macro action. A profile with no applicable preference is rejected, not silently accepted.
+3. **Remaining §4.6 work:** richer RGB (multi-zone/effects), macro persistence/limits in the daemon, and the display contract/preview remain pending.
+4. **Later scope/governance:** DRA, packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending.
+5. **Windows evidence is static:** as before, the Windows target checks are compilation evidence only.
+
+### Relevant files and decisions
+
+Updated `crates/ipc/src/protocol.rs`, `apps/daemon/src/{manager.rs,main.rs}`, `apps/daemon/tests/manager.rs`, `apps/desktop/src/types/ipc.ts`, `apps/desktop/src/services/{ipcClient.ts,daemonController.ts}`, `apps/desktop/src/features/profiles/ProfilesScreen.tsx`, `apps/desktop/src/services/{ipcClient.test.ts,daemonController.test.ts}` and `apps/desktop/src/features/screens.test.tsx`; added [ADR 0007](decisions/0007-profile-application.md) and updated the [IPC](ipc.md)/[daemon](daemon.md)/[desktop](desktop.md) references and [ADR 0004](decisions/0004-storage-and-profiles.md). SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## Domain features §4.6: generic multi-zone RGB lighting (continuation of user "Fase 5")
+
+After profile application, the user asked to proceed with the next §4.6 increment only: a generic RGB lighting system (their "Fase 5"; the master's own Fase 5 is the out-of-scope DRA). Multi-zone lighting was the explicit remaining §4.6 gap recorded above. It reuses the SDK lighting DTOs, the capability-gated path shared with profiles, and the declarative interpreter, without inventing any proprietary protocol. Macros and displays were left untouched, and no commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| IPC contract | Completed (concluído) | `IPC_VERSION` raised 3 → 4 with `Operation::SetLightingScene { interface_id, scene }` and `LightingScene { commands }`; `MAX_SCENE_ZONES = 256`; `LightingScene::validate()` rejects empty, oversized and duplicate-zone scenes before transport |
+| Daemon manager | Completed (concluído) | New `execute_scene` pre-validates all commands against the driver capabilities before any write, then executes in order; `ApplyProfile` now routes its resolved command through the same path; `operation_error` returns the typed `Fault` |
+| Declarative driver | Completed (concluído) | Rate limit trackers are now per zone (`BTreeMap<String, Instant>`, cleared on open/close); the example manifest declares a second `logo` zone so multi-zone scenes are exercised end to end |
+| Daemon CLI | Completed (concluído) | `lighting-scene INTERFACE_ID ZONE:R:G:B [...]` plus help text |
+| Desktop | Completed (concluído) | `src/types/ipc.ts` bumped to `IPC_VERSION = 4` with `LightingScene`; `ipcClient.setLightingScene`/`DaemonController.setLightingScene`; the Lighting screen selects one or more declared zones and applies them as a single scene, with a clear-all/select-all toggle and an "Apply to N zones" action |
+| Tests | Completed (concluído) | IPC `codec` shape test; daemon `manager` capability-gate test (valid, empty/duplicate/oversized shape, undeclared zone/brightness/effect, non-open interface); daemon `declarative` multi-zone scene test; declarative crate per-zone independence assertion → Rust **85 → 88 passed**; frontend `set_lighting_scene` parameter test → **57 → 58 passed** |
+| Documentation | Completed (concluído) | New [ADR 0008](decisions/0008-generic-multi-zone-lighting.md); updated [IPC](ipc.md), [daemon](daemon.md), [desktop](desktop.md), [driver system](driver-system.md) and this ledger |
+
+SDK 1.0/Core/Registry contracts, the storage/profiles libraries, the profile schema version and the declarative manifest schema are unchanged. The physical registry remains empty and no hardware compatibility is claimed.
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`) and the local Node/pnpm under `target/phase4-node`.
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or warning suppressions |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **88 passed / 0 failed / 0 ignored** (+1 ipc, +1 daemon manager, +1 daemon declarative) |
+| `pnpm --filter @peripheral-hub/desktop typecheck` | Passed, exit 0 |
+| `pnpm --filter @peripheral-hub/desktop test` | Passed: **58 passed / 0 failed** across 9 files (+1 ipcClient) |
+| `pnpm --filter @peripheral-hub/desktop build` | Passed, exit 0 (Vite production build) |
+
+All tests use the explicit software simulator, an in-memory profile store, the fictitious declarative example and local IPC doubles; no physical device was enumerated, opened or written.
+
+### Failures corrected and design review
+
+- The declarative interpreter tracked a single `last_sent: Option<Instant>` for the whole driver, so a multi-zone scene written back-to-back was rejected as a rate violation and could tear down the session. It now tracks one timestamp per zone, matching the one-report-per-operation model, so independent zones no longer interfere.
+
+### Limitations and pending priorities
+
+1. **Declared zones only:** a scene can only target zones the driver declares; an undeclared zone fails the whole scene with `InvalidArgument`/`NotSupported` rather than being ignored.
+2. **Volatile lighting only:** scenes are still bounded volatile-lighting writes; effects remain the SDK's fixed enum and no persistent-memory or firmware operation exists.
+3. **Simulated evidence:** all new paths are exercised against the simulator and the fictitious declarative example; no physical device validated them.
+4. **Remaining §4.6 work:** macro persistence/limits in the daemon and the display contract/preview remain pending.
+5. **Later scope/governance:** DRA, packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending.
+6. **Windows evidence is static:** as before, the Windows target checks are compilation evidence only.
+
+### Relevant files and decisions
+
+Updated `crates/ipc/src/protocol.rs`, `crates/ipc/tests/codec.rs`, `crates/driver-declarative/src/driver.rs`, `crates/driver-declarative/tests/declarative.rs`, `apps/daemon/src/{manager.rs,main.rs}`, `apps/daemon/tests/{manager.rs,declarative.rs}`, `examples/declarative-driver/manifest.toml`, `apps/desktop/src/types/ipc.ts`, `apps/desktop/src/services/{ipcClient.ts,daemonController.ts,ipcClient.test.ts}` and `apps/desktop/src/features/lighting/LightingScreen.tsx`; added [ADR 0008](decisions/0008-generic-multi-zone-lighting.md) and updated the [IPC](ipc.md)/[daemon](daemon.md)/[desktop](desktop.md)/[driver system](driver-system.md) references. SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## pnpm configuration correction (Etapa 1)
+
+The user asked to fix two pnpm configuration points. The audit found the repository already satisfied both, so this step confirmed the current state and corrected stale documentation instead of changing configuration. **No `pnpm-workspace.yaml`/`package.json` change was required.**
+
+| Item | State | Evidence and boundary |
+| --- | --- | --- |
+| esbuild build approval | Already correct (correto) | `pnpm-workspace.yaml` uses `allowBuilds: {esbuild: true}`, the current pnpm 10 syntax (`renamedKeys` maps `allowBuilds` → `onlyBuiltDependencies`); no legacy `pnpm.onlyBuiltDependencies` key remains in any config |
+| `minimumReleaseAge` | Already configured (configurado) | `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440` |
+| Documentation | Corrected (corrigido) | Two stale ledger rows that named `pnpm.onlyBuiltDependencies` and one that claimed `minimumReleaseAge` was unset were corrected above |
+
+### Commands and actual outcomes
+
+| Command / action | Outcome |
+| --- | --- |
+| `pnpm install --frozen-lockfile` (pnpm 10.34.7, `CI=true`) | Passed; lockfile up to date, 101 packages, esbuild postinstall ran |
+| `pnpm --dir apps/desktop typecheck` | Passed, exit 0 |
+| `pnpm --dir apps/desktop test` | Passed: **66 passed / 0 failed** across 9 files |
+| `pnpm --dir apps/desktop build` | Passed, exit 0 (Vite production build) |
+
+## Domain features §4.6: macro persistence and editing (continuation of user "Fase 5")
+
+After generic multi-zone lighting, the user asked to proceed with the next §4.6 increment only: a persistent, editable macro system (their "Fase 5"; the master's own Fase 5 is the out-of-scope DRA). Macros are modeled as a bounded, versioned, validated action sequence that is **persisted and edited but never executed** — this increment implements storage, CRUD, IPC, daemon and desktop editing only; no input injection, hooking or automatic run-on-load exists. Displays were left untouched and no commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| Macro crate | Completed (concluído) | New `crates/macros` (`peripheral-hub-macros`) with `MacroId`, `KeyPress`, `MacroAction`, `MacroRepeat`, `Macro`, `MacroSummary`, `MacroFile`; bounded limits (`MAX_MACRO_ACTIONS = 4096`, `MAX_MACRO_NAME = 64`, `MAX_DELAY_MS = 60000`, `MAX_MACRO_REPEAT = 1000`, `MAX_MACRO_INTERVAL_MS = 60000`, `MAX_MACRO_ITERATION_MS = 600000`, `MAX_MACRO_TOTAL_MS = 3600000`); `validate()` rejects malformed names, non-token keys, empty/oversized action lists, out-of-range repeats/pauses and over-long iteration/total durations before any write |
+| Storage | Completed (concluído) | `MacroRepository` over the storage crate's SQLite abstractions, in its own forward-only migration stream (`MACRO_SCHEMA_VERSION = 1`) and a **separate** `macros.sqlite` file, because the storage `Database` tracks a single global `user_version` that the profile stream already owns |
+| IPC contract | Completed (concluído) | `IPC_VERSION` raised 4 → 5 with `ListMacros`, `GetMacro`, `SaveMacro`, `DeleteMacro`, `Reply::Macros`/`Reply::Macro` and `Fault::Macro(MacroFault)` (`Invalid`, `UnsupportedVersion`, `NotFound`, `Storage`); the `SaveMacro` payload carries the validated `Macro` (wire key `macro`) |
+| Daemon manager | Completed (concluído) | `DeviceManager::with_stores` accepts explicit profile and macro repositories; `SaveMacro` validates the payload and, when a profile link is present, confirms the referenced profile exists (else `Fault::Macro(Invalid)`); persistence never touches a device or executes the macro |
+| Daemon CLI | Completed (concluído) | `macros`, `macro-get ID`, `macro-save ID NAME KEY [KEY ...]`, `macro-delete ID`, `macro-export ID [PATH]`, `macro-import PATH`, plus a `--macros PATH` serve flag (default under the per-user data directory) and updated help |
+| Desktop | Completed (concluído) | `src/types/ipc.ts` bumped to `IPC_VERSION = 5` with the macro DTOs; `ipcClient`/`DaemonController` macro methods; the Macros screen lists stored macros, edits/repeats/profile link, saves/deletes via IPC, and keeps the descriptive dry-run simulation with an explicit "execution is not implemented" notice |
+| Tests | Completed (concluído) | Macro crate unit tests (ids, validation, bounds, JSON round-trip, invalid/future import, CRUD, file-backed persistence, reject-before-write); IPC `codec` round-trip and sanitized macro-fault test; daemon `manager` CRUD/validation/profile-link test; daemon `macro_files` export/import test; daemon `ipc_roundtrip` macro test → Rust **88 → 102 passed**; frontend macro-model, client/controller and screen tests → **58 → 66 passed** |
+| Documentation | Completed (concluído) | New ADR 0009; updated [IPC](ipc.md), [daemon](daemon.md), [desktop](desktop.md) and this ledger |
+
+SDK 1.0/Core/Registry contracts, the storage/profiles libraries, the profile schema version and the declarative manifest schema are unchanged. The physical registry remains empty and no hardware compatibility is claimed.
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`) and the local Node/pnpm under `target/phase4-node`.
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or warning suppressions |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **102 passed / 0 failed / 0 ignored** (+8 macros, +2 daemon macro_files, +1 daemon manager, +2 ipc codec, +1 daemon ipc_roundtrip) |
+| `pnpm --dir apps/desktop typecheck` | Passed, exit 0 |
+| `pnpm --dir apps/desktop test` | Passed: **66 passed / 0 failed** across 9 files (+3 macroModel, +3 ipcClient/controller, +1 daemonStore, +2 screens) |
+| `pnpm --dir apps/desktop build` | Passed, exit 0 (Vite production build) |
+
+All tests use the explicit software simulator, in-memory or temporary-file macro stores and local IPC doubles; no physical device was enumerated, opened or written, and no macro was executed.
+
+### Failures corrected and design review
+
+- The `macro` wire/file key cannot be a Rust field name (it is a reserved keyword), so the field is `macro_value` with `#[serde(rename = "macro")]`, keeping the wire/file contract (`macro`) consistent with the profile envelope.
+- Macros cannot share the profile SQLite file: the storage `Database` tracks a single global `pragma user_version` and both features wanted migration `v1`. Macros therefore use a separate `macros.sqlite` file and their own migration stream.
+- The frontend `Fault` union gained a `macro` variant; the `errors.ts` exhaustive switch was extended rather than left non-total (a missing case failed `tsc`).
+
+### Limitations and pending priorities
+
+1. **No execution:** stored macros are never run, injected or hooked. `SaveMacro`/`macro-import` validate and persist only; the CLI and screen say so explicitly. A future execution path would require a separate, reviewed driver/session integration and is out of scope here.
+2. **No button binding:** association to physical buttons is not modeled; the only optional link is an advisory reference to a stored **profile** id (`Macro.profile`), which the daemon checks for existence but does not act on.
+3. **Symbolic keys only:** actions reference symbolic key names; no captured or replayed input exists, so keystroke logging is not possible.
+4. **Simulated evidence:** all paths are exercised against the simulator and local IPC doubles; no physical device validated them.
+5. **Remaining §4.6 work:** the display contract/preview remains pending.
+6. **Later scope/governance:** the DRA MVP was implemented in the following increment; packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending; Windows evidence stays static.
+
+### Relevant files and decisions
+
+Added `crates/macros/{Cargo.toml,src/{lib,error,model,migrations,repository,tests}.rs}`, `apps/daemon/src/macro_files.rs`, `apps/daemon/tests/macro_files.rs` and [ADR 0009](decisions/0009-macro-persistence.md). Updated root `Cargo.toml`, `crates/ipc/{Cargo.toml,src/protocol.rs}`, `crates/ipc/tests/codec.rs`, `apps/daemon/{Cargo.toml,src/{lib.rs,manager.rs,main.rs},tests/{manager.rs,ipc_roundtrip.rs}}`, `apps/desktop/src/{types/ipc.ts,stores/daemonStore.ts,services/{errors.ts,ipcClient.ts,daemonController.ts,ipcClient.test.ts,daemonController.test.ts},stores/daemonStore.test.ts,features/macros/{macroModel.ts,MacrosScreen.tsx,macroModel.test.ts},features/screens.test.tsx}` and the [IPC](ipc.md)/[daemon](daemon.md)/[desktop](desktop.md) references. SDK/Core/Registry contracts, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## Domain features §4.6: display contract and local preview (completion of the requested "Fase 5")
+
+After macros, the user asked to implement the display part, the last §4.6 domain surface. The SDK already models `DisplayCapabilities` but has no display/frame command, and the master forbids sending content to a physical screen without a validated protocol. This increment is therefore deliberately **contract validation plus a local preview only**: no SDK/IPC change, no frame encoder, no transport write and no hardware operation. The fictitious simulator now declares a bounded display so the screen can be exercised in simulation.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| Display model | Completed (concluído) | New `apps/desktop/src/features/displays/displayModel.ts`: `bytesPerPixel` (3 for `rgb888`, 2 for `rgb565`), `frameBytes`, `validateFrame` (undeclared format and `max_frame_bytes` overflow) and `previewFrame` (solid/checker/gradient CSS background plus a descriptive "not transmitted" label); no encoder or transport call exists |
+| Display screen | Completed (concluído) | `DisplaysScreen` keeps the declared capability table and adds format/pattern/RGB controls, byte computation, contract errors and a preview constrained to the declared aspect ratio; it states that the preview is local and that effective control requires a validated driver protocol |
+| Simulator | Completed (concluído) | `simulation:peripheral` declares 64×32, `rgb888`/`rgb565`, 30 fps and 6144 max frame bytes; a daemon `GetCapabilities` test asserts the declaration, and no display command is executed because SDK 1.0 has none |
+| IPC/SDK | Unchanged (inalterado) | Reuses the existing `GetCapabilities`; `IPC_VERSION` stays 5, `SDK_CONTRACT_VERSION` stays 1.0 and no `DeviceCommand` variant was added |
+| Tests | Completed (concluído) | Frontend `displayModel` tests (byte math, format/limit rejection, preview construction/colour) and a connected-display screen test → **66 → 75 passed across 10 files**; daemon display-contract test → Rust **102 → 103 passed** |
+| Documentation | Completed (concluído) | New [ADR 0010](decisions/0010-display-contract-preview.md); updated [desktop](desktop.md) and this ledger; ADR 0009 now points to the display increment |
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`) and the local Node/pnpm under `target/phase4-node`.
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or warning suppressions |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **103 passed / 0 failed / 0 ignored** (+1 daemon display-contract test) |
+| `pnpm --dir apps/desktop typecheck` | Passed, exit 0 |
+| `pnpm --dir apps/desktop test` | Passed: **75 passed / 0 failed** across 10 files (+8 displayModel, +1 screens) |
+| `pnpm --dir apps/desktop build` | Passed, exit 0 (Vite production build) |
+
+All tests use the explicit software simulator and local IPC doubles; no physical device was enumerated, opened or written, and no frame was encoded or transmitted.
+
+### Limitations and pending priorities
+
+1. **No transmission:** the preview is a local CSS background. There is no frame buffer, encoder, rate loop, packet layout or transport write, and the screen says so.
+2. **No SDK extension:** a real display path first needs a reviewed SDK contract extension and an evidence-backed protocol; neither is authorized or implemented.
+3. **Fictitious declaration:** the 64×32 display belongs to the explicit `simulation:peripheral` model and is not evidence of any real product's display.
+4. **No hardware evidence:** the display contract is exercised only through capability IPC and desktop tests; no physical screen was controlled.
+5. **§4.6 coverage:** profiles, lighting, macros and displays now exist at the editing/persistence/contract/preview level; real device behavior remains a later, separately authorized stage.
+6. **Later scope/governance:** the DRA MVP was implemented in the following increment; packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending; Windows evidence stays static.
+
+### Relevant files and decisions
+
+Added `apps/desktop/src/features/displays/displayModel.ts`, `apps/desktop/src/features/displays/displayModel.test.ts` and [ADR 0010](decisions/0010-display-contract-preview.md). Updated `apps/daemon/src/simulation.rs`, `apps/daemon/tests/manager.rs`, `apps/desktop/src/features/displays/DisplaysScreen.tsx`, `apps/desktop/src/features/screens.test.tsx`, [desktop](desktop.md), this ledger and [ADR 0009](decisions/0009-macro-persistence.md). SDK/Core/Registry contracts, the IPC version, the macro/profile schemas, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
+
+## Phase 5 DRA MVP (explicitly authorized, no hardware)
+
+After the §4.6 display increment, the user explicitly authorized the **master's Phase 5 DRA MVP** with the constraint that it remain hardware-free, avoid vendor execution and packet replay, and avoid external data sharing. The implementation is a standalone Cargo member and CLI; it is not part of the daemon, IPC or shipped desktop runtime. It implements local research sessions, bounded textual JSON capture import, deterministic offset/action analysis, sanitized Markdown/JSON reports and a deliberately non-loadable scaffold. **No pcap/pcapng/TShark parser, capture backend, REA integration or hardware operation is implemented.** Raw files remain outside the repository, and the DRA has no network client.
+
+### Actual delivery and evidence levels
+
+| Component | State | Evidence and boundary |
+| --- | --- | --- |
+| Workspace member | Completed (concluído) | `apps/device-research-assistant` added as the twelfth Cargo member (`device-research-assistant`), with library, binary and integration tests; no daemon/IPC/desktop dependency |
+| Sessions and storage | Completed (concluído) | Versioned `session.json` schema `1` under the per-user DRA data root; `--consent` required; path-safe ids; exclusive directory creation; atomic same-directory JSON writes; no repository-local data by default |
+| Capture import | Completed (concluído) | Stable project JSON format, schema `1`, `deny_unknown_fields`, 16 MiB input, 20,000 events/capture, 32 captures/session, 4,096 payload bytes, tolerant hex whitespace, deterministic timestamp normalization and `reordered` metadata; pcap/pcapng and TShark inputs are rejected as unsupported formats |
+| Analysis | Completed (concluído) | Deterministic grouping by direction/transfer/interface/report id/length, outbound offset comparison and labeled action/value one-to-one checks; emits only `inferred`/`unverified` automatically; `confirmed-on-hardware` is never generated and is reserved for human evidence |
+| Reports | Completed (concluído) | Sanitized `report.md` and typed `report.json` schema `1`; no raw payloads, input paths, serials or private locators; report recomputes analysis instead of trusting stale derived data; typed `ReportDocument::validate` |
+| Scaffold | Completed (concluído) | Only with hypotheses; `README.md`, fully commented `manifest.toml.example` (not loadable), `tests/README.md` and `hypotheses.json`; no capture files, driver code or capability declaration; refuses non-empty directories without `--force` |
+| Inventory | Completed (concluído) | `devices list` uses non-destructive `HidDiscovery::scan`, removes serials/paths and reports only sanitized fields/error codes; it opens no handle or report stream. It was **not executed** during validation; a synthetic descriptor test covers sanitization |
+| Schemas | Reference only (referência) | `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` were filled; the Rust semantic validator/serializer is authoritative. No external JSON Schema validator dependency exists, and no schema-validation pass is claimed |
+| Tests | Completed (concluído) | `apps/device-research-assistant/tests/synthetic.rs`: **8 passed**; full workspace **103 → 111 passed**; synthetic happy path plus rejection, consent/id, normalization, inventory sanitization, schema parsing and scaffold safety |
+| Documentation | Completed (concluído) | New [DRA reference](dra.md) and [ADR 0011](decisions/0011-dra-mvp.md); updated [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), READMEs, AGENTS and this ledger |
+
+### Commands and actual outcomes
+
+Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`). The CLI smoke test used `/tmp/opencode/dra-demo`, outside the repository.
+
+| Command / action | Outcome |
+| --- | --- |
+| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or suppressions |
+| `cargo check --workspace --locked` | Passed, exit 0 |
+| `cargo test --workspace --locked` | Passed: **111 passed / 0 failed / 0 ignored** (+8 DRA tests) |
+| DRA CLI smoke: `session create --consent`, `capture import`, `analyze`, `report`, `scaffold`, `session list` | Passed in `/tmp/opencode/dra-demo`; report and scaffold content manually inspected |
+| `pnpm --dir apps/desktop typecheck`, `test`, `build` | Not rerun after the DRA increment because no frontend file changed; the prior display result remains **75 passed / 10 files**, typecheck and build passing |
+
+All evidence is synthetic/software-only. No physical device was enumerated, opened or written; no vendor executable, packet replay or external service was used. The CLI smoke test proves local file/serialization behavior, not hardware compatibility.
+
+### Limitations and pending priorities
+
+1. **No capture backend/parser:** only textual project JSON is accepted; pcap/pcapng, TShark and live capture are not implemented or claimed.
+2. **No hardware operation:** `devices list` is non-destructive and unexecuted here; no device was opened, written or validated.
+3. **Heuristic analysis:** grouping and offset comparison do not model framing, checksums, timing, state machines or multi-transfer transactions.
+4. **No automatic hardware confirmation:** only a human can attach `confirmed-on-hardware` evidence.
+5. **No driver generation:** the scaffold is a commented evidence handoff, not a loadable manifest or compiled driver.
+6. **Schema validation boundary:** schema files are documentary references; Rust typed validation is authoritative, and no external schema validator was run.
+7. **No packaging/CI:** the DRA runs from Cargo source; release packaging, CI, an installer and GUI integration remain out of scope.
+8. **REA remains optional/unconfigured:** no MCP configuration was invented; `config/agents/rea-mcp.example.json` remains an empty placeholder.
+
+### Relevant files and decisions
+
+Added `apps/device-research-assistant/` (`Cargo.toml`, `src/{lib,main,cli,error,model,paths,session,capture,analysis,report,scaffold,inventory}.rs`, `tests/synthetic.rs`), [dra.md](dra.md), [ADR 0011](decisions/0011-dra-mvp.md), `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` content. Updated the root `Cargo.toml`/`Cargo.lock`, [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), `README.md`, `README.pt-BR.md`, `AGENTS.md`, public status pages and this ledger. SDK/Core/Registry contracts, IPC version 5, daemon behavior and the desktop frontend are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.

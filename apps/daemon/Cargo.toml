@@ -13,6 +13,7 @@ peripheral-hub-core.workspace = true
 peripheral-hub-transport-hid.workspace = true
 peripheral-hub-ipc.workspace = true
 peripheral-hub-profiles.workspace = true
+peripheral-hub-macros.workspace = true
 peripheral-hub-storage.workspace = true
 peripheral-hub-driver-declarative.workspace = true
 tokio.workspace = true

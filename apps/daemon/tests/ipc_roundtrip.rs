@@ -2,6 +2,7 @@
 use peripheral_hub_daemon::*;
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_macros::{KeyPress, Macro, MacroAction, MacroId, MacroRepeat};
 use peripheral_hub_profiles::{Profile, ProfileId};
 use peripheral_hub_transport_hid::simulated::SimulatedSource;
 use std::time::Duration;
@@ -248,6 +249,72 @@ async fn profile_operations_roundtrip_over_local_ipc() {
     client
         .call(Operation::DeleteProfile {
             profile_id: ProfileId::new("night").unwrap(),
+        })
+        .await
+        .unwrap()
+        .result
+        .unwrap();
+    stop.send(()).unwrap();
+    server.await.unwrap().unwrap();
+}
+
+#[tokio::test]
+async fn macro_operations_roundtrip_over_local_ipc() {
+    let directory = private_directory();
+    let endpoint = endpoint(&directory, "macros");
+    let (stop, server) = start(&endpoint).await;
+    let mut client = Client::new(endpoint.clone(), Duration::from_secs(2)).unwrap();
+    let macro_value = Macro {
+        id: MacroId::new("combo").unwrap(),
+        name: "Combo".into(),
+        actions: vec![
+            MacroAction::Key {
+                key: "f13".into(),
+                press: KeyPress::Tap,
+            },
+            MacroAction::Delay { ms: 20 },
+        ],
+        repeat: MacroRepeat {
+            times: 2,
+            interval_ms: 5,
+        },
+        profile: None,
+    };
+    assert!(matches!(
+        client
+            .call(Operation::SaveMacro {
+                macro_value: macro_value.clone()
+            })
+            .await
+            .unwrap()
+            .result,
+        Ok(Reply::Macro(saved)) if saved == macro_value
+    ));
+    let Reply::Macros(macros) = client
+        .call(Operation::ListMacros)
+        .await
+        .unwrap()
+        .result
+        .unwrap()
+    else {
+        panic!("macros")
+    };
+    assert_eq!(macros.len(), 1);
+    assert_eq!(macros[0].id.as_str(), "combo");
+    assert_eq!(macros[0].action_count, 2);
+    assert!(matches!(
+        client
+            .call(Operation::GetMacro {
+                macro_id: MacroId::new("missing").unwrap()
+            })
+            .await
+            .unwrap()
+            .result,
+        Err(Fault::Macro(MacroFault::NotFound))
+    ));
+    client
+        .call(Operation::DeleteMacro {
+            macro_id: MacroId::new("combo").unwrap(),
         })
         .await
         .unwrap()

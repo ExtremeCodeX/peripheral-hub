@@ -1,13 +1,20 @@
 use peripheral_hub_device_sdk::*;
+use peripheral_hub_macros::*;
 use peripheral_hub_profiles::*;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 /// Implemented IPC wire contract; independent from SDK 1.0.
 ///
 /// Version 2 extends version 1 with typed profile operations.
-pub const IPC_VERSION: u16 = 2;
+/// Version 3 adds the profile-application operation.
+/// Version 4 adds the generic multi-zone lighting-scene operation.
+/// Version 5 adds the persistent macro management operations.
+pub const IPC_VERSION: u16 = 5;
 /// Maximum live interfaces exposed by this bounded daemon.
 pub const MAX_INTERFACES: usize = 256;
+/// Maximum zones in one generic lighting scene (matches the capability ceiling).
+pub const MAX_SCENE_ZONES: usize = 256;
 
 /// Caller request with explicit version and correlation token.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,7 +28,35 @@ pub struct Request {
     pub operation: Operation,
 }
 
-/// Allowed user-session operations. Profiles are explicit unsupported placeholders.
+/// A generic multi-zone lighting request over the SDK `LightingCommand`.
+///
+/// Shape validation (count and unique zones) runs before capability gating; the
+/// daemon then checks every zone, effect and brightness against the open
+/// driver's declared capabilities before any report is written.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LightingScene {
+    /// One command per target zone; zones must be unique and 1..=256 entries.
+    pub commands: Vec<LightingCommand>,
+}
+
+impl LightingScene {
+    /// Validate only the wire shape, without device capabilities.
+    pub fn validate(&self) -> Result<(), Fault> {
+        if self.commands.is_empty() || self.commands.len() > MAX_SCENE_ZONES {
+            return Err(Fault::InvalidArgument);
+        }
+        let mut zones = BTreeSet::new();
+        for command in &self.commands {
+            if !zones.insert(command.zone.as_str()) {
+                return Err(Fault::InvalidArgument);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Allowed user-session operations. No raw reports or executable commands exist.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
     tag = "operation",
@@ -61,6 +96,16 @@ pub enum Operation {
         /// Lighting parameters.
         command: LightingCommand,
     },
+    /// Generic multi-zone lighting scene applied to one open driver.
+    ///
+    /// Every entry is capability-validated before any report is written, so an
+    /// unsupported zone rejects the whole scene instead of partially applying it.
+    SetLightingScene {
+        /// Opaque endpoint token of an already connected device.
+        interface_id: DeviceInterfaceId,
+        /// Per-zone lighting commands.
+        scene: LightingScene,
+    },
     /// Query actual driver state.
     ReadState {
         /// Opaque endpoint token.
@@ -92,6 +137,39 @@ pub enum Operation {
     DeleteProfile {
         /// Validated profile identifier.
         profile_id: ProfileId,
+    },
+    /// Apply a stored profile's supported preferences to an open driver.
+    ///
+    /// The manager enforces the optional model binding and capability-gates the
+    /// embedded lighting request; a profile with no applicable preference or a
+    /// model mismatch yields `NotSupported`, never a fabricated success.
+    ApplyProfile {
+        /// Opaque endpoint token of an already connected device.
+        interface_id: DeviceInterfaceId,
+        /// Validated profile identifier.
+        profile_id: ProfileId,
+    },
+    /// List stored macro summaries; no full payloads are returned.
+    ListMacros,
+    /// Fetch one stored macro by validated identifier.
+    GetMacro {
+        /// Validated macro identifier.
+        macro_id: MacroId,
+    },
+    /// Insert or replace a validated macro; persistence never executes it.
+    ///
+    /// The manager validates the macro and, when a profile link is present,
+    /// confirms the referenced profile exists before writing.
+    SaveMacro {
+        /// Fully validated macro payload (wire key `macro`; the Rust field is
+        /// `macro_value` because `macro` is a reserved keyword).
+        #[serde(rename = "macro")]
+        macro_value: Macro,
+    },
+    /// Remove one stored macro.
+    DeleteMacro {
+        /// Validated macro identifier.
+        macro_id: MacroId,
     },
 }
 
@@ -210,6 +288,10 @@ pub enum Reply {
     Profiles(Vec<ProfileSummary>),
     /// One stored profile.
     Profile(Profile),
+    /// Stored macro summaries.
+    Macros(Vec<MacroSummary>),
+    /// One stored macro.
+    Macro(Macro),
     /// Completed non-hardware administrative action.
     Ack,
 }
@@ -241,6 +323,9 @@ pub enum Fault {
     /// Profile contract or persistence failure, projected to a stable code.
     #[error("profile operation failed: {0}")]
     Profile(ProfileFault),
+    /// Macro contract or persistence failure, projected to a stable code.
+    #[error("macro operation failed: {0}")]
+    Macro(MacroFault),
     /// Internal infrastructure failure, without exception detail.
     #[error("internal daemon error")]
     Internal,
@@ -261,6 +346,31 @@ pub enum ProfileFault {
 }
 
 impl std::fmt::Display for ProfileFault {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Invalid => "invalid",
+            Self::UnsupportedVersion => "unsupported_version",
+            Self::NotFound => "not_found",
+            Self::Storage => "storage",
+        })
+    }
+}
+
+/// Stable, wire-safe projection of macro failures; no storage detail leaks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MacroFault {
+    /// A field, limit or referenced profile failed contract validation.
+    Invalid,
+    /// The schema version is not understood.
+    UnsupportedVersion,
+    /// The requested macro does not exist.
+    NotFound,
+    /// Local persistence failed.
+    Storage,
+}
+
+impl std::fmt::Display for MacroFault {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::Invalid => "invalid",
@@ -300,6 +410,17 @@ impl From<ProfileError> for Fault {
             ProfileError::Storage(_) => ProfileFault::Storage,
         };
         Self::Profile(fault)
+    }
+}
+impl From<MacroError> for Fault {
+    fn from(error: MacroError) -> Self {
+        let fault = match error {
+            MacroError::Invalid(_) | MacroError::InvalidJson => MacroFault::Invalid,
+            MacroError::UnsupportedVersion => MacroFault::UnsupportedVersion,
+            MacroError::NotFound => MacroFault::NotFound,
+            MacroError::Storage(_) => MacroFault::Storage,
+        };
+        Self::Macro(fault)
     }
 }
 

@@ -2,7 +2,7 @@
 
 [Português brasileiro](../../pt-BR/contributors/adding-a-device.md)
 
-**Current stage:** [SDK 1.0, Registry, and Core](../../architecture/sdk.md) are preserved; [Phase 2](../../architecture/daemon.md) implements real HID discovery/report transport, protected IPC, daemon and explicit simulation, and the [driver system](../../architecture/driver-system.md) adds a bounded declarative manifest interpreter (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) that supports volatile lighting only. DRA, scaffold tools and proprietary physical drivers remain absent. A real driver needs authorized scope, proven policy/protocol and capability-specific hardware validation, not just successful enumeration.
+**Current stage:** [SDK 1.0, Registry, and Core](../../architecture/sdk.md) are preserved; [Phase 2](../../architecture/daemon.md) implements real HID discovery/report transport, protected IPC, daemon and explicit simulation, and the [driver system](../../architecture/driver-system.md) adds a bounded declarative manifest interpreter (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) that supports volatile lighting only. A standalone DRA MVP provides local sessions, bounded textual capture import, analysis, sanitized reports and a commented scaffold without hardware; proprietary physical drivers remain absent. A real driver needs authorized scope, proven policy/protocol and capability-specific hardware validation, not just successful enumeration.
 
 ## Start with identity and a limited goal
 
@@ -41,7 +41,7 @@ Exact manifest fields and schema versions must come from actual implemented mode
 
 ## With AI
 
-Read [AGENTS.md](../../../AGENTS.md); use [add-device](../../../.agents/skills/add-device/SKILL.md) and the matching evidence/development/validation skills. Skills guide the process but do not grant execution, hardware, or publication permission. Do not upload proprietary evidence to external AI services. Verify commands against real installed tools; DRA commands in the master are proposals today.
+Read [AGENTS.md](../../../AGENTS.md); use [add-device](../../../.agents/skills/add-device/SKILL.md) and the matching evidence/development/validation skills. Skills guide the process but do not grant execution, hardware, or publication permission. Do not upload proprietary evidence to external AI services. Verify commands against real installed tools; use the [DRA reference](../../architecture/dra.md) for the implemented subset, and do not present pcap parsing, live capture or hardware execution as available.
 
 ## Without AI
 

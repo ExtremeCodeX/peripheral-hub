@@ -119,7 +119,7 @@ fn manifests_load_and_flow_through_the_manager() {
     };
     assert_eq!(
         capabilities.lighting.as_ref().unwrap().zones,
-        vec!["whole-device".to_string()]
+        vec!["whole-device".to_string(), "logo".to_string()]
     );
 
     // A valid request reports the explicit simulation provenance.
@@ -158,6 +158,70 @@ fn manifests_load_and_flow_through_the_manager() {
         _ => panic!("unexpected reply"),
     };
     assert_eq!(summary.status, ConnectionStatus::Connected);
+    manager.shutdown().unwrap();
+}
+
+#[test]
+fn multi_zone_scene_validates_the_whole_scene_before_any_write() {
+    let mut registry = DriverRegistry::new();
+    register_manifest_dir(&mut registry, &example_dir(), ExecutionMode::Simulated).unwrap();
+    let mut manager = DeviceManager::try_new(registry, Box::new(ExampleSource::new())).unwrap();
+    manager.refresh().unwrap();
+    let interface_id = match manager.handle(Operation::ListDevices).unwrap() {
+        Reply::Devices(devices) => devices[0].interface_id.clone(),
+        _ => panic!("unexpected reply"),
+    };
+    manager
+        .handle(Operation::Connect {
+            interface_id: interface_id.clone(),
+        })
+        .unwrap();
+
+    // A two-zone scene applies through the declarative driver's per-zone reports.
+    let scene = LightingScene {
+        commands: vec![lighting("whole-device"), lighting("logo")],
+    };
+    let outcome = match manager
+        .handle(Operation::SetLightingScene {
+            interface_id: interface_id.clone(),
+            scene,
+        })
+        .unwrap()
+    {
+        Reply::Outcome(outcome) => outcome,
+        _ => panic!("unexpected reply"),
+    };
+    assert_eq!(outcome.mode, ExecutionMode::Simulated);
+
+    // Duplicate zones are a wire-shape rejection.
+    let duplicate = LightingScene {
+        commands: vec![lighting("logo"), lighting("logo")],
+    };
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: interface_id.clone(),
+            scene: duplicate,
+        }),
+        Err(Fault::InvalidArgument)
+    ));
+
+    // An undeclared zone rejects the whole scene before any report is written.
+    let undeclared = LightingScene {
+        commands: vec![lighting("whole-device"), lighting("side-panel")],
+    };
+    assert!(matches!(
+        manager.handle(Operation::SetLightingScene {
+            interface_id: interface_id.clone(),
+            scene: undeclared,
+        }),
+        Err(Fault::Device(DeviceError::InvalidArgument(_)))
+    ));
+
+    // The session survived the rejected scenes.
+    assert!(matches!(
+        manager.handle(Operation::GetDevice { interface_id }),
+        Ok(Reply::Device(summary)) if summary.status == ConnectionStatus::Connected
+    ));
     manager.shutdown().unwrap();
 }
 

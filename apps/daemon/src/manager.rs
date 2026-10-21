@@ -2,6 +2,7 @@ use peripheral_hub_core::{Identification, PeripheralCore};
 use peripheral_hub_device_registry::{DriverRegistry, RegistryError};
 use peripheral_hub_device_sdk::*;
 use peripheral_hub_ipc::*;
+use peripheral_hub_macros::MacroRepository;
 use peripheral_hub_profiles::ProfileRepository;
 use peripheral_hub_transport_hid::DeviceSource;
 use std::collections::{BTreeMap, VecDeque};
@@ -22,24 +23,29 @@ pub struct DeviceManager {
     sequence: u64,
     discovery_error: Option<DeviceError>,
     profiles: ProfileRepository,
+    macros: MacroRepository,
 }
 impl DeviceManager {
     /// Own an explicit registry/backend; physical mode never registers simulation.
     pub fn new(registry: DriverRegistry, source: Box<dyn DeviceSource>) -> Self {
         Self::try_new(registry, source).expect("daemon initialization failed")
     }
-    /// Fallible initialization with an ephemeral in-memory profile store.
+    /// Fallible initialization with ephemeral in-memory profile and macro stores.
     pub fn try_new(registry: DriverRegistry, source: Box<dyn DeviceSource>) -> DeviceResult<Self> {
         let profiles = ProfileRepository::open_in_memory().map_err(|_| {
             DeviceError::ProtocolError("profile storage initialization failed".into())
         })?;
-        Self::with_profiles(registry, source, profiles)
+        let macros = MacroRepository::open_in_memory().map_err(|_| {
+            DeviceError::ProtocolError("macro storage initialization failed".into())
+        })?;
+        Self::with_stores(registry, source, profiles, macros)
     }
-    /// Initialization with an explicit profile repository (for example file-backed).
-    pub fn with_profiles(
+    /// Initialization with explicit repositories (for example file-backed).
+    pub fn with_stores(
         registry: DriverRegistry,
         source: Box<dyn DeviceSource>,
         profiles: ProfileRepository,
+        macros: MacroRepository,
     ) -> DeviceResult<Self> {
         Ok(Self {
             session_id: peripheral_hub_transport_hid::session_epoch()?,
@@ -50,6 +56,7 @@ impl DeviceManager {
             sequence: 0,
             discovery_error: None,
             profiles,
+            macros,
         })
     }
     /// Actual source mode, never an automatic fallback from failed hardware discovery.
@@ -291,25 +298,19 @@ impl DeviceManager {
                         &interface_id,
                         DeviceError::ProtocolError("driver mode mismatch".into()),
                     )),
-                    Err(error) => self.operation_error(&interface_id, error),
+                    Err(error) => Err(self.operation_error(&interface_id, error)),
                 }
             }
             Operation::SetLighting {
                 interface_id,
                 command,
+            } => self.execute_lighting(&interface_id, command),
+            Operation::SetLightingScene {
+                interface_id,
+                scene,
             } => {
-                let request = DeviceCommand::SetLighting(command);
-                let driver = self.driver(&interface_id)?;
-                driver.capabilities()?.validate_command(&request)?;
-                let result = driver.execute(&request);
-                match result {
-                    Ok(outcome) if outcome.mode == self.mode() => Ok(Reply::Outcome(outcome)),
-                    Ok(_) => Err(self.failed(
-                        &interface_id,
-                        DeviceError::ProtocolError("driver mode mismatch".into()),
-                    )),
-                    Err(error) => self.operation_error(&interface_id, error),
-                }
+                scene.validate()?;
+                self.execute_scene(&interface_id, &scene.commands)
             }
             Operation::Events { after } => {
                 if after > self.sequence {
@@ -347,20 +348,95 @@ impl DeviceManager {
                 self.profiles.delete(&profile_id)?;
                 Ok(Reply::Ack)
             }
+            Operation::ApplyProfile {
+                interface_id,
+                profile_id,
+            } => {
+                let profile = self.profiles.get(&profile_id)?;
+                let summary = self.summary(&interface_id)?;
+                if let Some(bound) = &profile.device_model
+                    && summary.model.as_ref() != Some(bound)
+                {
+                    return Err(DeviceError::NotSupported.into());
+                }
+                let Some(command) = profile.lighting else {
+                    return Err(DeviceError::NotSupported.into());
+                };
+                // Profiles integrate with the generic lighting engine: a stored
+                // single-zone preference is applied as a one-entry scene.
+                self.execute_scene(&interface_id, &[command])
+            }
+            Operation::ListMacros => Ok(Reply::Macros(self.macros.list()?)),
+            Operation::GetMacro { macro_id } => Ok(Reply::Macro(self.macros.get(&macro_id)?)),
+            Operation::SaveMacro { macro_value } => {
+                // Persisting a macro never executes it. An advisory profile link
+                // must reference an existing stored profile, or the write fails.
+                if let Some(profile_id) = &macro_value.profile {
+                    self.profiles
+                        .get(profile_id)
+                        .map_err(|_| Fault::Macro(MacroFault::Invalid))?;
+                }
+                self.macros.save(&macro_value)?;
+                Ok(Reply::Macro(macro_value))
+            }
+            Operation::DeleteMacro { macro_id } => {
+                self.macros.delete(&macro_id)?;
+                Ok(Reply::Ack)
+            }
         }
     }
-    fn operation_error(
+    fn execute_lighting(
         &mut self,
         id: &DeviceInterfaceId,
-        error: DeviceError,
+        command: LightingCommand,
     ) -> Result<Reply, Fault> {
+        self.run_lighting(id, command).map(Reply::Outcome)
+    }
+    /// Apply one capability-gated command and return the driver's real outcome.
+    fn run_lighting(
+        &mut self,
+        id: &DeviceInterfaceId,
+        command: LightingCommand,
+    ) -> Result<CommandOutcome, Fault> {
+        let request = DeviceCommand::SetLighting(command);
+        let driver = self.driver(id)?;
+        driver.capabilities()?.validate_command(&request)?;
+        let result = driver.execute(&request);
+        match result {
+            Ok(outcome) if outcome.mode == self.mode() => Ok(outcome),
+            Ok(_) => Err(self.failed(
+                id,
+                DeviceError::ProtocolError("driver mode mismatch".into()),
+            )),
+            Err(error) => Err(self.operation_error(id, error)),
+        }
+    }
+    /// Apply a multi-zone scene, validating every entry before any I/O so an
+    /// unsupported zone rejects the whole scene rather than half-applying it.
+    fn execute_scene(
+        &mut self,
+        id: &DeviceInterfaceId,
+        commands: &[LightingCommand],
+    ) -> Result<Reply, Fault> {
+        let capabilities = self.driver(id)?.capabilities()?;
+        capabilities.validate()?;
+        for command in commands {
+            capabilities.validate_command(&DeviceCommand::SetLighting(command.clone()))?;
+        }
+        let mut outcome = None;
+        for command in commands {
+            outcome = Some(self.run_lighting(id, command.clone())?);
+        }
+        outcome.map(Reply::Outcome).ok_or(Fault::InvalidArgument)
+    }
+    fn operation_error(&mut self, id: &DeviceInterfaceId, error: DeviceError) -> Fault {
         if matches!(
             error,
             DeviceError::NotSupported | DeviceError::InvalidArgument(_)
         ) {
-            Err(error.into())
+            error.into()
         } else {
-            Err(self.failed(id, error))
+            self.failed(id, error)
         }
     }
     /// Close every managed driver on shutdown, retaining the first real cleanup error.

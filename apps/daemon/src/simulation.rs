@@ -69,6 +69,13 @@ impl DeviceDriver for SimulatedDriver {
                 brightness: true,
                 effects: vec![LightingEffect::Static],
             }),
+            display: Some(DisplayCapabilities {
+                width: 64,
+                height: 32,
+                formats: vec![PixelFormat::Rgb888, PixelFormat::Rgb565],
+                max_frames_per_second: 30,
+                max_frame_bytes: 64 * 32 * 3,
+            }),
             ..Capabilities::default()
         })
     }

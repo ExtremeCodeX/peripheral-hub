@@ -1,11 +1,11 @@
-// TypeScript mirror of the daemon's typed local IPC contract (IPC_VERSION = 2).
+// TypeScript mirror of the daemon's typed local IPC contract (IPC_VERSION = 5).
 //
 // These shapes are intentionally a faithful copy of `crates/ipc/src/protocol.rs`
 // and the SDK DTOs it re-uses. The frontend never talks to USB/HID; it only
 // builds these typed operations, and the restricted Tauri bridge performs the
 // local IPC call. Keep this file in sync when the wire version changes.
 
-export const IPC_VERSION = 2;
+export const IPC_VERSION = 5;
 
 export type ExecutionMode = "simulated" | "physical";
 
@@ -38,6 +38,12 @@ export interface LightingCommand {
   color: RgbColor;
   brightness: number | null;
   effect: LightingEffect;
+}
+
+// A multi-zone lighting scene; the wire enforces at most MAX_SCENE_ZONES unique
+// zones and rejects duplicates before any device access.
+export interface LightingScene {
+  commands: LightingCommand[];
 }
 
 export interface LightingCapabilities {
@@ -136,6 +142,33 @@ export interface ProfileSummary {
   device_model: string | null;
 }
 
+export type KeyPress = "down" | "up" | "tap";
+
+// MacroAction is internally tagged: { kind, ... }.
+export type MacroAction =
+  | { kind: "key"; key: string; press: KeyPress }
+  | { kind: "delay"; ms: number };
+
+export interface MacroRepeat {
+  times: number;
+  interval_ms: number;
+}
+
+export interface Macro {
+  id: string;
+  name: string;
+  actions: MacroAction[];
+  repeat: MacroRepeat;
+  profile: string | null;
+}
+
+export interface MacroSummary {
+  id: string;
+  name: string;
+  action_count: number;
+  profile: string | null;
+}
+
 // DeviceError is adjacently tagged: { code, detail? }.
 export type DeviceError =
   | { code: "not_supported" }
@@ -149,6 +182,8 @@ export type DeviceError =
 
 export type ProfileFault = "invalid" | "unsupported_version" | "not_found" | "storage";
 
+export type MacroFault = "invalid" | "unsupported_version" | "not_found" | "storage";
+
 // Fault is adjacently tagged: { code, detail? }.
 export type Fault =
   | { code: "incompatible_version" }
@@ -157,7 +192,8 @@ export type Fault =
   | { code: "timeout" }
   | { code: "internal" }
   | { code: "device"; detail: DeviceError }
-  | { code: "profile"; detail: ProfileFault };
+  | { code: "profile"; detail: ProfileFault }
+  | { code: "macro"; detail: MacroFault };
 
 // Reply is adjacently tagged: { result, data? }.
 export type Reply =
@@ -170,6 +206,8 @@ export type Reply =
   | { result: "events"; data: EventBatch }
   | { result: "profiles"; data: ProfileSummary[] }
   | { result: "profile"; data: Profile }
+  | { result: "macros"; data: MacroSummary[] }
+  | { result: "macro"; data: Macro }
   | { result: "ack" };
 
 // Operation is adjacently tagged: { operation, parameters? }.
@@ -184,13 +222,25 @@ export type Operation =
       operation: "set_lighting";
       parameters: { interface_id: string; command: LightingCommand };
     }
+  | {
+      operation: "set_lighting_scene";
+      parameters: { interface_id: string; scene: LightingScene };
+    }
   | { operation: "read_state"; parameters: { interface_id: string } }
   | { operation: "events"; parameters: { after: number } }
   | { operation: "simulate_presence"; parameters: { present: boolean } }
   | { operation: "list_profiles" }
   | { operation: "get_profile"; parameters: { profile_id: string } }
   | { operation: "save_profile"; parameters: { profile: Profile } }
-  | { operation: "delete_profile"; parameters: { profile_id: string } };
+  | { operation: "delete_profile"; parameters: { profile_id: string } }
+  | {
+      operation: "apply_profile";
+      parameters: { interface_id: string; profile_id: string };
+    }
+  | { operation: "list_macros" }
+  | { operation: "get_macro"; parameters: { macro_id: string } }
+  | { operation: "save_macro"; parameters: { macro: Macro } }
+  | { operation: "delete_macro"; parameters: { macro_id: string } };
 
 // serde serializes Result<Reply, Fault> as { Ok } | { Err }.
 export type ResponseResult = { Ok: Reply } | { Err: Fault };
