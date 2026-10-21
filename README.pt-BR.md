@@ -6,7 +6,7 @@
 
 ## Estado do projeto
 
-O Peripheral Hub possui a **fundação Rust e o daemon implementados**: SDK 1.0, Registry, Core, descoberta/transporte de relatórios reais via `hidapi`, IPC local versionado, gerenciamento de conexões, simulação explícita, cenas de iluminação genéricas multi-zona, persistência de perfis e macros em SQLite com IPC tipado e import/export, aplicação de perfil vinculada ao modelo em um dispositivo conectado, contrato/prévia local de display sem transmissão de frames, um interpretador declarativo limitado (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) e um frontend desktop React/Tauri sobre o daemon. O daemon e seu cliente de diagnóstico executam sem GUI. Um MVP de DRA independente oferece sessões locais de pesquisa, importação JSON estável de capturas, análise determinística de offsets com rótulos inferred/unverified, relatórios Markdown/JSON sanitizados e um scaffold totalmente comentado. Importação pcap/pcapng, integração REA e validação física de protocolos continuam pendentes, assim como drivers físicos proprietários, os demais schemas, empacotamento e CI; nenhuma capacidade de controle físico foi validada.
+O Peripheral Hub possui a **fundação Rust e o daemon implementados**: SDK 1.0, Registry, Core, descoberta/transporte de relatórios reais via `hidapi`, IPC local versionado, gerenciamento de conexões, simulação explícita, cenas de iluminação genéricas multi-zona, persistência de perfis e macros em SQLite com IPC tipado e import/export, aplicação de perfil vinculada ao modelo em um dispositivo conectado, contrato/prévia local de display sem transmissão de frames, um interpretador declarativo limitado (`serve --manifests DIR`, `schemas/device-manifest.schema.json`) e um frontend desktop React/Tauri sobre o daemon. O daemon e seu cliente de diagnóstico executam sem GUI. Drivers físicos proprietários, DRA, os demais schemas, empacotamento e CI continuam pendentes; nenhuma capacidade de controle físico foi validada.
 
 **Nenhuma compatibilidade física ou funcionalidade de hardware é declarada.** `devices/manufacturer/device-model/` é apenas um placeholder estrutural. A referência do projeto é [OPENCODE_IMPLEMENTATION_MASTER.md](OPENCODE_IMPLEMENTATION_MASTER.md); o [registro de status](docs/architecture/implementation-status.md) diferencia a documentação entregue dos marcos futuros de software.
 
@@ -24,6 +24,7 @@ O princípio central é **mostrar apenas as capacidades realmente suportadas e v
 - Remapeamento e macros quando tecnicamente suportados; inicialmente, edição, validação, persistência e simulação segura de macros.
 - Perfis persistentes com importação/exportação JSON versionada.
 - Catálogo comunitário com evidências e validação por capacidade.
+- DRA independente para sessões locais de pesquisa, importação de capturas, comparação de pacotes, relatórios sanitizados e scaffolds baseados em evidências.
 
 São itens do roadmap, não recursos disponíveis. Gravação de firmware, bootloader, escritas persistentes desconhecidas e carregamento arbitrário de plugins nativos estão fora do MVP.
 
@@ -77,19 +78,6 @@ cargo run -p peripheral-hub-daemon -- list
 ```
 
 Para inventário HID físico não destrutivo, use `cargo run -p peripheral-hub-daemon -- enumerate`; o daemon físico usa `serve` sem `--simulate`. Dispositivos desconhecidos não são abertos nem recebem relatórios automaticamente.
-
-A CLI de pesquisa é independente e prioriza dados sintéticos:
-
-```sh
-cargo run -p device-research-assistant -- --help
-cargo run -p device-research-assistant -- session create --name estudo --device "Pad de exemplo" --goal "Mapear bytes RGB" --consent
-cargo run -p device-research-assistant -- capture import --session <id> --input capture.json
-cargo run -p device-research-assistant -- analyze --session <id>
-cargo run -p device-research-assistant -- report --session <id>
-cargo run -p device-research-assistant -- scaffold --session <id>
-```
-
-Ela não executa binários do fabricante, não envia nem reproduz pacotes e não lê pcap/pcapng. O scaffold é um template comentado, não um driver. Consulte a [referência do DRA](docs/architecture/dra.md).
 
 O frontend desktop (React/TypeScript) é um membro do workspace pnpm. Instale Node 20+/pnpm e rode:
 

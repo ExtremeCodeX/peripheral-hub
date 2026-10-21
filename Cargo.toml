@@ -12,7 +12,6 @@ members = [
     "crates/driver-declarative",
     "examples/native-driver",
     "apps/daemon",
-    "apps/device-research-assistant",
 ]
 # The Tauri shell has its own workspace and requires platform webview
 # dependencies; it is not built by the root workspace.

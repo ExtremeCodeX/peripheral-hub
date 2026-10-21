@@ -1,10 +1,10 @@
 # Implementation status and evidence ledger
 
-Last updated: 2026-10-20. English is the technical reference. This ledger distinguishes delivered documentation from working software.
+Last updated: 2026-10-21. English is the technical reference. This ledger distinguishes delivered documentation from working software.
 
 ## Authorized scope
 
-The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application**, continuing with **generic multi-zone RGB lighting**, **macro persistence and editing** and **display contract/preview** (their "Fase 5", which is the master's out-of-scope DRA), together with a **pnpm configuration correction**. The §4.6 domain surface is now covered at the editing/persistence/contract/preview level; real device behavior remains limited to the software simulator. A later explicit authorization allowed the **Phase 5 DRA MVP** (standalone local sessions, bounded JSON capture import, analysis, sanitized reports and a commented scaffold) **without hardware, capture, vendor execution, packet replay or external data sharing**. No commit, push or PR is authorized; packaging/release, CI and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
+The current user authorized **Phase 2 — HID communication and daemon** (preserve SDK 1.0/Core/Registry; add real hidapi discovery/transport, same-user local IPC, connection management, explicit simulation and automated tests), then **Fase 3 — storage/profiles** (SQLite persistence and typed profile IPC), then **Fase 4 — desktop interface** (React/Tauri UI over the real daemon), then the **driver system** (the master's §4.4 declarative/native drivers), and then the master's **§4.6 domain features** starting with **profile application**, continuing with **generic multi-zone RGB lighting**, **macro persistence and editing** and **display contract/preview** (their "Fase 5", which is the master's out-of-scope DRA), together with a **pnpm configuration correction**. The §4.6 domain surface is now covered at the editing/persistence/contract/preview level; real device behavior remains limited to the software simulator. No commit, push or PR is authorized; DRA/research tooling, packaging/release, CI and hardware operations remain unauthorized. Phase 1–3 and documentary records below are historical evidence.
 
 ### Active Phase 2 plan
 
@@ -672,7 +672,7 @@ All tests use the explicit software simulator, in-memory or temporary-file macro
 3. **Symbolic keys only:** actions reference symbolic key names; no captured or replayed input exists, so keystroke logging is not possible.
 4. **Simulated evidence:** all paths are exercised against the simulator and local IPC doubles; no physical device validated them.
 5. **Remaining §4.6 work:** the display contract/preview remains pending.
-6. **Later scope/governance:** the DRA MVP was implemented in the following increment; packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending; Windows evidence stays static.
+6. **Later scope/governance:** DRA, packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending; Windows evidence stays static.
 
 ### Relevant files and decisions
 
@@ -716,57 +716,8 @@ All tests use the explicit software simulator and local IPC doubles; no physical
 3. **Fictitious declaration:** the 64×32 display belongs to the explicit `simulation:peripheral` model and is not evidence of any real product's display.
 4. **No hardware evidence:** the display contract is exercised only through capability IPC and desktop tests; no physical screen was controlled.
 5. **§4.6 coverage:** profiles, lighting, macros and displays now exist at the editing/persistence/contract/preview level; real device behavior remains a later, separately authorized stage.
-6. **Later scope/governance:** the DRA MVP was implemented in the following increment; packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending; Windows evidence stays static.
+6. **Later scope/governance:** DRA, packaging/release, real hardware operations, CI, private reporting channel and explicit license confirmation remain pending; Windows evidence stays static.
 
 ### Relevant files and decisions
 
 Added `apps/desktop/src/features/displays/displayModel.ts`, `apps/desktop/src/features/displays/displayModel.test.ts` and [ADR 0010](decisions/0010-display-contract-preview.md). Updated `apps/daemon/src/simulation.rs`, `apps/daemon/tests/manager.rs`, `apps/desktop/src/features/displays/DisplaysScreen.tsx`, `apps/desktop/src/features/screens.test.tsx`, [desktop](desktop.md), this ledger and [ADR 0009](decisions/0009-macro-persistence.md). SDK/Core/Registry contracts, the IPC version, the macro/profile schemas, toolchain, master and license are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.
-
-## Phase 5 DRA MVP (explicitly authorized, no hardware)
-
-After the §4.6 display increment, the user explicitly authorized the **master's Phase 5 DRA MVP** with the constraint that it remain hardware-free, avoid vendor execution and packet replay, and avoid external data sharing. The implementation is a standalone Cargo member and CLI; it is not part of the daemon, IPC or shipped desktop runtime. It implements local research sessions, bounded textual JSON capture import, deterministic offset/action analysis, sanitized Markdown/JSON reports and a deliberately non-loadable scaffold. **No pcap/pcapng/TShark parser, capture backend, REA integration or hardware operation is implemented.** Raw files remain outside the repository, and the DRA has no network client.
-
-### Actual delivery and evidence levels
-
-| Component | State | Evidence and boundary |
-| --- | --- | --- |
-| Workspace member | Completed (concluído) | `apps/device-research-assistant` added as the twelfth Cargo member (`device-research-assistant`), with library, binary and integration tests; no daemon/IPC/desktop dependency |
-| Sessions and storage | Completed (concluído) | Versioned `session.json` schema `1` under the per-user DRA data root; `--consent` required; path-safe ids; exclusive directory creation; atomic same-directory JSON writes; no repository-local data by default |
-| Capture import | Completed (concluído) | Stable project JSON format, schema `1`, `deny_unknown_fields`, 16 MiB input, 20,000 events/capture, 32 captures/session, 4,096 payload bytes, tolerant hex whitespace, deterministic timestamp normalization and `reordered` metadata; pcap/pcapng and TShark inputs are rejected as unsupported formats |
-| Analysis | Completed (concluído) | Deterministic grouping by direction/transfer/interface/report id/length, outbound offset comparison and labeled action/value one-to-one checks; emits only `inferred`/`unverified` automatically; `confirmed-on-hardware` is never generated and is reserved for human evidence |
-| Reports | Completed (concluído) | Sanitized `report.md` and typed `report.json` schema `1`; no raw payloads, input paths, serials or private locators; report recomputes analysis instead of trusting stale derived data; typed `ReportDocument::validate` |
-| Scaffold | Completed (concluído) | Only with hypotheses; `README.md`, fully commented `manifest.toml.example` (not loadable), `tests/README.md` and `hypotheses.json`; no capture files, driver code or capability declaration; refuses non-empty directories without `--force` |
-| Inventory | Completed (concluído) | `devices list` uses non-destructive `HidDiscovery::scan`, removes serials/paths and reports only sanitized fields/error codes; it opens no handle or report stream. It was **not executed** during validation; a synthetic descriptor test covers sanitization |
-| Schemas | Reference only (referência) | `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` were filled; the Rust semantic validator/serializer is authoritative. No external JSON Schema validator dependency exists, and no schema-validation pass is claimed |
-| Tests | Completed (concluído) | `apps/device-research-assistant/tests/synthetic.rs`: **8 passed**; full workspace **103 → 111 passed**; synthetic happy path plus rejection, consent/id, normalization, inventory sanitization, schema parsing and scaffold safety |
-| Documentation | Completed (concluído) | New [DRA reference](dra.md) and [ADR 0011](decisions/0011-dra-mvp.md); updated [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), READMEs, AGENTS and this ledger |
-
-### Commands and actual outcomes
-
-Validation reused the temporary Rust 1.99.0/Zig tools (`RUSTUP_HOME=target/phase3-rustup`, `CARGO_HOME=target/phase2-cargo`, linker shim `target/phase3-cc`). The CLI smoke test used `/tmp/opencode/dra-demo`, outside the repository.
-
-| Command / action | Outcome |
-| --- | --- |
-| `cargo fmt --all`; `cargo fmt --all --check` | Passed, exit 0 |
-| `cargo clippy --workspace --all-targets -- -D warnings` | Passed, exit 0; no target restrictions or suppressions |
-| `cargo check --workspace --locked` | Passed, exit 0 |
-| `cargo test --workspace --locked` | Passed: **111 passed / 0 failed / 0 ignored** (+8 DRA tests) |
-| DRA CLI smoke: `session create --consent`, `capture import`, `analyze`, `report`, `scaffold`, `session list` | Passed in `/tmp/opencode/dra-demo`; report and scaffold content manually inspected |
-| `pnpm --dir apps/desktop typecheck`, `test`, `build` | Not rerun after the DRA increment because no frontend file changed; the prior display result remains **75 passed / 10 files**, typecheck and build passing |
-
-All evidence is synthetic/software-only. No physical device was enumerated, opened or written; no vendor executable, packet replay or external service was used. The CLI smoke test proves local file/serialization behavior, not hardware compatibility.
-
-### Limitations and pending priorities
-
-1. **No capture backend/parser:** only textual project JSON is accepted; pcap/pcapng, TShark and live capture are not implemented or claimed.
-2. **No hardware operation:** `devices list` is non-destructive and unexecuted here; no device was opened, written or validated.
-3. **Heuristic analysis:** grouping and offset comparison do not model framing, checksums, timing, state machines or multi-transfer transactions.
-4. **No automatic hardware confirmation:** only a human can attach `confirmed-on-hardware` evidence.
-5. **No driver generation:** the scaffold is a commented evidence handoff, not a loadable manifest or compiled driver.
-6. **Schema validation boundary:** schema files are documentary references; Rust typed validation is authoritative, and no external schema validator was run.
-7. **No packaging/CI:** the DRA runs from Cargo source; release packaging, CI, an installer and GUI integration remain out of scope.
-8. **REA remains optional/unconfigured:** no MCP configuration was invented; `config/agents/rea-mcp.example.json` remains an empty placeholder.
-
-### Relevant files and decisions
-
-Added `apps/device-research-assistant/` (`Cargo.toml`, `src/{lib,main,cli,error,model,paths,session,capture,analysis,report,scaffold,inventory}.rs`, `tests/synthetic.rs`), [dra.md](dra.md), [ADR 0011](decisions/0011-dra-mvp.md), `schemas/research-capture.schema.json` and `schemas/research-report.schema.json` content. Updated the root `Cargo.toml`/`Cargo.lock`, [overview](overview.md), [research workflow](../reverse-engineering/research-workflow.md), `README.md`, `README.pt-BR.md`, `AGENTS.md`, public status pages and this ledger. SDK/Core/Registry contracts, IPC version 5, daemon behavior and the desktop frontend are unchanged. No commit, push, PR, vendor execution, hardware access, capture or external data sharing occurred.

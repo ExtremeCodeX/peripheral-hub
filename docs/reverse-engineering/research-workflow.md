@@ -1,6 +1,6 @@
 # Responsible peripheral research workflow
 
-**Current status:** the standalone DRA MVP is implemented for local JSON sessions, bounded textual capture import, deterministic offset analysis, sanitized Markdown/JSON reports and a fully commented scaffold. pcap/pcapng/TShark parsing, capture backends, REA integration and hardware execution are not implemented. This page remains the binding human/agent procedure; real commands are in the [DRA reference](../architecture/dra.md).
+**Current status:** DRA, report schemas, capture parsers, and scaffold utilities are not implemented. This is a human/agent research procedure and future tooling requirement, not a CLI manual.
 
 ## Mandatory interoperability boundary
 
@@ -26,22 +26,15 @@ Keep captures short, preserve raw input locally, and stop on unexpected behavior
 
 ## 4. Import and correlation
 
-The DRA imports the stable project JSON capture format documented in the [DRA reference](../architecture/dra.md) and [capture schema](../../schemas/research-capture.schema.json). It does **not** parse pcap/pcapng or TShark exports yet; do not present those formats as supported.
+Future DRA should support a stable project JSON capture format for CI and only claim pcap/pcapng support when a parser/backend is implemented and tested. TShark structured exports require a verified mapping and documented dependency version. No import commands or field schema are available yet.
 
-```sh
-cargo run -p device-research-assistant -- session create --name NAME --device MODEL --goal TEXT --consent
-cargo run -p device-research-assistant -- capture import --session ID --input capture.json
-cargo run -p device-research-assistant -- analyze --session ID
-cargo run -p device-research-assistant -- report --session ID
-```
-
-The normalized event records timestamp, direction, interface, transfer/report type, report ID, decoded payload, and an optional correlated action. Comparison groups identical transfer shapes, finds varying offsets, and checks labeled action/value mappings. Automatic analysis emits only `inferred` or `unverified`; `confirmed-on-hardware` requires separate human hardware evidence and must never be inferred. Retain alternative explanations, timing, framing, and unknowns.
+The conceptual normalized event needs timestamp, direction, interface, transfer/report type, report ID, payload, origin, and correlated action. Compare repetitions and action differences; retain alternative explanations, timing, framing, and unknowns. Use `confirmed-on-hardware`, `inferred`, and `unverified` for hypotheses with scoped evidence.
 
 ## 5. Sanitization and handoff
 
 Keep originals/raw captures local. Remove unrelated traffic, typed input, serials, usernames and private paths from working exports. If credentials/private keys/confidential information are encountered, suspend that analysis and request review instead of extracting them. Export only minimum authorized, reviewed, sanitized protocol findings; exclude all proprietary source. Synthetic data must be labeled and cannot prove physical compatibility.
 
-Write findings using the [protocol documentation format](../protocols/specification-format.md). The DRA `report` command produces sanitized Markdown/JSON, and `scaffold` produces a commented template that is not a loadable driver. Hand off identity, capabilities, bounds, provenance, and uncertainties to the [driver workflow](../../.agents/skills/develop-driver/SKILL.md). Actual driver development needs implemented SDK/validators and separate scope authorization.
+Write findings using the [protocol documentation format](../protocols/specification-format.md). Hand off identity, capabilities, bounds, provenance, and uncertainties to the [driver workflow](../../.agents/skills/develop-driver/SKILL.md). Actual driver development needs implemented SDK/validators and separate scope authorization.
 
 ## Completion and limits
 
