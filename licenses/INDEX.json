@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "target": "x86_64-unknown-linux-gnu, Cargo default features plus custom-protocol for Tauri production embedding; production frontend",
-  "status": "Publication blocked; no global license assigned.",
+  "status": "Hub and starter own code: Apache-2.0 by maintainer decision. Third-party terms preserved independently; R1 excluded. Source distribution only, no dependency binaries or toolchains bundled.",
   "method": "Scope from filtered offline Cargo graph, proc macros/build edges separated; production Vite rendered modules; runtime graph is conservative, not a claim every byte survives linking. Build generators can emit code: all selected license texts retained.",
   "summary": {
     "cargoSelected": 284,
