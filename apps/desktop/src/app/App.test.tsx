@@ -11,7 +11,7 @@ beforeAll(() => {
   });
 });
 beforeEach(() => { vi.spyOn(window, 'scrollTo').mockImplementation(() => {}); });
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllEnvs(); });
 
 function openMenu() { fireEvent.click(screen.getByRole('button', { name: 'Menu do aplicativo' })); }
 function renderExplore() {
@@ -22,6 +22,15 @@ function renderExplore() {
 function openDetails(name = 'NOVA AIR') { fireEvent.click(screen.getByRole('button', { name: `Ver detalhes de ${name}` })); }
 
 describe('coleção simplificada', () => {
+  it('keeps examples and local code registration out of production', () => {
+    vi.stubEnv('DEV', false);
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'Sua biblioteca está vazia' })).toBeTruthy();
+    openMenu();
+    expect(screen.queryByRole('button', { name: 'Exemplos para desenvolvedores' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Registrar starter local (DEV)' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Attack Shark R1/i })).toBeNull();
+  });
   it('registers the starter locally without auto-start and returns focus to its library card', () => {
     render(<App software={[]} />);
     openMenu();
