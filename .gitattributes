@@ -1,0 +1,3 @@
+# Preserve upstream license texts byte-for-byte, including original line endings.
+licenses/texts/*.txt -text -whitespace
+apps/desktop/src/ui/fonts/OFL.txt -text -whitespace

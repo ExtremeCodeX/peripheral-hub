@@ -1,0 +1,100 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { invoke } from '@tauri-apps/api/core';
+import { CatalogClient, CATALOG_INTERVAL, type CatalogResult } from './catalog';
+import { App } from './App';
+import { Catalog } from './Catalog';
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
+const empty: CatalogResult = { index: { schemaVersion: 1, revision: 'fixture', software: [] }, status: 'UPDATED', checkedAt: 1, cacheWarning: null };
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.resetAllMocks(); });
+
+describe('catálogo somente metadados', () => {
+  it('consulta na entrada, manual e a cada 15 minutos; coalesce e encerra ao fechar', async () => {
+    vi.useFakeTimers();
+    const call = vi.fn().mockResolvedValue(empty);
+    const client = new CatalogClient(vi.fn(), call);
+    expect(call).not.toHaveBeenCalled();
+    await client.enter();
+    expect(call.mock.calls).toEqual([[false], [true]]);
+    await vi.advanceTimersByTimeAsync(CATALOG_INTERVAL - 1);
+    expect(call).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(call).toHaveBeenCalledTimes(3);
+    await client.enter();
+    await client.refresh();
+    expect(call).toHaveBeenCalledTimes(5);
+    client.dispose();
+    await vi.advanceTimersByTimeAsync(CATALOG_INTERVAL * 2);
+    expect(call).toHaveBeenCalledTimes(5);
+  });
+  it('conserva dados válidos após rede/timeout e substitui snapshot em remoção', async () => {
+    const initial = { ...empty, index: { ...empty.index!, software: [{ id: 'test.fixture' }] } } as CatalogResult;
+    const call = vi.fn().mockResolvedValue(initial);
+    const client = new CatalogClient(vi.fn(), call);
+    await client.refresh();
+    call.mockRejectedValueOnce('TIMEOUT');
+    await client.refresh();
+    expect(client.result.index).toEqual(initial.index);
+    expect(client.result.status).toBe('TIMEOUT');
+    call.mockResolvedValueOnce(empty);
+    await client.refresh();
+    expect(client.result.index?.software).toEqual([]);
+    client.dispose();
+  });
+  it('continua o timer fora de Explorar e para na desmontagem do aplicativo', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    vi.mocked(invoke).mockResolvedValue(empty);
+    const view = render(<App software={[]} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(CATALOG_INTERVAL); });
+    expect(invoke).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Explorar softwares' })); });
+    fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Meus softwares' }));
+    const before = vi.mocked(invoke).mock.calls.length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(CATALOG_INTERVAL); });
+    expect(invoke).toHaveBeenCalledTimes(before + 1);
+    view.unmount();
+    await vi.advanceTimersByTimeAsync(CATALOG_INTERVAL * 2);
+    expect(invoke).toHaveBeenCalledTimes(before + 1);
+  });
+  it('ignora resposta tardia após desmontagem e não duplica pedidos', async () => {
+    let resolve!: (v: CatalogResult) => void;
+    const call = vi.fn().mockReturnValue(new Promise<CatalogResult>((r) => { resolve = r; }));
+    const notify = vi.fn();
+    const client = new CatalogClient(notify, call);
+    const first = client.enter();
+    expect(client.refresh()).toBe(first);
+    client.dispose();
+    resolve(empty);
+    await first;
+    expect(client.result.index).toBeNull();
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+  it('Explorar não mostra exemplos; biblioteca/exemplos não consultam catálogo antes da primeira visita', async () => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    vi.mocked(invoke).mockResolvedValue(empty);
+    render(<App software={[]} />);
+    expect(invoke).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Explorar softwares' }));
+    expect(await screen.findByText('Nenhuma integração no catálogo')).toBeTruthy();
+    expect(screen.queryByText('AURA M1')).toBeNull();
+    expect(screen.queryByText('Modo demonstração')).toBeNull();
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'catalog_sync')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar catálogo' }));
+    await screen.findByText('Catálogo atualizado.');
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'catalog_sync')).toBe(true);
+  });
+  it('renderiza strings como texto, busca fabricante e não oferece links/instalação', async () => {
+    const client = new CatalogClient(vi.fn());
+    client.result = { ...empty, index: { ...empty.index!, software: [{ id: 'test.fixture', name: '<img src=x onerror=evil()>', version: '0.0.0-fixture', shortDescription: 'Fixture sintética', fullDescription: '<script>evil()</script>', authors: ['Fixture'], license: 'Fixture', architectures: ['fixture'], devices: [{ manufacturer: 'Órbita', model: 'Synthetic', category: 'mouse', compatibility: 'Não real' }], source: { repository: 'https://example.org/fixture', commit: 'a'.repeat(40) }, features: [], limitations: [], requirements: [] }] } };
+    render(<Catalog client={client} query="orbita" />);
+    fireEvent.click(screen.getByRole('button', { name: /<img src=x/ }));
+    expect(screen.getByText('<script>evil()</script>')).toBeTruthy();
+    expect(document.querySelector('img, script, a')).toBeNull();
+    expect(screen.queryByRole('button', { name: /instalar|executar/i })).toBeNull();
+    expect(document.activeElement?.textContent).toBe('<img src=x onerror=evil()>');
+    await act(async () => {});
+    client.dispose();
+  });
+});

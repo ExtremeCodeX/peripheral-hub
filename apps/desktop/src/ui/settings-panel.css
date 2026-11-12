@@ -1,0 +1,5 @@
+.settings-panel { min-width: 0; padding: 20px; background: var(--hub-panel); border: 1px solid var(--hub-border); border-radius: var(--hub-radius-small); }
+.settings-panel__heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 18px; }
+.settings-panel__heading h3 { font-family: var(--hub-font-heading); font-size: 18px; line-height: 1.4; font-weight: 650; letter-spacing: -.25px; text-wrap: balance; }
+.settings-panel__heading > span { color: var(--hub-subtle); font-size: 12px; }
+@media (max-width: 560px) { .settings-panel { padding: 16px; } }

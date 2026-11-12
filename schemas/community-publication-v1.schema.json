@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Community publication experimental v1 (not execution)",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "name", "status", "version", "authors", "source", "license", "devices", "features", "requirements", "limitations", "documents", "videos", "artifacts", "pending"],
+  "anyOf": [
+    {"properties": {"pending": {"minItems": 1}}},
+    {"properties": {"version": {"type": "string"}, "authors": {"minItems": 1}, "source": {"type": "object"}, "license": {"type": "string"}, "videos": {"minItems": 1}, "artifacts": {"minItems": 1}}}
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "community-publication"},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+(?![\\s\\S])"},
+    "name": {"$ref": "#/definitions/text"},
+    "status": {"const": "experimental"},
+    "version": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/text"}]},
+    "authors": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/text"}},
+    "source": {"anyOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["repository", "commit"], "properties": {"repository": {"$ref": "#/definitions/https"}, "commit": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})(?![\\s\\S])"}}}]},
+    "license": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/text"}]},
+    "devices": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["model", "compatibility"], "properties": {"model": {"$ref": "#/definitions/text"}, "compatibility": {"$ref": "#/definitions/text"}}}},
+    "features": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["name", "implementation", "verification", "notes"], "properties": {"name": {"$ref": "#/definitions/text"}, "implementation": {"enum": ["implemented", "partial", "not-implemented"]}, "verification": {"enum": ["not-tested", "offline-only", "historical-report", "physical-evidence-presented"]}, "notes": {"$ref": "#/definitions/text"}}}},
+    "requirements": {"$ref": "#/definitions/texts"},
+    "limitations": {"$ref": "#/definitions/texts"},
+    "documents": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/definitions/path"}},
+    "videos": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/https"}},
+    "artifacts": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["path", "sha256", "target"], "properties": {"path": {"$ref": "#/definitions/path"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])"}, "target": {"$ref": "#/definitions/text"}}}},
+    "pending": {"$ref": "#/definitions/texts"}
+  },
+  "definitions": {
+    "text": {"type": "string", "minLength": 1, "maxLength": 4096, "pattern": "^[^\\x00-\\x20\\x7f](?:[^\\x00-\\x1f\\x7f]*[^\\x00-\\x20\\x7f])?(?![\\s\\S])"},
+    "texts": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/text"}},
+    "path": {"type": "string", "maxLength": 512, "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_-][A-Za-z0-9_.-]*)*(?![\\s\\S])"},
+    "https": {"type": "string", "maxLength": 2048, "pattern": "^https://[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:/[A-Za-z0-9_./~!$&'()*+,;=:@-]*)?(?![\\s\\S])"}
+  }
+}

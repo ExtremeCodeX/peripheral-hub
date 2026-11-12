@@ -1,0 +1,14 @@
+.starter-preview { max-width: 720px; margin: 32px 0; display: grid; gap: 20px; }
+.starter-preview > .text-button { justify-self: start; }
+.starter-preview > h2 { font: 650 25px/1.3 var(--hub-font-heading); text-wrap: balance; }
+.starter-preview p { color: var(--hub-muted); max-width: 65ch; line-height: 1.5; }
+.starter-preview .settings-panel { display: grid; gap: 20px; }
+.starter-preview__field { display: grid; gap: 12px; }
+.starter-preview__field label { display: flex; justify-content: space-between; gap: 12px; }
+.starter-preview__field output { font-variant-numeric: tabular-nums; }
+.starter-preview__field input { width: 100%; min-height: 44px; accent-color: var(--hub-selection); }
+.starter-preview__actions { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.starter-preview button:disabled { color: var(--hub-muted); cursor: not-allowed; }
+.starter-preview input:not([type="range"]), .starter-preview select, .starter-preview textarea { background: var(--hub-panel); color: var(--hub-text); border: 1px solid var(--hub-border); border-radius: 8px; padding: 10px; max-width: 100%; min-height: 44px; font: inherit; }
+.starter-preview__field input[type="checkbox"] { width: 44px; }
+.starter-preview__field output, .starter-preview p { overflow-wrap: anywhere; }

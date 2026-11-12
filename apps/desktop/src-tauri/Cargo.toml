@@ -1,0 +1,24 @@
+[package]
+name = "peripheral-hub"
+version = "0.1.0"
+description = "Base desktop Linux-first do Peripheral Hub"
+edition = "2021"
+publish = false
+default-run = "peripheral-hub"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "=0.10.9"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Same GTK already used by Tauri on Linux; native host confirmation, not WebView UI.
+gtk = "=0.18.2"
+libc = "0.2"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]

@@ -1,0 +1,38 @@
+/* Outfit: Copyright 2021 The Outfit Project Authors, SIL OFL 1.1; ver fonts/OFL.txt. */
+@font-face {
+  font-family: 'Outfit';
+  src: url('./fonts/Outfit-Variable.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Direção da prévia aprovada a partir da referência do mantenedor. */
+:root {
+  color-scheme: dark;
+  --hub-font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --hub-font-heading: 'Outfit', var(--hub-font-body);
+  --hub-canvas: #0c0d0e;
+  --hub-surface: #202224;
+  --hub-surface-hover: #26292b;
+  --hub-panel: #191b1d;
+  --hub-text: #f2f3f3;
+  --hub-muted: #a5aaad;
+  --hub-subtle: #92999c;
+  --hub-border: #34383b;
+  --hub-selection: #b6d8c7;
+  --hub-selection-ink: #18281f;
+  --hub-success: #a7dfb8;
+  --hub-success-surface: #21392a;
+  --hub-warning: #ebcf87;
+  --hub-warning-surface: #393222;
+  --hub-space-xs: 0.5rem;
+  --hub-space-small: 0.75rem;
+  --hub-space-medium: 1.5rem;
+  --hub-space-large: 2rem;
+  --hub-radius-small: 8px;
+  --hub-radius-card: 14px;
+  --hub-motion-feedback: 150ms;
+  --hub-motion-select: 220ms;
+  --hub-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

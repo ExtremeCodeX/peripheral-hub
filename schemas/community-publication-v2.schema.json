@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Community publication experimental v2 (not execution)",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "name", "status", "version", "authors", "source", "license", "devices", "features", "requirements", "limitations", "documents", "videos", "artifacts", "pending"],
+  "anyOf": [
+    {"properties": {"pending": {"minItems": 1}}},
+    {"properties": {"version": {"type": "string"}, "authors": {"minItems": 1}, "source": {"type": "object"}, "license": {"type": "string"}, "videos": {"minItems": 1}}}
+  ],
+  "properties": {
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "community-publication"},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+(?![\\s\\S])"},
+    "name": {"$ref": "#/definitions/text"},
+    "status": {"const": "experimental"},
+    "shortDescription": {"$ref": "#/definitions/nullableText"},
+    "fullDescription": {"$ref": "#/definitions/nullableText"},
+    "version": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/semver"}, {"type": "string", "pattern": "^git-(?:[a-f0-9]{40}|[a-f0-9]{64})(?![\\s\\S])"}]},
+    "releaseDate": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/date"}]},
+    "minimumHubVersion": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/semver"}]},
+    "architectures": {"anyOf": [{"type": "null"}, {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*(?![\\s\\S])"}}]},
+    "distributions": {"anyOf": [{"type": "null"}, {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["id", "version", "tested"], "properties": {"id": {"$ref": "#/definitions/text"}, "version": {"$ref": "#/definitions/nullableText"}, "tested": {"anyOf": [{"type": "null"}, {"type": "boolean"}]}}}}]},
+    "authors": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/text"}},
+    "source": {"anyOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["repository", "commit"], "properties": {"repository": {"$ref": "#/definitions/https"}, "commit": {"$ref": "#/definitions/commit"}}}]},
+    "license": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/text"}]},
+    "devices": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["model", "compatibility"], "properties": {
+      "model": {"$ref": "#/definitions/text"}, "manufacturer": {"$ref": "#/definitions/nullableText"},
+      "category": {"enum": [null, "mouse", "keyboard", "headset", "other"]},
+      "compatibility": {"$ref": "#/definitions/text"},
+      "transports": {"anyOf": [{"type": "null"}, {"type": "array", "uniqueItems": true, "items": {"enum": ["usb-wired", "usb-receiver", "bluetooth", "other"]}}]},
+      "usb": {"anyOf": [{"type": "null"}, {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["vid", "pid", "provenance"], "properties": {
+        "vid": {"$ref": "#/definitions/hex16"}, "pid": {"$ref": "#/definitions/hex16"},
+        "interface": {"anyOf": [{"type": "null"}, {"type": "integer", "minimum": 0, "maximum": 255}]},
+        "usagePage": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/hex16"}]},
+        "usage": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/hex16"}]},
+        "provenance": {"$ref": "#/definitions/reference"}
+      }}}]}
+    }}},
+    "features": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["name", "implementation", "verification", "notes"], "properties": {"name": {"$ref": "#/definitions/text"}, "implementation": {"enum": ["implemented", "partial", "not-implemented"]}, "verification": {"enum": ["not-tested", "offline-only", "historical-report", "physical-evidence-presented"]}, "notes": {"$ref": "#/definitions/text"}}}},
+    "requirements": {"$ref": "#/definitions/texts"},
+    "limitations": {"$ref": "#/definitions/texts"},
+    "documents": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/definitions/path"}},
+    "documentation": {"anyOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "properties": {
+      "readme": {"$ref": "#/definitions/nullableReference"}, "changelog": {"$ref": "#/definitions/nullableReference"},
+      "homepage": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/https"}]},
+      "guides": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/reference"}}
+    }}]},
+    "images": {"anyOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "properties": {
+      "main": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/image"}]},
+      "thumbnail": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/image"}]},
+      "screenshots": {"type": "array", "items": {"$ref": "#/definitions/image"}}
+    }}]},
+    "videos": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/https"}},
+    "artifacts": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["path", "sha256", "target"], "properties": {"path": {"$ref": "#/definitions/path"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])"}, "target": {"$ref": "#/definitions/text"}}}},
+    "pending": {"$ref": "#/definitions/texts"}
+  },
+  "definitions": {
+    "submission": {
+      "required": ["shortDescription", "fullDescription", "architectures", "documentation"],
+      "properties": {
+        "version": {"type": "string"}, "authors": {"minItems": 1}, "source": {"type": "object"}, "license": {"type": "string"},
+        "shortDescription": {"type": "string"}, "fullDescription": {"type": "string"},
+        "architectures": {"type": "array", "minItems": 1}, "videos": {"minItems": 1}, "pending": {"enum": [[]]},
+        "devices": {"items": {"required": ["manufacturer", "category", "transports"], "properties": {
+          "manufacturer": {"type": "string"}, "category": {"type": "string"}, "transports": {"type": "array", "minItems": 1}
+        }}},
+        "documentation": {"type": "object", "required": ["readme"], "properties": {"readme": {"type": "string"}}},
+        "images": {"anyOf": [{"type": "null"}, {"properties": {
+          "main": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/submissionImage"}]},
+          "thumbnail": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/submissionImage"}]},
+          "screenshots": {"items": {"$ref": "#/definitions/submissionImage"}}
+        }}]}
+      }
+    },
+    "submissionImage": {
+      "required": ["alt", "rights"], "properties": {
+        "alt": {"type": "string"},
+        "rights": {"type": "object", "required": ["status", "statement", "evidence"],
+          "properties": {"statement": {"type": "string"}, "evidence": {"minItems": 1}},
+          "anyOf": [
+            {"properties": {"status": {"const": "permission-confirmed"}}},
+            {"required": ["license"], "properties": {"status": {"const": "open-license"}, "license": {"type": "string"}}}
+          ]
+        }
+      }
+    },
+    "text": {"type": "string", "minLength": 1, "pattern": "^[^\\x00-\\x20\\x7f](?:[^\\x00-\\x1f\\x7f]*[^\\x00-\\x20\\x7f])?(?![\\s\\S])"},
+    "nullableText": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/text"}]},
+    "texts": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/text"}},
+    "path": {"type": "string", "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_-][A-Za-z0-9_.-]*)*(?![\\s\\S])"},
+    "https": {"type": "string", "pattern": "^https://[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:/[A-Za-z0-9_./~!$&'()*+,;=:@-]*)?(?![\\s\\S])"},
+    "reference": {"anyOf": [{"$ref": "#/definitions/path"}, {"$ref": "#/definitions/https"}]},
+    "nullableReference": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/reference"}]},
+    "commit": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})(?![\\s\\S])"},
+    "hex16": {"type": "string", "pattern": "^[a-f0-9]{4}(?![\\s\\S])"},
+    "semver": {"type": "string", "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?![\\s\\S])"},
+    "date": {"type": "string", "pattern": "^(?!0000)(?:[0-9]{4}-(?:(?:01|03|05|07|08|10|12)-(?:0[1-9]|[12][0-9]|3[01])|(?:04|06|09|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8]))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)(?![\\s\\S])"},
+    "image": {"type": "object", "additionalProperties": false, "required": ["path", "mediaType"], "properties": {
+      "path": {"$ref": "#/definitions/path"}, "mediaType": {"enum": ["image/png", "image/jpeg"]},
+      "alt": {"$ref": "#/definitions/nullableText"},
+      "width": {"anyOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]},
+      "height": {"anyOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]},
+      "byteLength": {"anyOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]},
+      "rights": {"anyOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["status"], "properties": {
+        "status": {"enum": ["unknown", "permission-confirmed", "open-license"]},
+        "holder": {"$ref": "#/definitions/nullableText"}, "license": {"$ref": "#/definitions/nullableText"},
+        "statement": {"$ref": "#/definitions/nullableText"},
+        "evidence": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/reference"}}
+      }}]}
+    }}
+  }
+}
