@@ -43,5 +43,35 @@ as suítes sob bwrap com `/dev` privado, `/sys` vazio e rede isolada; isso é um
 ambiente de ensaio, não uma sandbox fornecida pelo produto.
 
 O release fica em `apps/desktop/src-tauri/target/release/peripheral-hub`.
-`bundle.active` é false: não se promete AppImage, pacote ou runtime embutido.
-O release não registra os comandos DEV; catálogo continua somente consulta.
+Na configuração padrão, `bundle.active` é false; o AppImage usa a configuração
+separada abaixo. O release não registra os comandos DEV. A distribuição pública
+do X6 é fixada; o catálogo comunitário remoto contém somente metadados.
+
+## AppImage Linux x86_64
+
+O empacotamento AppImage é opcional e usa uma configuração separada:
+
+```sh
+npm ci
+npm run build:appimage
+```
+
+O arquivo é gerado em `apps/desktop/src-tauri/target/release/bundle/appimage/`.
+O build padrão `npm run build` continua gerando somente o executável.
+Para distribuir, compile em Ubuntu 22.04 ou outra base antiga compatível com
+WebKitGTK 4.1; compilar em uma distribuição mais recente pode exigir uma glibc
+mais nova no computador do usuário. São necessários os pré-requisitos de build
+do Tauri, `patchelf` e as ferramentas AppImage que o Tauri baixa ao empacotar.
+Em um contêiner sem FUSE, use `APPIMAGE_EXTRACT_AND_RUN=1` durante o build.
+
+O AppImage inclui os recursos de licença do Hub e da fonte. Não inclui Python:
+os plugins continuam exigindo Python 3.11+ em `/usr/bin/python3`. O formato não
+concede acesso hidraw, não instala regras udev e não é uma sandbox.
+
+No artefato publicado, os copyrights de `/usr/share/doc/*/copyright`, os textos
+de `/usr/share/common-licenses` e um inventário `dpkg-query` com versões e nomes
+dos pacotes-fonte do ambiente Ubuntu 22.04 também foram preservados sob
+`licenses/system-runtime-ubuntu-22.04/`, dentro dos recursos do AppImage.
+É um inventário conservador do ambiente, não uma afirmação de que todos os
+pacotes listados sejam redistribuídos. Preserve os avisos dos componentes
+efetivamente empacotados ao gerar um novo artefato em outro ambiente.

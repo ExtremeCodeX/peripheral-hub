@@ -37,12 +37,35 @@ a autorização, a operação informa o erro em vez de prosseguir silenciosament
 
 ## Linux x86_64
 
+### AppImage
+
+Baixe `peripheral-hub-0.2.3-linux-x86_64.AppImage`, permita a execução e abra:
+
+```sh
+chmod +x peripheral-hub-0.2.3-linux-x86_64.AppImage
+./peripheral-hub-0.2.3-linux-x86_64.AppImage
+```
+
+Sem FUSE 2 disponível, use a extração temporária integrada:
+
+```sh
+./peripheral-hub-0.2.3-linux-x86_64.AppImage --appimage-extract-and-run
+```
+
+O AppImage foi compilado em Ubuntu 22.04 e inclui bibliotecas de interface,
+licenças do Hub, da fonte e avisos dos pacotes de runtime do ambiente de build.
+Não inclui Python: os plugins ainda exigem Python 3.11+ em `/usr/bin/python3`
+e as permissões hidraw existentes. Não instala regras udev e não é uma sandbox.
+Não é uma promessa de compatibilidade com toda distribuição Linux.
+
+### Arquivo tar.gz
+
 Extraia `peripheral-hub-0.2.3-linux-x86_64.tar.gz` e execute `./peripheral-hub`
 na pasta extraída. Mantenha LICENSE, THIRD_PARTY_NOTICES, a pasta de licenças e
 a licença da fonte junto ao aplicativo. Verifique o arquivo com `SHA256SUMS`.
 
 Requer as bibliotecas Linux do Tauri/GTK/WebKitGTK e Python 3.11+ em
-`/usr/bin/python3`. Não é AppImage universal; não execute como root.
+`/usr/bin/python3`. Não execute como root em nenhum dos formatos.
 Instalações existentes e backups são preservados. Não há atualização automática
 do plugin.
 

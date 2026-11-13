@@ -8,6 +8,7 @@
     "dev": "npm run tauri --workspace @peripheral-hub/desktop -- dev",
     "dev:web": "npm run dev --workspace @peripheral-hub/desktop",
     "build": "npm run tauri --workspace @peripheral-hub/desktop -- build --no-bundle",
+    "build:appimage": "npm run tauri --workspace @peripheral-hub/desktop -- build --bundles appimage --config src-tauri/tauri.appimage.conf.json",
     "build:web": "npm run build --workspace @peripheral-hub/desktop",
     "typecheck": "npm run typecheck --workspace @peripheral-hub/desktop",
     "test": "npm run test --workspace @peripheral-hub/desktop --",

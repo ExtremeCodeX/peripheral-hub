@@ -4,6 +4,9 @@ Versão atual: **0.2.3** — temas claro/escuro, melhorias de contraste e acesso
 mouse, e autorização de conexão opcionalmente lembrada. Veja as
 [notas da versão](docs/public/RELEASE-0.2.3.md) e o
 [download Linux x86_64](https://github.com/ExtremeCodeX/peripheral-hub/releases/tag/v0.2.3).
+Também disponível em [AppImage](https://github.com/ExtremeCodeX/peripheral-hub/releases/download/v0.2.3/peripheral-hub-0.2.3-linux-x86_64.AppImage):
+permita a execução nas propriedades do arquivo e abra com dois cliques, ou siga
+os comandos nas notas da versão. Python 3.11+ continua necessário para os plugins.
 
 ## Attack Shark X6 · Parcial
 

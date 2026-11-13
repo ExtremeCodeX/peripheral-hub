@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "active": true,
+    "targets": ["appimage"],
+    "category": "Utility",
+    "icon": ["icons/icon.png"],
+    "resources": {
+      "../../../LICENSE": "LICENSE",
+      "../../../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
+      "../../../licenses/": "licenses/",
+      "../src/ui/fonts/OFL.txt": "licenses/Outfit-OFL.txt"
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
+  }
+}
