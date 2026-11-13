@@ -26,14 +26,12 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
   const [tab, setTab] = useState('Mouse');
   const [state, setState] = useState<Snapshot | null>(null);
   const [busy, setBusy] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('Conecte o X6 para ler configurações reais. Nenhuma alteração automática.');
   const [selected, setSelected] = useState(4);
   const [action, setAction] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas');
-  const [lastKey, setLastKey] = useState('Nenhum evento local');
   const [draft, setDraft] = useState<Record<string, unknown>>({});
   const [dpi, setDpi] = useState(4);
   const [logs, setLogs] = useState<string[]>([]);
@@ -61,14 +59,14 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
       if (result && (result.mode !== 'hardware' || !result.hardwareAccess)) throw new Error('INVALID_HANDSHAKE');
       if (starting && result) { original.current = { ...result.values }; setDpi(Number(result.values.dpi_stage)); }
       setState(result); setDraft(result?.values ?? {}); setAction('');
-      if (!result) { setConfirmed(false); original.current = {}; }
+      if (!result) original.current = {};
       const message = result ? `${label} · ${result.outcome === 'confirmed_by_readback' ? 'Escrita confirmada por readback físico.' : result.outcome === 'unchanged' ? 'Sem alteração.' : 'Leitura física validada.'}` : 'Desconectado · processo encerrado.';
       setStatus(message); setLogs((old) => [message, ...old].slice(0, 16));
     } catch (failure) {
       if (current !== generation.current) return;
       const message = starterError(failure);
       setState(null); setDraft({}); setError(message); setStatus('Sem confirmação — sessão descartada.');
-      setConfirmed(false); original.current = {};
+      original.current = {};
       setLogs((old) => [message, ...old].slice(0, 16));
       await starterClient.stop().catch(() => undefined);
     } finally { if (current === generation.current) setBusy(false); }
@@ -79,7 +77,7 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
   return <section className="x6-control" aria-labelledby="x6-title">
     <header className="x6-heading"><h2 id="x6-title" ref={heading} tabIndex={-1}>X6 / CONTROL</h2><span className={`x6-badge${connected ? ' is-live' : ''}`}>{busy ? 'AGUARDANDO GTK / HID' : connected ? 'HARDWARE · CONECTADO' : error ? 'SEM CONFIRMAÇÃO' : 'DESCONECTADO'}</span><button type="button" className="x6-back" onClick={onBack} disabled={busy}>Voltar ao Hub</button></header>
     <div className="x6-toolbar"><div role="tablist" aria-label="Seções X6">{['Mouse', 'Macros', 'Diagnóstico', 'Iluminação'].map((name, i, tabs) => <button type="button" role="tab" key={name} id={`x6-tab-${i}`} aria-selected={tab === name} aria-controls={`x6-panel-${i}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={(e) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; setTab(tabs[next]); document.getElementById(`x6-tab-${next}`)?.focus(); } }}>{name}</button>)}</div>
-      <div className="x6-connection">{!connected && <label><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} disabled={busy}/> Confirmei X6 · dongle 2,4 GHz</label>}<button type="button" disabled={busy || (!connected && !confirmed)} onClick={() => connected ? void run(async () => { await starterClient.stop(); return null; }, 'Desconectar') : void run(() => starterClient.start(pluginId, true), 'Conectar X6', true)}>{connected ? 'Desconectar' : 'Conectar X6'}</button></div>
+      <div className="x6-connection"><button type="button" disabled={busy} onClick={() => connected ? void run(async () => { await starterClient.stop(); return null; }, 'Desconectar') : void run(() => starterClient.start(pluginId, true), 'Conectar 2.4 GHz', true)}>{connected ? 'Desconectar' : 'Conectar 2.4 GHz'}</button></div>
     </div>
     <p className={`x6-notice${error ? ' is-error' : ''}`} role={error ? 'alert' : 'status'}>{error || status}</p>
     <div role="tabpanel" id="x6-panel-0" aria-labelledby="x6-tab-0" hidden={tab !== 'Mouse'}>
@@ -91,15 +89,14 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
             <label className="x6-action">Pesquisar função<input aria-label="Pesquisar função" type="search" placeholder="F5, Ctrl, Espaço, Volume…" value={search} onChange={(e) => setSearch(e.target.value)}/></label>
             <label className="x6-action">Categoria<select aria-label="Categoria de função" value={category} onChange={(e) => setCategory(e.target.value)}><option>Todas</option>{categories.map((name) => <option key={name}>{name}</option>)}</select></label>
             <label className="x6-action">Nova ação de {BUTTONS[selected - 1]}<select aria-label="Nova ação do botão selecionado" value={action || (typeof currentAction === 'string' ? currentAction : '')} disabled={!writable || busy} onChange={(e) => setAction(e.target.value)}><option value="" disabled>{state ? 'Escolha uma função' : 'Aguardando leitura…'}</option>{typeof currentAction === 'string' && !filtered.some((entry) => entry.id === currentAction) && <option value={currentAction}>{ACTIONS[currentAction] ?? 'Ação não decodificada' } — atual</option>}{action && !filtered.some((entry) => entry.id === action) && action !== currentAction && <option value={action}>{ACTIONS[action]} — rascunho</option>}{categories.map((name) => { const entries = filtered.filter((entry) => entry.category === name); return entries.length ? <optgroup key={name} label={name}>{entries.map((entry) => <option key={entry.id} value={entry.id} disabled={entry.disabled}>{entry.label}</option>)}</optgroup> : null; })}<option disabled>Macro — não implementada</option></select></label>
-            <small>Teclas são posições HID: ABNT2/US e o layout do sistema determinam o caractere. Catálogo documentado; validação física parcial. F13–F24/ABNT2 extra pendentes.</small>
-            <p className="x6-muted">{selected <= 2 ? 'Cliques primários protegidos — somente leitura.' : selected >= 6 ? `Superior ${selected - 5} · report 0x08, grupo ${selected - 1}. ${writable ? 'Um superior por operação, com backup, ACK e readback.' : 'Snapshot somente leitura; atualize o plugin validado.'}` : selected === 3 ? 'Somente leitura nesta fase de validação.' : 'Um lateral por operação. Backup antes da escrita.'}</p>
+            {selected <= 3 && <p className="x6-muted">Botão protegido — somente leitura.</p>}
             <button type="button" className="x6-primary x6-wide" disabled={!writable || busy || !action || action === currentAction} onClick={() => apply(key, action, `Aplicar ${BUTTONS[selected - 1]}`)}>Aplicar botão selecionado</button>
             <button type="button" className="x6-wide" disabled={!writable || busy || original.current[key] === currentAction || original.current[key] === undefined} onClick={() => apply(key, 'restore_session', `Restaurar ${BUTTONS[selected - 1]}`)}>Restaurar botão</button>
             <small>Restaura a leitura inicial desta sessão, nunca um padrão de fábrica.</small>
           </section>
           <section className="x6-panel"><h3>Perfis</h3><div className="x6-profile-empty">Perfil físico: não implementado.<br/>Nenhum preset é aplicado automaticamente.</div><div className="x6-profile-actions">{['Salvar', 'Carregar', 'Importar', 'Exportar'].map((name) => <button key={name} type="button" disabled title="Presets locais pendentes">{name}</button>)}</div><button type="button" disabled className="x6-wide" title="Restauração arbitrária de arquivo não habilitada">Restaurar backup — pendente</button></section>
         </aside>
-        <div className="x6-center"><MouseDiagram selected={selected} select={select}/><span className="x6-diagram-caption">ATTACK SHARK X6 <span>2,4 GHz · esquema original</span></span><label className="x6-test-input">Teste local do botão secundário<input aria-label="Campo de teste de botão secundário" placeholder="Clique aqui e pressione o botão" autoComplete="off" spellCheck={false} onKeyDown={(e) => { setLastKey(`${e.code} · Ctrl=${e.ctrlKey} Shift=${e.shiftKey} Alt=${e.altKey} Super=${e.metaKey}`); if (/^F\d+$/.test(e.code) || e.ctrlKey || e.altKey || e.metaKey) e.preventDefault(); }}/></label><small role="status">{lastKey}</small><small>Somente neste campo. Nenhuma captura global de teclas.</small></div>
+        <div className="x6-center"><MouseDiagram selected={selected} select={select}/><span className="x6-diagram-caption">ATTACK SHARK X6 <span>2,4 GHz · esquema original</span></span></div>
         <aside className="x6-right">
           <section className="x6-panel"><h3>Sensibilidade</h3><div className="x6-dpi-stages">{Array.from({ length: 6 }, (_, i) => i + 1).map((n) => <div key={n}><button type="button" aria-label={`Selecionar estágio ${n}`} aria-pressed={dpi === n} className={Number(state?.values.dpi_stage) === n ? 'is-active-stage' : ''} onClick={() => setDpi(n)}>{n}</button><input type="range" aria-label={`DPI estágio ${n} slider`} min="800" max="26000" step="50" disabled={!connected || busy} value={Number(draft[`dpi_stage_${n}`] ?? 800)} onChange={(e) => { setDpi(n); setDraft((d) => ({ ...d, [`dpi_stage_${n}`]: Number(e.target.value) })); }}/><input type="number" aria-label={`DPI estágio ${n}`} min="800" max="26000" step="50" placeholder="—" value={draft[`dpi_stage_${n}`] === undefined ? '' : Number(draft[`dpi_stage_${n}`])} disabled={!connected || busy} onChange={(e) => { setDpi(n); setDraft((d) => ({ ...d, [`dpi_stage_${n}`]: e.target.value === '' ? null : Number(e.target.value) })); }}/></div>)}</div>
             <p className="x6-muted">Ativo no mouse: {connected ? String(state?.values.dpi_stage) : 'sem leitura'} · aplica somente o estágio selecionado.</p>

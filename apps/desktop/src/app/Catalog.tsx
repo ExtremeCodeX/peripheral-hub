@@ -34,22 +34,31 @@ export function Catalog({ client, query, releases = [], installing = false, inst
     if (selected && !current) { setSelected(null); document.getElementById('collection-title')?.focus(); }
   }, [selected, current]);
   const message = catalogMessages[client.result.status] ?? catalogMessages.WORKER_ERROR;
-  if (currentRelease) return <div className="catalog"><article className="catalog-details" aria-labelledby="public-release-title">
-    <button type="button" className="text-button" onClick={() => { setSelectedReleaseId(null); requestAnimationFrame(() => document.getElementById(`public-release-${currentRelease.id}`)?.focus()); }}>Voltar aos softwares</button>
-    <h3 id="public-release-title" ref={detailRef} tabIndex={-1}>{currentRelease.name}</h3>
-    <CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/>
-    <p>{currentRelease.description}</p>
-    <p>Linux · {currentRelease.version} · {currentRelease.installed ? 'Instalado' : installing ? 'Instalando…' : 'Disponível para instalar'}</p>
-    <h4>Compatibilidade</h4><p>{currentRelease.connection}</p>
-    <h4>Limitações</h4><ul>{currentRelease.limitations.map((limit) => <li key={limit}>{limit}</li>)}</ul>
-    <p><ExternalLink label="Repositório" url={currentRelease.repository} kind="repositório"/> · <ExternalLink label={`Release ${currentRelease.version}`} url={`${currentRelease.repository}/releases/tag/v${currentRelease.version}`} kind="release"/></p>
-    <p>Download fixado por manifesto/SHA-256. Não é sandbox; iniciar e acessar hardware exigem consentimento GTK. Sem vídeo público de qualificação individual.</p>
-    {installationError && <p role="alert">{installationError}</p>}
-    <button type="button" className="secondary-button" disabled={installing} onClick={() => currentRelease.installed ? onOpen?.() : onInstall?.(currentRelease.id)}>{installing ? 'Instalando…' : `${currentRelease.installed ? 'Abrir' : 'Instalar'} ${currentRelease.name}`}</button>
+  if (currentRelease) return <div className="catalog"><article className="catalog-details release-details" aria-labelledby="public-release-title">
+    <button type="button" className="text-button release-back" onClick={() => { setSelectedReleaseId(null); requestAnimationFrame(() => document.getElementById(`public-release-${currentRelease.id}`)?.focus()); }}>Voltar aos softwares</button>
+    <header className="release-header">
+      <div className="release-title"><h3 id="public-release-title" ref={detailRef} tabIndex={-1}>{currentRelease.name}</h3><CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/></div>
+      <p className="release-manufacturer">{currentRelease.manufacturer} · Mouse</p>
+      <p className="release-description">{currentRelease.description}</p>
+    </header>
+    <dl className="release-facts">
+      <div><dt>Plataforma</dt><dd>Linux</dd></div>
+      <div><dt>Versão</dt><dd>{currentRelease.version}</dd></div>
+      <div><dt>Instalação</dt><dd><span role="status" aria-live="polite">{installing ? 'Instalando…' : currentRelease.installed ? 'Instalado' : 'Não instalado'}</span></dd></div>
+    </dl>
+    <section className="release-section" aria-labelledby="release-compatibility"><h4 id="release-compatibility">Compatibilidade</h4><p>{currentRelease.connection}</p></section>
+    <section className="release-section" aria-labelledby="release-limitations"><h4 id="release-limitations">Limitações</h4><ul>{currentRelease.limitations.map((limit) => <li key={limit}>{limit}</li>)}</ul></section>
+    <section className="release-section release-source" aria-labelledby="release-source"><h4 id="release-source">Código e distribuição</h4>
+      <div className="release-links"><ExternalLink label="Repositório" url={currentRelease.repository} kind="repositório"/><ExternalLink label={`Release ${currentRelease.version}`} url={`${currentRelease.repository}/releases/tag/v${currentRelease.version}`} kind="release"/></div>
+      <p className="release-notice">Download fixado por manifesto/SHA-256. Não é sandbox; iniciar e acessar hardware exigem consentimento GTK. Sem vídeo público de qualificação individual.</p>
+    </section>
+    <footer className="release-actions">
+      {installationError && <p role="alert">{installationError}</p>}
+      <button type="button" className="primary-button" disabled={installing} onClick={() => currentRelease.installed ? onOpen?.() : onInstall?.(currentRelease.id)}>{installing ? 'Instalando…' : `${currentRelease.installed ? 'Abrir' : 'Instalar'} ${currentRelease.name}`}</button>
+    </footer>
   </article></div>;
   return <div className="catalog">
     {!!releases.length && <section aria-label="Versões públicas instaláveis">
-      <h3>Versões públicas · Linux</h3>
       {installationError && <p role="alert">{installationError}</p>}
       <div className="device-grid">{releases.filter((r) => normalize(`${r.name} ${r.manufacturer}`).includes(normalize(query))).map((release) =>
         <DeviceCardFrame key={release.id} id={`public-release-${release.id}`} name={release.name} manufacturer={`${release.manufacturer} · Mouse`} visual={<X6CardArt/>} status={<CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/>} aria-label={`Ver detalhes de ${release.name}`} onClick={() => setSelectedReleaseId(release.id)}/>

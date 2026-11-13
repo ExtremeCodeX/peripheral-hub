@@ -217,9 +217,8 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
       <main id="devices" tabIndex={-1}>
         {LocalView ? <LocalView onBack={() => setLocalView(null)} /> : activeMouse ? <MouseDetails key={activeMouse.id} mouse={activeMouse} fromExamples={examplesOpen} onBack={() => setDetailsId(null)} /> :
         <section className="collection" aria-labelledby="collection-title">
-          {page === 'library' && <p>R1: os controles ficam no aplicativo local R1 Control separado. Este núcleo não configura o R1 sozinho.</p>}
           <div className="collection-heading">
-              <div><h2 id="collection-title" tabIndex={-1}>{examplesOpen ? 'Exemplos para desenvolvedores' : page === 'library' ? 'Meus softwares' : 'Explorar softwares'}</h2>{page !== 'library' && <p>{examplesOpen ? 'Casos de referência para integrações. Todos os dados são fictícios.' : 'Versões públicas fixadas e metadados da comunidade. Instalar não executa código nem acessa o hardware.'}</p>}</div>
+              <div><h2 id="collection-title" tabIndex={-1}>{examplesOpen ? 'Exemplos para desenvolvedores' : page === 'library' ? 'Meus softwares' : 'Explorar softwares'}</h2>{examplesOpen && <p>Casos de referência para integrações. Todos os dados são fictícios.</p>}</div>
             {examplesOpen && <span className="demo-label"><span aria-hidden="true" />Modo demonstração</span>}
           </div>
           {page === 'library' ? <>

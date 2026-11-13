@@ -34,7 +34,9 @@ describe('coleção simplificada', () => {
       return Promise.resolve({ index: null, status: 'NOT_CONFIGURED', checkedAt: null, cacheWarning: null }) as never;
     });
     render(<App/>);
+    expect(screen.queryByText(/R1: os controles ficam/)).toBeNull();
     fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Explorar softwares' }));
+    expect(screen.queryByText(/Versões públicas fixadas|Versões públicas · Linux/)).toBeNull();
     const details = await screen.findByRole('button', { name: 'Ver detalhes de Attack Shark X6' });
     expect(details.querySelector('svg[viewBox="0 0 320 500"]')).toBeTruthy();
     expect(details.querySelector('.x6-hotspot')).toBeNull();
@@ -43,6 +45,10 @@ describe('coleção simplificada', () => {
     fireEvent.click(details);
     expect(screen.getByRole('heading', { name: 'Attack Shark X6' })).toBe(document.activeElement);
     expect(screen.getByText(publicReleases[0].description)).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Compatibilidade' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Limitações' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Código e distribuição' })).toBeTruthy();
+    expect(screen.getAllByRole('definition')).toHaveLength(3);
     fireEvent.click(screen.getByRole('button', { name: 'Repositório — abrir repositório no navegador' }));
     await waitFor(() => expect(invoke).toHaveBeenCalledWith('open_external_url', { url: publicReleases[0].repository }));
     fireEvent.click(screen.getByRole('button', { name: 'Release 0.6.0 — abrir release no navegador' }));

@@ -30,8 +30,7 @@ beforeEach(() => {
   vi.mocked(starterClient.set).mockImplementation(async (state, value, key) => ({ ...state, outcome: 'confirmed_by_readback', values: { ...state.values, [key!]: value === 'restore_session' ? snapshot().values[key!] : value } }));
 });
 async function connect() {
-  fireEvent.click(screen.getByRole('checkbox', { name: /Confirmei X6/ }));
-  fireEvent.click(screen.getByRole('button', { name: 'Conectar X6' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Conectar 2.4 GHz' }));
   await screen.findByText('HARDWARE · CONECTADO');
 }
 describe('X6 Control physical UI', () => {
@@ -121,9 +120,7 @@ describe('X6 Control physical UI', () => {
       await waitFor(()=>expect(starterClient.set).toHaveBeenLastCalledWith(expect.anything(),'restore_session',`button_${n}`));
       await waitFor(()=>expect(screen.getByRole('button',{name:'Restaurar botão'}).hasAttribute('disabled')).toBe(true));
     }
-    const input=screen.getByRole('textbox',{name:'Campo de teste de botão secundário'});
-    expect(fireEvent.keyDown(input,{key:'F5',code:'F5',cancelable:true})).toBe(false);
-    expect(screen.getByText(/F5 · Ctrl=false/)).toBeTruthy();
+    expect(screen.queryByRole('textbox',{name:'Campo de teste de botão secundário'})).toBeNull();
   });
   it('only adds the second top rectangle and independently selects both top buttons without writes', async () => {
     const { container } = render(<X6Control onBack={() => undefined}/>);
@@ -140,13 +137,11 @@ describe('X6 Control physical UI', () => {
     fireEvent.click(front);
     expect(screen.getByRole('button',{name:/6.*Botão superior 1/}).getAttribute('aria-pressed')).toBe('true');
     expect((screen.getByRole('combobox',{name:'Nova ação do botão selecionado'}) as HTMLSelectElement).value).toBe('dpi_up');
-    expect(screen.getByText(/grupo 5/).textContent).toContain('Um superior por operação');
     expect((screen.getByRole('button',{name:'Aplicar botão selecionado'}) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button',{name:/7.*Botão superior 2/}));
     expect(rear.getAttribute('aria-pressed')).toBe('true');
     expect(front.getAttribute('aria-pressed')).toBe('false');
     expect((screen.getByRole('combobox',{name:'Nova ação do botão selecionado'}) as HTMLSelectElement).value).toBe('dpi_down');
-    expect(screen.getByText(/grupo 6/).textContent).toContain('ACK e readback');
     expect((screen.getByRole('button',{name:'Restaurar botão'}) as HTMLButtonElement).disabled).toBe(true);
     expect(starterClient.set).not.toHaveBeenCalled();
   });
@@ -164,6 +159,9 @@ describe('X6 Control physical UI', () => {
   it('has three columns/tabs, no auto-connect, protected primary clicks and synchronized hotspots', async () => {
     render(<X6Control onBack={() => undefined}/>);
     expect(starterClient.start).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Conectar 2.4 GHz' }).hasAttribute('disabled')).toBe(false);
+    expect(screen.queryByRole('checkbox', { name: /Confirmei X6/ })).toBeNull();
+    expect(screen.queryByText(/Nenhum evento local|Somente neste campo|Teclas são posições HID|Um lateral por operação/)).toBeNull();
     expect((screen.getByRole('button', { name: 'Aplicar botão selecionado' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getAllByRole('tab').map((e) => e.textContent)).toEqual(['Mouse', 'Macros', 'Diagnóstico', 'Iluminação']);
     await connect();
