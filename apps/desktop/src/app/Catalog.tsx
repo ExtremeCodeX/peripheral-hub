@@ -5,6 +5,7 @@ import { DeviceCardFrame } from '../ui/DeviceCard';
 import { CoverageBadge } from '../ui/SoftwareStatus';
 import { X6CardArt } from '../integrations/x6/MouseArt';
 import type { PublicRelease } from './distribution';
+import { ExternalLink } from '../ui/ExternalLink';
 
 const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().trim();
 
@@ -20,28 +21,39 @@ export function useCatalog(active: boolean) {
 
 export function Catalog({ client, query, releases = [], installing = false, installationError = '', onInstall, onOpen }: { client: CatalogClient; query: string; releases?: PublicRelease[]; installing?: boolean; installationError?: string; onInstall?: (id: string) => void; onOpen?: () => void }) {
   const [selected, setSelected] = useState<CatalogSoftware | null>(null);
+  const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
   const detailRef = useRef<HTMLHeadingElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const entries = client.result.index?.software ?? [];
   const visible = entries.filter((entry) => normalize([entry.name, ...entry.devices.flatMap((d) => [d.model, d.manufacturer])].join(' ')).includes(normalize(query)));
   const current = selected && entries.find((entry) => entry.id === selected.id);
-  useEffect(() => { setSelected(null); }, [query]);
-  useEffect(() => { if (selected) detailRef.current?.focus(); }, [selected]);
+  const currentRelease = releases.find((release) => release.id === selectedReleaseId);
+  useEffect(() => { setSelected(null); setSelectedReleaseId(null); }, [query]);
+  useEffect(() => { if (selected || selectedReleaseId) detailRef.current?.focus(); }, [selected, selectedReleaseId]);
   useEffect(() => {
     if (selected && !current) { setSelected(null); document.getElementById('collection-title')?.focus(); }
   }, [selected, current]);
   const message = catalogMessages[client.result.status] ?? catalogMessages.WORKER_ERROR;
+  if (currentRelease) return <div className="catalog"><article className="catalog-details" aria-labelledby="public-release-title">
+    <button type="button" className="text-button" onClick={() => { setSelectedReleaseId(null); requestAnimationFrame(() => document.getElementById(`public-release-${currentRelease.id}`)?.focus()); }}>Voltar aos softwares</button>
+    <h3 id="public-release-title" ref={detailRef} tabIndex={-1}>{currentRelease.name}</h3>
+    <CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/>
+    <p>{currentRelease.description}</p>
+    <p>Linux · {currentRelease.version} · {currentRelease.installed ? 'Instalado' : installing ? 'Instalando…' : 'Disponível para instalar'}</p>
+    <h4>Compatibilidade</h4><p>{currentRelease.connection}</p>
+    <h4>Limitações</h4><ul>{currentRelease.limitations.map((limit) => <li key={limit}>{limit}</li>)}</ul>
+    <p><ExternalLink label="Repositório" url={currentRelease.repository} kind="repositório"/> · <ExternalLink label={`Release ${currentRelease.version}`} url={`${currentRelease.repository}/releases/tag/v${currentRelease.version}`} kind="release"/></p>
+    <p>Download fixado por manifesto/SHA-256. Não é sandbox; iniciar e acessar hardware exigem consentimento GTK. Sem vídeo público de qualificação individual.</p>
+    {installationError && <p role="alert">{installationError}</p>}
+    <button type="button" className="secondary-button" disabled={installing} onClick={() => currentRelease.installed ? onOpen?.() : onInstall?.(currentRelease.id)}>{installing ? 'Instalando…' : `${currentRelease.installed ? 'Abrir' : 'Instalar'} ${currentRelease.name}`}</button>
+  </article></div>;
   return <div className="catalog">
     {!!releases.length && <section aria-label="Versões públicas instaláveis">
       <h3>Versões públicas · Linux</h3>
       {installationError && <p role="alert">{installationError}</p>}
-      <div className="device-grid">{releases.filter((r) => normalize(`${r.name} ${r.manufacturer}`).includes(normalize(query))).map((release) => <article key={release.id}>
-        <DeviceCardFrame name={release.name} manufacturer={`${release.manufacturer} · Mouse`} visual={<X6CardArt/>} status={<CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/>} disabled={installing} aria-label={`${release.installed ? 'Abrir' : 'Instalar'} ${release.name}`} onClick={() => release.installed ? onOpen?.() : onInstall?.(release.id)}/>
-        <p>{release.description}</p><p>Linux · {release.version} · {release.installed ? 'Instalado' : installing ? 'Instalando…' : 'Clique no card para instalar'}</p>
-        <p>{release.connection}</p><ul>{release.limitations.map((limit) => <li key={limit}>{limit}</li>)}</ul>
-        <p><a href={release.repository} target="_blank" rel="noreferrer">Repositório</a> · <a href={`${release.repository}/releases/tag/v${release.version}`} target="_blank" rel="noreferrer">Release {release.version}</a></p>
-        <small>Download fixado por manifesto/SHA-256. Não é sandbox; iniciar e acessar hardware exigem consentimento GTK. Sem vídeo público de qualificação individual.</small>
-      </article>)}</div>
+      <div className="device-grid">{releases.filter((r) => normalize(`${r.name} ${r.manufacturer}`).includes(normalize(query))).map((release) =>
+        <DeviceCardFrame key={release.id} id={`public-release-${release.id}`} name={release.name} manufacturer={`${release.manufacturer} · Mouse`} visual={<X6CardArt/>} status={<CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/>} aria-label={`Ver detalhes de ${release.name}`} onClick={() => setSelectedReleaseId(release.id)}/>
+      )}</div>
     </section>}
     {(!releases.length || client.result.index || client.result.status !== 'NOT_CONFIGURED') && <><div className="collection-toolbar catalog-toolbar">
       <div role="status" aria-live="polite" aria-busy={client.busy}>

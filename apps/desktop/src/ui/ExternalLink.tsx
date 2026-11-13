@@ -10,7 +10,7 @@ export function isSafeExternalUrl(value: string | null): value is string {
   } catch { return false; }
 }
 
-export function ExternalLink({ label, url, kind }: { label: string; url: string | null; kind: 'perfil' | 'repositório' }) {
+export function ExternalLink({ label, url, kind }: { label: string; url: string | null; kind: 'perfil' | 'repositório' | 'release' }) {
   const [error, setError] = useState(false);
   const [opening, setOpening] = useState(false);
   const enabled = isSafeExternalUrl(url);

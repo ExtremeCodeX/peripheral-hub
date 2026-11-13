@@ -8,7 +8,9 @@ Esse registro de distribuição acompanha o build; não depende de uma pasta DEV
 URL configurada no ambiente ou branch remota móvel. Metadados de versão, manifesto,
 licença, tamanho e SHA-256 são revisados juntos no código do Hub.
 
-Em **Explorar softwares**, clicar no card instala a release HTTPS do GitHub.
+Em **Explorar softwares**, clicar no card abre uma tela dedicada com descrição,
+compatibilidade, limitações e links do repositório/release. O botão **Instalar**
+nessa tela instala a release HTTPS do GitHub; quando instalado, mostra **Abrir**.
 O worker isolado não executa o pacote e não acessa HID: verifica manifesto/artefato/
 licença por hashes fixados, escreve em diretório temporário privado e renomeia
 atomicamente para `$XDG_DATA_HOME/peripheral-hub/plugins/<id>` (fallback padrão XDG).
