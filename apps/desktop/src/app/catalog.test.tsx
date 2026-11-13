@@ -48,7 +48,7 @@ describe('catálogo somente metadados', () => {
     vi.mocked(invoke).mockResolvedValue(empty);
     const view = render(<App software={[]} />);
     await act(async () => { await vi.advanceTimersByTimeAsync(CATALOG_INTERVAL); });
-    expect(invoke).not.toHaveBeenCalled();
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'software_distribution')).toBe(true);
     await act(async () => { fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Explorar softwares' })); });
     fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Meus softwares' }));
     const before = vi.mocked(invoke).mock.calls.length;
@@ -75,15 +75,15 @@ describe('catálogo somente metadados', () => {
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     vi.mocked(invoke).mockResolvedValue(empty);
     render(<App software={[]} />);
-    expect(invoke).not.toHaveBeenCalled();
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'software_distribution')).toBe(true);
     fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Explorar softwares' }));
     expect(await screen.findByText('Nenhuma integração no catálogo')).toBeTruthy();
     expect(screen.queryByText('AURA M1')).toBeNull();
     expect(screen.queryByText('Modo demonstração')).toBeNull();
-    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'catalog_sync')).toBe(true);
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => ['catalog_sync', 'software_distribution'].includes(command))).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Atualizar catálogo' }));
     await screen.findByText('Catálogo atualizado.');
-    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'catalog_sync')).toBe(true);
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => ['catalog_sync', 'software_distribution'].includes(command))).toBe(true);
   });
   it('renderiza strings como texto, busca fabricante e não oferece links/instalação', async () => {
     const client = new CatalogClient(vi.fn());

@@ -72,7 +72,6 @@ pub fn source(_hardware: bool, _wire: &str) -> Result<String, String> {
     Err("R1_DISTRIBUTION_BLOCKED".into())
 }
 
-#[cfg(debug_assertions)]
 fn data_home() -> Result<std::path::PathBuf, String> {
     let path = match std::env::var_os("XDG_DATA_HOME") {
         Some(p) => std::path::PathBuf::from(p),
@@ -105,10 +104,10 @@ pub fn starter_source() -> Result<String, String> {
     Err("LOCAL_INTEGRATION_UNAVAILABLE".into())
 }
 
-#[cfg(all(debug_assertions, target_os = "linux"))]
+#[cfg(target_os = "linux")]
 struct Directory(std::fs::File);
 
-#[cfg(all(debug_assertions, target_os = "linux"))]
+#[cfg(target_os = "linux")]
 impl Directory {
     fn open(path: &std::path::Path) -> Result<Self, String> {
         use std::path::Component;
@@ -226,4 +225,39 @@ impl Directory {
         // Execute this snapshot, never reopen verified paths in the worker.
         String::from_utf8(bytes).map_err(|_| "LOCAL_SOURCE_INTEGRITY".into())
     }
+}
+
+pub fn public_entry(id: &str) -> Option<serde_json::Value> {
+    let entries: serde_json::Value =
+        serde_json::from_str(include_str!("../../../../catalog/installable.json")).ok()?;
+    entries
+        .as_array()?
+        .iter()
+        .find(|e| e["package"]["id"].as_str() == Some(id))
+        .cloned()
+}
+
+#[cfg(target_os = "linux")]
+pub fn public_source(id: &str) -> Result<String, String> {
+    let entry = public_entry(id).ok_or("UNAUTHORIZED_PLUGIN")?;
+    let directory = Directory::open(&data_home()?)?
+        .child("plugins")?
+        .child(id)?;
+    directory.read(
+        "manifest.json",
+        entry["manifestSha256"]
+            .as_str()
+            .ok_or("LOCAL_SOURCE_INTEGRITY")?,
+    )?;
+    directory.read(
+        "plugin.py",
+        entry["package"]["sha256"]
+            .as_str()
+            .ok_or("LOCAL_SOURCE_INTEGRITY")?,
+    )
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn public_source(_id: &str) -> Result<String, String> {
+    Err("LINUX_REQUIRED".into())
 }

@@ -10,6 +10,9 @@ export function StarterPreview({ onBack }: { onBack: () => void }) {
   const [value, setValue] = useState<Record<string, unknown>>({ sample_value: 50 });
   const [pluginId, setPluginId] = useState('dev.starter');
   const [editingId, setEditingId] = useState('dev.starter');
+  const [hardware, setHardware] = useState(false);
+  const [identityConfirmed, setIdentityConfirmed] = useState(false);
+  const [appliedKey, setAppliedKey] = useState<string | null>(null);
   const [invalid, setInvalid] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -18,13 +21,14 @@ export function StarterPreview({ onBack }: { onBack: () => void }) {
     title.current?.focus();
     return () => { generation.current++; void starterClient.stop().catch(() => undefined); };
   }, []);
-  async function run(task: () => Promise<Snapshot | null>) {
+  async function run(task: () => Promise<Snapshot | null>, key: string | null = null) {
     const current = ++generation.current;
     setBusy(true); setError('');
     try {
       const result = await task();
       if (current !== generation.current) return;
       setState(result); setValue(result?.values ?? { sample_value: 50 }); setInvalid({});
+      setAppliedKey(key);
     } catch (failure) {
       if (current !== generation.current) return;
       setState(null); setError(starterError(failure));
@@ -33,17 +37,19 @@ export function StarterPreview({ onBack }: { onBack: () => void }) {
   }
   return <section className="starter-preview" aria-labelledby="starter-title">
     <button className="text-button" type="button" onClick={onBack}>Voltar</button>
-    <h2 id="starter-title" ref={title} tabIndex={-1}>Starter local — simulado</h2>
-    <p>DEV · Processo Python JSON-RPC real · Estado simulado, sem hardware.</p>
+    <h2 id="starter-title" ref={title} tabIndex={-1}>{hardware ? 'Integração local — hardware' : 'Starter local — simulado'}</h2>
+    <p>{hardware ? 'DEV · Configuração física · Sem fallback para simulação.' : 'DEV · Processo Python JSON-RPC real · Estado simulado, sem hardware.'}</p>
     <form onSubmit={(event) => { event.preventDefault(); setPluginId(editingId); }}>
       <label htmlFor="local-plugin-id">Integração local registrada</label>{' '}
       <input id="local-plugin-id" value={editingId} disabled={busy || !!state} maxLength={64} pattern="dev\.[a-z0-9.-]+" onChange={(event) => setEditingId(event.target.value)} />
       <button className="text-button" type="submit" disabled={busy || !!state || editingId === pluginId}>Selecionar integração</button>
       <p>Selecionada: {pluginId}. Registre a fonte com tools/install-local.py antes de iniciar.</p>
     </form>
-    <SettingsPanel id="starter-setting-title" title="Valor de exemplo" status={busy ? 'Aguardando processo…' : state ? 'Sessão simulada aberta' : 'Processo parado'}>
-      <p>O starter fornecido altera somente memória. Iniciar exige confirmação nativa: código local modificado executa com suas permissões, sem sandbox.</p>
-      {(state?.settings ?? [{ key: 'sample_value', access: ['read', 'write'], effects: 'simulation_only', schema: { type: 'integer', enum: [0, 25, 50, 75, 100] } }]).map((setting) => {
+    <label><input type="checkbox" checked={hardware} disabled={busy || !!state} onChange={(e) => { setHardware(e.target.checked); setIdentityConfirmed(false); }} /> Backend físico (snapshot hardware necessário)</label>
+    {hardware && <label><input type="checkbox" checked={identityConfirmed} disabled={busy || !!state} onChange={(e) => setIdentityConfirmed(e.target.checked)} /> Confirmei o modelo físico e a conexão do periférico selecionado. VID/PID pode ser compartilhado.</label>}
+    <SettingsPanel id="starter-setting-title" title={hardware ? 'Configurações do dispositivo' : 'Valor de exemplo'} status={busy ? 'Aguardando processo…' : state ? hardware ? 'Conectado · leitura física validada' : 'Sessão simulada aberta' : 'Processo parado'}>
+      <p>{hardware ? 'Abrir, ler e aplicar exigem confirmação GTK por operação. Aplicar escreve no periférico e exige readback; backup é responsabilidade do plugin.' : 'O starter fornecido altera somente memória.'} Iniciar exige confirmação nativa: código local modificado executa com suas permissões, sem sandbox.</p>
+      {(state?.settings ?? (hardware ? [] : [{ key: 'sample_value', access: ['read', 'write'], effects: 'simulation_only', schema: { type: 'integer', enum: [0, 25, 50, 75, 100] } }])).map((setting) => {
         const id = `setting-${setting.key}`;
         const disabled = !state || busy || !setting.access.includes('write');
         const draft = value[setting.key];
@@ -59,12 +65,12 @@ export function StarterPreview({ onBack }: { onBack: () => void }) {
             : numeric ? <input id={id} type="number" min={setting.schema.minimum} max={setting.schema.maximum} step={setting.schema.multipleOf} value={Number(draft)} disabled={disabled} onChange={(e) => update(e.target.value === '' ? null : Number(e.target.value))} />
             : <textarea id={id} key={state?.baselineToken ?? 'stopped'} defaultValue={JSON.stringify(draft, null, 2)} disabled={disabled} aria-invalid={invalid[setting.key] || undefined} aria-describedby={invalid[setting.key] ? `${id}-error` : undefined} onChange={(e) => { try { update(JSON.parse(e.target.value)); setInvalid((errors) => ({ ...errors, [setting.key]: false })); } catch { setInvalid((errors) => ({ ...errors, [setting.key]: true })); } }} />}
           {invalid[setting.key] && <p id={`${id}-error`} role="alert">JSON inválido. Corrija o rascunho antes de aplicar.</p>}
-          <button className="text-button" type="button" disabled={disabled || invalid[setting.key] || JSON.stringify(draft) === JSON.stringify(state?.values[setting.key])} onClick={() => state && void run(() => starterClient.set(state, draft, setting.key))}>Aplicar no simulador</button>
-          <p role="status">{state ? `Lido do processo: ${typeof state.values[setting.key] === 'object' ? JSON.stringify(state.values[setting.key]) : String(state.values[setting.key] ?? 'não disponível')} · resultado simulado.` : 'Inicie o processo para ler seu estado. Parar ou sair encerra a sessão.'}</p>
+          <button className="text-button" type="button" disabled={disabled || invalid[setting.key] || JSON.stringify(draft) === JSON.stringify(state?.values[setting.key])} onClick={() => state && void run(() => starterClient.set(state, draft, setting.key), setting.key)}>{hardware ? 'Aplicar no dispositivo' : 'Aplicar no simulador'}</button>
+          <p role="status">{state ? `Lido do processo: ${typeof state.values[setting.key] === 'object' ? JSON.stringify(state.values[setting.key]) : String(state.values[setting.key] ?? 'não disponível')} · ${state.hardwareAccess ? state.outcome === 'confirmed_by_readback' && appliedKey === setting.key ? 'escrita confirmada por readback físico' : state.outcome === 'unchanged' && appliedKey === setting.key ? 'sem alteração física' : 'lido do dispositivo físico' : 'resultado simulado'}.` : 'Inicie o processo para ler seu estado. Parar ou sair encerra a sessão.'}</p>
         </div>;
       })}
       <div className="starter-preview__actions">
-        <button className="text-button" type="button" disabled={busy} onClick={() => void run(state ? async () => { await starterClient.stop(); return null; } : () => starterClient.start(pluginId))}>{state ? 'Parar processo' : 'Iniciar processo'}</button>
+        <button className="text-button" type="button" disabled={busy || (!state && hardware && !identityConfirmed)} onClick={() => void run(state ? async () => { await starterClient.stop(); return null; } : () => starterClient.start(pluginId, hardware))}>{state ? 'Parar processo' : 'Iniciar processo'}</button>
         <button className="text-button" type="button" disabled={!state || busy} onClick={() => state && void run(() => starterClient.read(state.session))}>Ler estado</button>
       </div>
       {error && <p role="alert">{error}</p>}

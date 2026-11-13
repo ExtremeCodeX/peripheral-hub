@@ -10,6 +10,8 @@ import { demoExamples } from './demo-examples';
 import { categoryLabels, filterSoftware, registeredSoftware, type LocalSoftware } from './local-software';
 import { Catalog, useCatalog } from './Catalog';
 import { starterPreviewIntegration } from '../integrations/starter/Preview';
+import { x6Integration, publicX6Integration } from '../integrations/x6/Control';
+import { publicReleases, type PublicRelease } from './distribution';
 
 type Page = 'library' | 'explore' | 'examples';
 
@@ -20,8 +22,22 @@ export function App({ software = registeredSoftware }: { software?: readonly Loc
 function AppContent({ software }: { software: readonly LocalSoftware[] }) {
   const [page, setPage] = useState<Page>('library');
   const [starterRegistered, setStarterRegistered] = useState(false);
-  const localSoftware = import.meta.env.DEV && starterRegistered
-    ? [...software.filter((entry) => entry.id !== starterPreviewIntegration.id), starterPreviewIntegration] : software;
+  const [x6Registered, setX6Registered] = useState(false);
+  const [releases, setReleases] = useState<PublicRelease[]>(publicReleases);
+  const [installing, setInstalling] = useState(false);
+  const [installationError, setInstallationError] = useState('');
+  useEffect(() => {
+    let active = true;
+    Promise.resolve(invoke<{ software: PublicRelease[] }>('software_distribution', { request: { action: 'list' } }))
+      .then((result) => { if (active && Array.isArray(result?.software)) setReleases(result.software); })
+      .catch(() => { if (active) setInstallationError('Não foi possível consultar as instalações públicas. Use o Hub desktop atualizado.'); });
+    return () => { active = false; };
+  }, []);
+  const publicInstalled = releases.some((r) => r.id === publicX6Integration.id && r.installed);
+  const localSoftware = [...software,
+    ...(publicInstalled && !software.some((s) => s.id === publicX6Integration.id) ? [publicX6Integration] : []),
+    ...(import.meta.env.DEV && starterRegistered && !software.some((s) => s.id === starterPreviewIntegration.id) ? [starterPreviewIntegration] : []),
+     ...(import.meta.env.DEV && x6Registered && !publicInstalled && !software.some((s) => s.id === x6Integration.id) ? [x6Integration] : [])];
   const catalog = useCatalog(page === 'explore');
   const [queries, setQueries] = useState<Record<Page, string>>({ library: '', explore: '', examples: '' });
   const query = queries[page];
@@ -140,6 +156,18 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
     window.scrollTo({ top: 0 });
   }
 
+  async function installPublic(id: string) {
+    if (installing) return;
+    setInstalling(true); setInstallationError('');
+    try {
+      const result = await invoke<{ software: PublicRelease[] }>('software_distribution', { request: { action: 'install', plugin_id: id } });
+      if (!Array.isArray(result?.software)) throw new Error('INVALID_RESULT');
+      setReleases(result.software);
+    } catch {
+      setInstallationError('Instalação não concluída. Confira rede, versão do Hub, permissões e integridade do pacote. Nenhum código foi executado; tente novamente apenas após revisar o erro.');
+    } finally { setInstalling(false); }
+  }
+
   function openDetails(id: DemoMouseId) {
     galleryScrollRef.current = window.scrollY;
     returnFocusIdRef.current = id;
@@ -168,7 +196,8 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
                  <button ref={firstMenuActionRef} className="menu-action" type="button" onClick={() => navigate('library')}><Icon name="mouse" />Meus softwares<Icon name="chevron" /></button>
                  <button className="menu-action" type="button" onClick={() => navigate('explore')}><Icon name="search" />Explorar softwares<Icon name="chevron" /></button>
                   {import.meta.env.DEV && <button className="menu-action" type="button" onClick={() => navigate('examples')}><Icon name="terminal" />Exemplos para desenvolvedores<Icon name="chevron" /></button>}
-                  {import.meta.env.DEV && <button className="menu-action" type="button" disabled={starterRegistered} onClick={() => { setStarterRegistered(true); setQueries((current) => ({ ...current, library: '' })); navigate('library'); }}><Icon name="terminal" />{starterRegistered ? 'Starter local registrado (DEV)' : 'Registrar starter local (DEV)'}<Icon name="chevron" /></button>}
+                   {import.meta.env.DEV && <button className="menu-action" type="button" disabled={starterRegistered} onClick={() => { setStarterRegistered(true); setQueries((current) => ({ ...current, library: '' })); navigate('library'); }}><Icon name="terminal" />{starterRegistered ? 'Starter local registrado (DEV)' : 'Registrar starter local (DEV)'}<Icon name="chevron" /></button>}
+                   {import.meta.env.DEV && <button className="menu-action" type="button" disabled={x6Registered} onClick={() => { setX6Registered(true); setQueries((current) => ({ ...current, library: '' })); navigate('library'); }}><Icon name="mouse" />{x6Registered ? 'X6 Control registrado (DEV)' : 'Registrar X6 Control (DEV)'}<Icon name="chevron" /></button>}
                 <div className="menu-diagnostic">
                   <button className="menu-action" type="button" disabled={checking} onClick={checkBackend}><Icon name="terminal" />{checking ? 'Verificando…' : 'Verificar backend'}</button>
                   <p role="status">{backendStatus}</p>
@@ -190,7 +219,7 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
         <section className="collection" aria-labelledby="collection-title">
           {page === 'library' && <p>R1: os controles ficam no aplicativo local R1 Control separado. Este núcleo não configura o R1 sozinho.</p>}
           <div className="collection-heading">
-             <div><h2 id="collection-title" tabIndex={-1}>{examplesOpen ? 'Exemplos para desenvolvedores' : page === 'library' ? 'Meus softwares' : 'Explorar softwares'}</h2>{page !== 'library' && <p>{examplesOpen ? 'Casos de referência para integrações. Todos os dados são fictícios.' : 'Versões do catálogo curado. Somente consulta; sem instalação ou execução.'}</p>}</div>
+              <div><h2 id="collection-title" tabIndex={-1}>{examplesOpen ? 'Exemplos para desenvolvedores' : page === 'library' ? 'Meus softwares' : 'Explorar softwares'}</h2>{page !== 'library' && <p>{examplesOpen ? 'Casos de referência para integrações. Todos os dados são fictícios.' : 'Versões públicas fixadas e metadados da comunidade. Instalar não executa código nem acessa o hardware.'}</p>}</div>
             {examplesOpen && <span className="demo-label"><span aria-hidden="true" />Modo demonstração</span>}
           </div>
           {page === 'library' ? <>
@@ -201,7 +230,7 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
               return <DeviceCardFrame key={entry.id} name={entry.name} manufacturer={`${entry.manufacturer}${entry.category && entry.showCategoryOnCard !== false ? ` · ${categoryLabels[entry.category]}` : ''}`} data-software={entry.id} disabled={!entry.available} onClick={() => openLocal(entry)} aria-label={`Abrir ${entry.name}`} visual={Visual && <Visual />} status={entry.available && entry.coverage ? <CoverageBadge coverage={entry.coverage} label={entry.status} title="Suporte no escopo documentado da integração. Consulte os limites nos detalhes." /> : <span className="software-card__status">{entry.available ? entry.status : 'Indisponível · abertura desativada'}</span>}>{Presence && <Presence />}</DeviceCardFrame>;
             })}</div> :
               <div className="empty-state"><Icon name={software.length ? 'search' : 'mouse'} /><h3>{software.length ? 'Nenhum software encontrado.' : 'Sua biblioteca está vazia'}</h3>{software.length ? <><p>Nenhum software registrado corresponde a “{query}”.</p><button className="text-button" type="button" onClick={clearSearch}>Limpar pesquisa<Icon name="arrow" /></button></> : <><p>Você ainda não adicionou nenhum software ao Peripheral Hub. Explore os softwares disponíveis e comece a configurar seus periféricos.</p><button className="text-button" type="button" onClick={() => navigate('explore')}>Explorar softwares<Icon name="arrow" /></button></>}</div>}
-          </> : page === 'explore' ? <Catalog client={catalog} query={query} /> : <>
+          </> : page === 'explore' ? <Catalog client={catalog} query={query} releases={releases} installing={installing} installationError={installationError} onInstall={installPublic} onOpen={() => openLocal(publicX6Integration)} /> : <>
           <div className="collection-toolbar">
             <span className="collection-category"><Icon name="mouse" />Mouses<span className="count-badge">{visibleMice.length}</span></span>
             <span className="collection-hint">Modelos fictícios · Sem conexão com hardware</span>

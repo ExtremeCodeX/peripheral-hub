@@ -22,11 +22,25 @@ mod local_runtime;
 // languages can implement the same mode/evidence contract without host codecs.
 fn allowed_plugin(id: &str, development: bool, debug: bool) -> Option<bool> {
     match id {
+        id if !development && local_runtime::public_entry(id).is_some() => Some(true),
         "local.r1.hardware" | "local.r1.simulated" => None,
         "dev.fake" | "dev.starter" if debug && development => Some(false),
         id if debug && development && local_runtime::valid_dev_id(id) => Some(false),
         _ => None,
     }
+}
+
+#[cfg(test)]
+#[test]
+fn public_registry_is_available_without_enabling_dev_in_release() {
+    let id = "io.github.extremecodex.attack-shark-x6";
+    assert_eq!(allowed_plugin(id, false, false), Some(true));
+    assert_eq!(allowed_plugin(id, true, false), None);
+    assert_eq!(allowed_plugin("dev.attack-shark-x6", true, false), None);
+    assert_eq!(
+        allowed_plugin("io.github.unknown.plugin", false, false),
+        None
+    );
 }
 
 #[cfg(test)]
@@ -53,6 +67,7 @@ fn local_plugin(id: &str, development: bool) -> Result<(String, bool), String> {
 // Reviewed local identities only. Never accept source, paths or arguments from IPC.
 fn local_source(id: &str) -> Result<String, String> {
     match id {
+        id if local_runtime::public_entry(id).is_some() => local_runtime::public_source(id),
         "dev.fake" => Ok(SOURCE.into()),
         #[cfg(debug_assertions)]
         "dev.starter" => local_runtime::starter_source(),
@@ -74,6 +89,10 @@ mod tests;
 #[derive(Debug, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum DevAction {
+    StartHardware {
+        plugin_id: String,
+        development: bool,
+    },
     Start {
         plugin_id: String,
         development: bool,
@@ -128,11 +147,12 @@ impl PhysicalConfirmation {
     pub fn description(&self) -> String {
         let operation = match self.method.as_str() {
             "process.start.dev" => format!(
-                "Executar código Python local de desenvolvimento, modificável e NÃO isolado. Ele terá as permissões do seu usuário, inclusive arquivos, rede e hardware. Não autorize código desconhecido.\nSHA-256 do snapshot: {}",
-                self.params["sha256"].as_str().unwrap_or("")
+                "Executar código Python local de desenvolvimento, modificável e NÃO isolado. Ele terá as permissões do seu usuário, inclusive arquivos, rede e hardware. Não autorize código desconhecido.\nModo solicitado: {}\nSHA-256 do snapshot: {}",
+                self.params["mode"].as_str().unwrap_or("fake"), self.params["sha256"].as_str().unwrap_or("")
             ),
+            "process.start.public" => format!("Executar plugin público instalado e conferido por SHA-256. Código Python NÃO isolado: terá as permissões do seu usuário, inclusive arquivos, rede e hardware.\nSHA-256: {}", self.params["sha256"].as_str().unwrap_or("")),
             "device.open" => format!(
-                "Abrir e identificar o candidato {}. Isso permite acesso HID ao dispositivo.",
+                "Abrir e identificar o candidato {}. Isso permite acesso HID ao dispositivo. Confirme o modelo físico e a conexão antes de autorizar: VID/PID não é identidade exclusiva.",
                 self.params["candidateId"].as_str().unwrap_or("")
             ),
             "device.get_state" => "Ler a configuração atual. A leitura ativa também envia comandos preparadores ao periférico.".into(),
@@ -177,7 +197,29 @@ impl DevHost {
     ) -> Result<Value, String> {
         // Legacy flags encode intent only. The host confirmation below is the
         // actual boundary for physical open/read/write, in debug AND release.
+        let hardware_requested = matches!(&action, DevAction::StartHardware { .. });
         let (action, physical_intent) = match action {
+            DevAction::StartHardware {
+                plugin_id,
+                development,
+            } => {
+                let public = !development && local_runtime::public_entry(&plugin_id).is_some();
+                if !public
+                    && (!cfg!(debug_assertions)
+                        || !development
+                        || !local_runtime::valid_dev_id(&plugin_id)
+                        || matches!(plugin_id.as_str(), "dev.fake" | "dev.starter"))
+                {
+                    return Err("UNAUTHORIZED_PLUGIN".into());
+                }
+                (
+                    DevAction::Start {
+                        plugin_id,
+                        development,
+                    },
+                    false,
+                )
+            }
             DevAction::ReadActive {
                 session,
                 authorization,
@@ -204,7 +246,8 @@ impl DevHost {
                 plugin_id,
                 development,
             } => {
-                let (source, hardware) = local_plugin(&plugin_id, development)?;
+                let (source, registry_hardware) = local_plugin(&plugin_id, development)?;
+                let hardware = registry_hardware || hardware_requested;
                 if self.process.is_some() {
                     return Err("ALREADY_STARTED".into());
                 }
@@ -215,8 +258,13 @@ impl DevHost {
                         generation,
                         operation: 0,
                         plugin_id: plugin_id.clone(),
-                        method: "process.start.dev".into(),
-                        params: json!({"sha256":format!("{:x}", Sha256::digest(source.as_bytes()))}),
+                        method: if development {
+                            "process.start.dev"
+                        } else {
+                            "process.start.public"
+                        }
+                        .into(),
+                        params: json!({"sha256":format!("{:x}", Sha256::digest(source.as_bytes())), "mode": if hardware {"hardware"} else {"fake"}}),
                     })?;
                 }
                 let mut process = Process::spawn(&source, TIMEOUT)?;
@@ -819,6 +867,7 @@ fn valid_error_data(data: &Value) -> bool {
             "INVALID_SNAPSHOT",
             "BACKUP_FAILED",
             "VERIFICATION_FAILED",
+            "ACK_FAILED",
             "DISCOVERY_FAILED",
             "INTERNAL_ERROR",
             "TIMEOUT",

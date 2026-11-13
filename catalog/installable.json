@@ -1,0 +1,31 @@
+[
+  {
+    "manifestUrl": "https://github.com/ExtremeCodeX/attack-shark-x6-plugin/releases/download/v0.6.0/manifest.json",
+    "manifestSha256": "6955a30ad555c9bb4f5eede79eb623bda822812fec773d0627498ba2f243e5d5",
+    "package": {
+      "schemaVersion": 1,
+      "kind": "peripheral-hub-python-plugin",
+      "id": "io.github.extremecodex.attack-shark-x6",
+      "name": "Attack Shark X6",
+      "manufacturer": "Attack Shark",
+      "category": "mouse",
+      "platform": "linux",
+      "status": "partial",
+      "version": "0.6.0",
+      "minimumHubVersion": "0.2.0",
+      "protocolVersion": "0.1",
+      "entrypoint": "plugin.py",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/ExtremeCodeX/attack-shark-x6-plugin",
+      "description": "DPI, polling, quatro botões secundários, 132 ações documentadas e cores DPI reais. RGB por estágio comprovado; modos e níveis com validação visual parcial.",
+      "connection": "X6 por receptor USB 2,4 GHz; sem suporte declarado a Bluetooth ou USB com fio.",
+      "requirements": ["Python 3.11+ em /usr/bin/python3", "Linux hidraw com acesso concedido pelo sistema", "Consentimento GTK por operação; código não isolado"],
+      "limitations": ["Sem macros, perfis ou controle RGB da base", "Catálogo de teclas com validação física parcial; F13–F24 e ABNT2 extra bloqueadas", "Modos de iluminação e níveis sem confirmação visual individual", "Bateria bruta, não porcentagem", "Somente seis estágios habilitados; slots 7/8 protegidos"],
+      "sha256": "46f0682a7decdaefbac6d8c385d202cf8305b20360f830dd47599f8e7cf1965b",
+      "byteLength": 58065,
+      "artifact": "https://github.com/ExtremeCodeX/attack-shark-x6-plugin/releases/download/v0.6.0/attack-shark-x6-0.6.0.py",
+      "licenseUrl": "https://github.com/ExtremeCodeX/attack-shark-x6-plugin/releases/download/v0.6.0/LICENSE",
+      "licenseSha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+  }
+]

@@ -2,6 +2,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { invoke } from '@tauri-apps/api/core';
 import { App } from './App';
+import { publicReleases } from './distribution';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 beforeAll(() => {
@@ -10,7 +11,7 @@ beforeAll(() => {
     close: { configurable: true, value() { this.removeAttribute('open'); } },
   });
 });
-beforeEach(() => { vi.spyOn(window, 'scrollTo').mockImplementation(() => {}); });
+beforeEach(() => { vi.mocked(invoke).mockReset(); vi.spyOn(window, 'scrollTo').mockImplementation(() => {}); });
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllEnvs(); });
 
 function openMenu() { fireEvent.click(screen.getByRole('button', { name: 'Menu do aplicativo' })); }
@@ -22,6 +23,33 @@ function renderExplore() {
 function openDetails(name = 'NOVA AIR') { fireEvent.click(screen.getByRole('button', { name: `Ver detalhes de ${name}` })); }
 
 describe('coleção simplificada', () => {
+  it('installs the public X6 in production, displays original art/Parcial and opens without hardware I/O', async () => {
+    vi.stubEnv('DEV', false);
+    let installed = false;
+    vi.mocked(invoke).mockImplementation((command, args) => {
+      if (command === 'software_distribution') {
+        if ((args as { request?: { action?: string } })?.request?.action === 'install') installed = true;
+        return Promise.resolve({ software: publicReleases.map((r) => ({ ...r, installed })) }) as never;
+      }
+      return Promise.resolve({ index: null, status: 'NOT_CONFIGURED', checkedAt: null, cacheWarning: null }) as never;
+    });
+    render(<App/>);
+    fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Explorar softwares' }));
+    const install = await screen.findByRole('button', { name: 'Instalar Attack Shark X6' });
+    expect(install.querySelector('svg[viewBox="0 0 320 500"]')).toBeTruthy();
+    expect(install.querySelector('.x6-hotspot')).toBeNull();
+    expect(within(install).getByText('Parcial')).toBeTruthy();
+    fireEvent.click(install);
+    await screen.findByRole('button', { name: 'Abrir Attack Shark X6' });
+    fireEvent.click(screen.getByRole('button', { name: 'Meus softwares' }));
+    const card = screen.getByRole('button', { name: 'Abrir Attack Shark X6' });
+    expect(screen.getAllByRole('button', { name: 'Abrir Attack Shark X6' })).toHaveLength(1);
+    expect(within(card).getByText('Parcial')).toBeTruthy();
+    expect(card.textContent).not.toContain('Hardware DEV');
+    fireEvent.click(card);
+    expect(screen.getByRole('heading', { name: 'X6 / CONTROL' })).toBeTruthy();
+    expect(vi.mocked(invoke).mock.calls.some(([command]) => ['plugin_public', 'starter_local', 'plugin_poc'].includes(command))).toBe(false);
+  });
   it('keeps examples and local code registration out of production', () => {
     vi.stubEnv('DEV', false);
     render(<App />);
@@ -29,7 +57,20 @@ describe('coleção simplificada', () => {
     openMenu();
     expect(screen.queryByRole('button', { name: 'Exemplos para desenvolvedores' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Registrar starter local (DEV)' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Registrar X6 Control (DEV)' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Attack Shark R1/i })).toBeNull();
+  });
+  it('opens X6 as an isolated local workspace without loading code or hardware automatically', () => {
+    render(<App software={[]} />);
+    openMenu();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar X6 Control (DEV)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Attack Shark X6' }));
+    expect(screen.getByRole('heading', { name: 'X6 / CONTROL' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Peripheral Hub' })).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Mouse' }).getAttribute('aria-selected')).toBe('true');
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'software_distribution')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar ao Hub' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Abrir Attack Shark X6' }));
   });
   it('registers the starter locally without auto-start and returns focus to its library card', () => {
     render(<App software={[]} />);
@@ -62,7 +103,7 @@ describe('coleção simplificada', () => {
     expect(card.textContent).not.toContain('Forma simétrica');
     fireEvent.click(card.querySelector('.mouse-artwork')!);
     expect(screen.getByRole('heading', { name: 'AURA M1' })).toBeTruthy();
-    expect(invoke).not.toHaveBeenCalled();
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'software_distribution')).toBe(true);
   });
 
   it('mostra cobertura e BETA antes de abrir a tela, sem seletores intermediários', () => {
@@ -126,7 +167,7 @@ describe('coleção simplificada', () => {
   });
 
   it('preserva o diagnóstico Tauri e o tratamento de falha', async () => {
-    vi.mocked(invoke).mockResolvedValueOnce('Backend Rust disponível.');
+    vi.mocked(invoke).mockResolvedValueOnce({ software: [] }).mockResolvedValueOnce('Backend Rust disponível.');
     renderExplore();
     openMenu();
     fireEvent.click(screen.getByRole('button', { name: 'Verificar backend' }));
@@ -213,7 +254,7 @@ describe('avaliação preservada', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fechar avaliação' }));
     expect(document.activeElement).toBe(trigger);
     expect(screen.getByText('1 de 2 aprovações')).toBeTruthy();
-    expect(invoke).not.toHaveBeenCalled();
+    expect(vi.mocked(invoke).mock.calls.every(([command]) => command === 'software_distribution')).toBe(true);
   });
 
   it('usa um só modal, prévia opcional e cancelamento nativo', () => {

@@ -50,6 +50,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             check_backend,
             catalog_sync,
+            software_distribution,
+            plugin_public,
             open_external_url,
             plugin_poc,
             enumerate_passive_usb,
@@ -59,6 +61,8 @@ fn main() {
     let builder = builder.invoke_handler(tauri::generate_handler![
         check_backend,
         catalog_sync,
+        software_distribution,
+        plugin_public,
         open_external_url,
         plugin_poc,
         enumerate_passive_usb
@@ -127,6 +131,7 @@ mod starter_host;
 mod passive_usb;
 
 mod catalog;
+mod distribution;
 
 mod native_confirmation;
 
@@ -156,6 +161,54 @@ async fn catalog_sync(app: tauri::AppHandle, refresh: bool) -> Result<serde_json
     tauri::async_runtime::spawn_blocking(move || catalog::sync(app, refresh))
         .await
         .map_err(|_| "WORKER_ERROR".to_string())?
+}
+
+#[tauri::command]
+async fn software_distribution(
+    request: distribution::Request,
+) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || distribution::execute(request))
+        .await
+        .map_err(|_| "INSTALLATION_FAILED".to_string())?
+}
+
+#[tauri::command]
+async fn plugin_public(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, std::sync::Arc<std::sync::Mutex<plugin_host::DevHost>>>,
+    request: plugin_host::DevAction,
+) -> Result<serde_json::Value, serde_json::Value> {
+    match &request {
+        plugin_host::DevAction::Start {
+            plugin_id,
+            development,
+        }
+        | plugin_host::DevAction::StartHardware {
+            plugin_id,
+            development,
+        } if *development
+            || !distribution::registry()
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|e| e["package"]["id"].as_str() == Some(plugin_id)) =>
+        {
+            return Err(plugin_host::error_detail("UNAUTHORIZED_PLUGIN".into()))
+        }
+        _ => (),
+    }
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        state
+            .try_lock()
+            .map_err(|_| "BUSY".to_string())?
+            .execute_with_confirmation(request, |operation| {
+                native_confirmation::confirm(window, operation.clone())
+            })
+    })
+    .await
+    .map_err(|_| plugin_host::error_detail("HOST_TASK_FAILED".into()))?
+    .map_err(plugin_host::error_detail)
 }
 
 #[tauri::command]

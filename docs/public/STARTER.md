@@ -18,7 +18,7 @@ O transporte JSON-RPC é independente da linguagem. O carregador DEV desta vers�
 carrega snapshots Python com biblioteca padrão; binários de outras linguagens e
 dependências externas não têm instalador/launcher genérico nesta versão. Isso não
 obriga futuros plugins a usar Python, mas limita o fluxo executável aqui entregue.
-O modo genérico entregue é simulado: backend físico exige implementação própria,
+O starter padrão é simulado: backend físico exige implementação própria,
 consentimento específico e validação real, não simplesmente mudar um rótulo.
 
 ## 2. Registrar localmente
@@ -81,6 +81,35 @@ Schema do host: enums escalares, booleanos, intervalos com minimum/maximum/
 multipleOf, arrays limitados e objetos de propriedades obrigatórias. Sem refs,
 validadores executáveis ou coerção. O starter implementa somente os escalares;
 estruturas exigem validação correspondente no seu backend.
+
+## Hardware local DEV (opt-in)
+
+O modo antigo continua simulado por padrão. Uma fonte Python física autocontida
+pode ser instalada pelo mesmo instalador e ID `dev.*` (não reservado). Marque
+**Backend físico** e confirme o modelo/conexão na UI antes de iniciar. Isso
+seleciona `start_hardware`, não muda silenciosamente o modo de um starter.
+O handshake deve declarar `mode:"hardware", hardwareAccess:true`; o host fixa
+essa expectativa antes de iniciar. Incompatibilidade encerra o processo.
+
+O snapshot completo continua limitado a 64 KiB, sem dependências externas ou
+módulos irmãos instalados implicitamente. Um plugin pode gerar um único snapshot
+com seus módulos incorporados; o hash mostrado no GTK cobre todo esse código.
+
+O fluxo genérico é `device.discover` passivo, seleção de candidato único,
+`device.open`, `device.get_state`, `device.set_setting`. Cada open/read/set exige
+confirmação GTK nativa, ligada à operação exata e à geração/sessão. Os campos
+`authorization:true` expressam intenção e **não substituem** essa confirmação.
+Não há comando arbitrário, shell, retry de escrita, fallback simulado ou permissão
+permanente. O catálogo continua incapaz de instalar/executar código.
+
+Capabilities físicas usam `effects:"active_read"` com acesso somente leitura, ou
+`effects:"active_read_and_configuration_write"`. Estado exige `baselineTokens`
+e `readTimes` por chave. Leitura retorna `outcome:"read_from_device"`; aplicação
+só pode retornar `unchanged` ou `confirmed_by_readback`. O plugin é responsável
+por identificação, codecs, backup durável, preservação de bytes e readback real.
+O host valida formato/estado, não consegue provar honestidade ou isolar código
+Python autorizado. Nenhum protocolo ou identificador de periférico é incluído
+nessa extensão genérica. Release e navegador não executam esse fluxo DEV.
 
 ## Submissão
 

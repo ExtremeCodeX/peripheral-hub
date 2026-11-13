@@ -1,5 +1,15 @@
 # Peripheral Hub
 
+## Attack Shark X6 · Parcial
+
+O Hub 0.2.0 inclui instalação pública do X6 em **Explorar softwares**. A release
+é fixada por manifesto, tamanho e SHA-256; instalar e abrir o card não acessam
+o mouse. A tela X6 / CONTROL reutiliza a arte original e exige GTK para iniciar
+o plugin e operar hardware. Requer Linux, Python 3.11+ e acesso hidraw existente.
+Veja [catálogo e instalação](docs/public/CATALOG.md) e a
+[release do plugin](https://github.com/ExtremeCodeX/attack-shark-x6-plugin/releases/tag/v0.6.0).
+
+
 Aplicativo **Linux-first** para desenvolver e descobrir integrações comunitárias
 de periféricos. Tauri 2, React/TypeScript e Rust; plugins comunicam por
 JSON-RPC 2.0 em stdin/stdout. Núcleo sob **Apache-2.0**.
@@ -38,14 +48,14 @@ pare/inicie o processo: **não é necessário recompilar o Hub**.
 
 O [guia de plugins](docs/public/STARTER.md) explica capacidades, estado, erros,
 limites do contrato e submissão. O transporte não define protocolo de mouse;
-o carregador DEV entregue usa Python. O fluxo genérico atual é de simulação,
-não promete configuração física universal nem um SDK estável.
+o carregador DEV e o runtime público usam Python. O X6 tem configuração física;
+isso não promete configuração universal nem um SDK estável.
 
 ## Estado do produto
 
-- Catálogo curado **somente de metadados**, com cache e validação. Inicialmente
-  vazio: nenhum R1 ou exemplo fictício é aprovado por este código.
-- Sem instalação, execução ou atualização automática a partir do catálogo.
+- Catálogo comunitário remoto de metadados com cache/validação e distribuição
+  pública fixada do X6. Nenhum R1 ou exemplo fictício é aprovado por este código.
+- Instalação pública explícita pelo catálogo; sem execução ou atualização automática.
 - Exemplos fictícios e registro de código local somente em desenvolvimento.
 - Controles locais vêm das capacidades do processo; sem frontend remoto.
 - Execução DEV exige confirmação nativa por snapshot e validação de caminhos.

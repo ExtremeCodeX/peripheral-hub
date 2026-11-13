@@ -1,5 +1,15 @@
 use super::*;
 
+#[test]
+fn generic_ack_error_preserves_uncertainty_without_retry() {
+    let data = json!({"kind":"ACK_FAILED","configurationOutcome":"unknown","stage":"writing","operationId":null,"retryable":false});
+    assert!(valid_error_data(&data));
+    assert_eq!(error_detail(data.to_string()), data);
+    let mut unsafe_retry = data.clone();
+    unsafe_retry["retryable"] = json!(true);
+    assert!(!valid_error_data(&unsafe_retry));
+}
+
 // Entirely synthetic peer, including for release tests. Never construct the R1
 // source, load its modules, enumerate sysfs, or open a device in these tests.
 fn physical_confirmation_host(open: bool) -> DevHost {

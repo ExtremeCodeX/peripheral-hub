@@ -6,6 +6,25 @@ use serde_json::Value;
 #[derive(Debug, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum StarterAction {
+    StartHardware {
+        plugin_id: String,
+    },
+    Discover {},
+    OpenCandidate {
+        candidate_id: String,
+        authorization: bool,
+    },
+    ReadActive {
+        session: String,
+        authorization: bool,
+    },
+    Apply {
+        session: String,
+        baseline_token: String,
+        key: String,
+        value: Value,
+        authorization: bool,
+    },
     Start {},
     StartPlugin {
         plugin_id: String,
@@ -47,6 +66,38 @@ impl StarterHost {
             return Err("DEV_ONLY".into());
         }
         let action = match request {
+            StarterAction::StartHardware { plugin_id } => DevAction::StartHardware {
+                plugin_id,
+                development: true,
+            },
+            StarterAction::Discover {} => DevAction::Discover {},
+            StarterAction::OpenCandidate {
+                candidate_id,
+                authorization,
+            } => DevAction::OpenCandidate {
+                candidate_id,
+                authorization,
+            },
+            StarterAction::ReadActive {
+                session,
+                authorization,
+            } => DevAction::ReadActive {
+                session,
+                authorization,
+            },
+            StarterAction::Apply {
+                session,
+                baseline_token,
+                key,
+                value,
+                authorization,
+            } => DevAction::Apply {
+                session,
+                baseline_token,
+                key,
+                value,
+                authorization,
+            },
             StarterAction::Start {} => DevAction::Start {
                 plugin_id: "dev.starter".into(),
                 development: true,
@@ -142,22 +193,77 @@ mod tests {
             .is_err());
     }
     #[test]
-    fn starter_closed_actions_reject_arbitrary_execution_and_hardware() {
+    fn starter_closed_actions_reject_arbitrary_execution() {
         for request in [
             json!({"action":"start","plugin_id":"local.r1.hardware"}),
             json!({"action":"start","path":"/bin/sh"}),
             json!({"action":"start","source":"x"}),
-            json!({"action":"discover"}),
+            json!({"action":"discover","path":"/dev/hidraw0"}),
             json!({"action":"apply","authorization":true}),
             json!({"action":"set","session":"x","baseline_token":"x","value":50,"key":"dpi"}),
         ] {
             assert!(serde_json::from_value::<StarterAction>(request).is_err());
         }
     }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    fn hardware_start_is_explicit_native_confirmed_and_mode_pinned() {
+        let mut host = StarterHost::default();
+        for id in [
+            "dev.starter",
+            "dev.fake",
+            "dev../bin/sh",
+            "local.r1.hardware",
+        ] {
+            assert_eq!(
+                host.execute_with_confirmation(
+                    StarterAction::StartHardware {
+                        plugin_id: id.into()
+                    },
+                    |_| panic!("invalid identity must not prompt")
+                )
+                .unwrap_err(),
+                "UNAUTHORIZED_PLUGIN"
+            );
+        }
+        assert_eq!(
+            host.execute(StarterAction::StartHardware {
+                plugin_id: "dev.test-mouse".into()
+            })
+            .unwrap_err(),
+            "NATIVE_CONFIRMATION_REQUIRED"
+        );
+        // An offline snapshot cannot impersonate hardware merely by UI selection.
+        assert_eq!(
+            host.execute_with_confirmation(
+                StarterAction::StartHardware {
+                    plugin_id: "dev.test-mouse".into()
+                },
+                |challenge| {
+                    assert_eq!(challenge.params["mode"], "hardware");
+                    assert!(challenge.description().contains("hardware"));
+                    Ok(())
+                }
+            )
+            .unwrap_err(),
+            "INVALID_HANDSHAKE"
+        );
+        assert_eq!(
+            host.execute(StarterAction::Capabilities {}).unwrap_err(),
+            "NOT_STARTED"
+        );
+    }
     #[test]
     fn starter_release_denies_even_direct_calls() {
         if !cfg!(debug_assertions) {
-            for action in [StarterAction::Start {}, StarterAction::Stop {}] {
+            for action in [
+                StarterAction::Start {},
+                StarterAction::StartHardware {
+                    plugin_id: "dev.mouse".into(),
+                },
+                StarterAction::Stop {},
+            ] {
                 assert_eq!(
                     StarterHost::default().execute(action).unwrap_err(),
                     "DEV_ONLY"

@@ -40,7 +40,11 @@ fn worker_command(script: &str) -> Command {
     command
 }
 
-fn run_worker(script: &str, input: &[u8], timeout: Duration) -> Result<serde_json::Value, String> {
+pub(crate) fn run_worker(
+    script: &str,
+    input: &[u8],
+    timeout: Duration,
+) -> Result<serde_json::Value, String> {
     let mut child = worker_command(script)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
