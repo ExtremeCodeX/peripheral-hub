@@ -7,7 +7,7 @@
   font-display: swap;
 }
 
-/* Direção da prévia aprovada a partir da referência do mantenedor. */
+/* Tema escuro existente; o atributo data-theme altera apenas as cores. */
 :root {
   color-scheme: dark;
   --hub-font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -20,12 +20,15 @@
   --hub-muted: #a5aaad;
   --hub-subtle: #92999c;
   --hub-border: #34383b;
+  --hub-control-border: var(--hub-border);
   --hub-selection: #b6d8c7;
   --hub-selection-ink: #18281f;
   --hub-success: #a7dfb8;
   --hub-success-surface: #21392a;
   --hub-warning: #ebcf87;
   --hub-warning-surface: #393222;
+  --hub-input: #141618;
+  --hub-selection-hover: #c7e4d4;
   --hub-space-xs: 0.5rem;
   --hub-space-small: 0.75rem;
   --hub-space-medium: 1.5rem;
@@ -35,4 +38,27 @@
   --hub-motion-feedback: 150ms;
   --hub-motion-select: 220ms;
   --hub-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --hub-canvas: #e0e5e9;
+  --hub-surface: #eef1f3;
+  --hub-surface-hover: #dce3e8;
+  --hub-panel: #eef1f3;
+  --hub-input: #e6ebef;
+  --hub-text: #111c24;
+  --hub-muted: #303d47;
+  --hub-subtle: #3d4a54;
+  --hub-border: #909ba4;
+  --hub-control-border: #465561;
+  --hub-disabled-text: #29323b;
+  --hub-disabled-surface: #d0d6dc;
+  --hub-selection: #235a43;
+  --hub-selection-hover: #194b36;
+  --hub-selection-ink: #ffffff;
+  --hub-success: #23613b;
+  --hub-success-surface: #e0f0e5;
+  --hub-warning: #72521b;
+  --hub-warning-surface: #f5ecd7;
 }

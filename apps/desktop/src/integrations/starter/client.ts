@@ -71,6 +71,7 @@ export function starterError(error: unknown): string {
   if (kind.includes('LOCAL_INTEGRATION_UNAVAILABLE')) return 'Snapshot local ausente. Prepare o starter com tools/install-local.py antes de iniciar.';
   if (/LOCAL_INTEGRATION_UNSAFE|LOCAL_SOURCE_INTEGRITY/.test(kind)) return 'Snapshot local recusado. Confira permissões, tamanho e armazenamento local sem symlinks.';
   if (kind.includes('NATIVE_CONFIRMATION_DENIED')) return 'Operação cancelada na confirmação nativa. Nenhum processo foi iniciado se o cancelamento ocorreu no início; operações seguintes canceladas não são enviadas.';
+  if (kind.includes('PERMISSION_STORAGE_FAILED')) return 'Não foi possível salvar a autorização. Confira o diretório de configuração do Hub e tente conectar novamente.';
   if (/NATIVE_CONFIRMATION_REQUIRED|NATIVE_CONFIRMATION_UNAVAILABLE/.test(kind)) return 'A confirmação nativa é obrigatória antes de executar código local.';
   return 'Falha no processo local. Estado descartado; revise o código antes de iniciar uma nova sessão.';
 }

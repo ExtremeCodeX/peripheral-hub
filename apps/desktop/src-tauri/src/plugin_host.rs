@@ -163,7 +163,7 @@ impl PhysicalConfirmation {
             _ => "Operação física não reconhecida; não autorize.".into(),
         };
         format!(
-            "Integração: {}\nGeração: {} · Operação: {}\n\n{}\n\nAutorize somente se você solicitou esta operação. A autorização vale apenas para esta operação; não é permissão permanente.",
+            "Integração: {}\nGeração: {} · Operação: {}\n\n{}\n\nAutorize somente se você solicitou esta operação. Sem marcar ‘Lembrar minha escolha’, a autorização vale apenas para esta operação.",
             self.plugin_id, self.generation, self.operation, operation
         )
     }
@@ -180,6 +180,7 @@ pub struct DevHost {
     candidates: HashSet<String>,
     generation: u64,
     operation: u64,
+    snapshot_sha256: String,
 }
 
 impl DevHost {
@@ -252,8 +253,9 @@ impl DevHost {
                     return Err("ALREADY_STARTED".into());
                 }
                 let generation = self.generation.checked_add(1).ok_or("HOST_FAILED")?;
+                use sha2::{Digest, Sha256};
+                let snapshot_sha256 = format!("{:x}", Sha256::digest(source.as_bytes()));
                 if plugin_id != "dev.fake" {
-                    use sha2::{Digest, Sha256};
                     confirm(&PhysicalConfirmation {
                         generation,
                         operation: 0,
@@ -264,7 +266,7 @@ impl DevHost {
                             "process.start.public"
                         }
                         .into(),
-                        params: json!({"sha256":format!("{:x}", Sha256::digest(source.as_bytes())), "mode": if hardware {"hardware"} else {"fake"}}),
+                        params: json!({"sha256":snapshot_sha256, "mode": if hardware {"hardware"} else {"fake"}}),
                     })?;
                 }
                 let mut process = Process::spawn(&source, TIMEOUT)?;
@@ -280,6 +282,7 @@ impl DevHost {
                 self.candidates.clear();
                 self.process = Some(process);
                 self.generation = generation;
+                self.snapshot_sha256 = snapshot_sha256;
                 Ok(hello)
             }
             DevAction::Stop {} => {
@@ -389,17 +392,21 @@ impl DevHost {
                     )
                 {
                     self.operation = self.operation.checked_add(1).ok_or("HOST_FAILED")?;
+                    let mut confirmation_params = params.clone();
+                    confirmation_params["sha256"] = json!(self.snapshot_sha256);
+                    confirmation_params["mode"] =
+                        json!(if self.hardware { "hardware" } else { "fake" });
                     confirm(&PhysicalConfirmation {
                         generation: self.generation,
                         operation: self.operation,
                         plugin_id: self.process.as_ref().unwrap().identity.clone(),
                         method: method.into(),
-                        params: params.clone(),
+                        params: confirmation_params,
                     })?;
                     // &mut self (and the IPC host mutex) is held throughout the
-                    // native decision. No grant is cached, returned to IPC or
-                    // usable by another operation/generation. All validation
-                    // above therefore still applies to these exact params.
+                    // native decision. Remembered execution/connection grants
+                    // are host-owned and snapshot-bound; writes always prompt.
+                    // All validation above still applies to these exact params.
                     if method == "device.open" {
                         self.candidates.clear();
                     }

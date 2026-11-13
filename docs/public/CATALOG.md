@@ -11,6 +11,7 @@ licença, tamanho e SHA-256 são revisados juntos no código do Hub.
 Em **Explorar softwares**, clicar no card abre uma tela dedicada com descrição,
 compatibilidade, limitações e links do repositório/release. O botão **Instalar**
 nessa tela instala a release HTTPS do GitHub; quando instalado, mostra **Abrir**.
+O card de uma integração já instalada abre diretamente seus controles.
 O worker isolado não executa o pacote e não acessa HID: verifica manifesto/artefato/
 licença por hashes fixados, escreve em diretório temporário privado e renomeia
 atomicamente para `$XDG_DATA_HOME/peripheral-hub/plugins/<id>` (fallback padrão XDG).
@@ -19,8 +20,16 @@ automáticas. Redirecionamentos são limitados aos hosts de assets do GitHub.
 
 **Meus softwares** mostra uma única entrada pública quando instalada; a fonte DEV
 anterior e backups permanecem intactos. Abertura do painel não inicia o plugin.
-Conectar exige consentimento GTK para código Python sem sandbox e cada operação
-física. O loader revalida hash e permissões antes de executar o snapshot em memória,
+Conectar exige consentimento GTK para código Python sem sandbox. **Lembrar minha
+escolha**, desmarcado por padrão, permite reutilizar a autorização para execução,
+conexão e leitura da mesma identidade, SHA-256 e modo, inclusive após reiniciar o Hub.
+Não identifica um exemplar físico específico; vale para um dispositivo compatível
+inequívoco descoberto pela integração. Não conecta automaticamente e não autoriza
+escritas: cada alteração continua pedindo confirmação. Código modificado exige nova
+aprovação. **Esquecer autorizações**, nos controles do mouse, remove todas as escolhas
+salvas do Hub; não encerra uma conexão já aberta. As escolhas ficam em
+`connection-permissions.json` no diretório de configuração do aplicativo Tauri.
+O loader revalida hash e permissões antes de executar o snapshot em memória,
 inclusive no build release. DEV continua restrito ao debug.
 
 Novas versões exigem novo registro/revisão e build do Hub. Não há instalação

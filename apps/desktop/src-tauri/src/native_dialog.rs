@@ -11,7 +11,8 @@ pub fn show(
     description: &str,
     deadline: Instant,
     pending: Arc<AtomicBool>,
-) -> Result<(), String> {
+    allow_remember: bool,
+) -> Result<bool, String> {
     let parent = parent.as_ref();
     if !parent.is_visible() || !pending.load(Ordering::SeqCst) || Instant::now() >= deadline {
         return Err("NATIVE_CONFIRMATION_UNAVAILABLE".into());
@@ -30,6 +31,17 @@ pub fn show(
     dialog.add_button("Cancelar", gtk::ResponseType::Cancel);
     dialog.add_button("Autorizar esta operação", gtk::ResponseType::Accept);
     dialog.set_default_response(gtk::ResponseType::Cancel);
+    let remember = gtk::CheckButton::with_label("Lembrar minha escolha");
+    if allow_remember {
+        remember.set_active(false);
+        remember.set_tooltip_text(Some("Permite executar esta versão e conectar/ler um dispositivo compatível nas próximas conexões. Alterações nas configurações continuam exigindo confirmação. Revogue em ‘Esquecer autorizações’, no mouse."));
+        let content = dialog.content_area();
+        content.pack_start(&remember, false, false, 8);
+        let note = gtk::Label::new(Some("Vale apenas para esta versão da integração e este modo.\nInclui execução, conexão e leitura; não autoriza escritas.\nEsqueça a permissão nos controles do mouse a qualquer momento."));
+        note.set_line_wrap(true);
+        note.set_xalign(0.0);
+        content.pack_start(&note, false, false, 8);
+    }
     let first_response = std::rc::Rc::new(std::cell::Cell::new(None));
     let first = first_response.clone();
     dialog.connect_response(move |_, response| {
@@ -65,7 +77,12 @@ pub fn show(
     if !expired.get() {
         timer.remove();
     }
-    dialog.close();
+    let wants_remember = allow_remember && remember.is_active();
+    // GtkDialog intercepts delete-event: close() alone can leave the previous
+    // dialog visible, intercepting focus and later confirmation responses.
+    unsafe {
+        dialog.destroy();
+    }
     if parent.is_visible() {
         if let Some(widget) = previous_focus {
             if widget.is_visible() && widget.is_sensitive() {
@@ -78,7 +95,7 @@ pub fn show(
         && pending.load(Ordering::SeqCst)
         && Instant::now() < deadline
     {
-        Ok(())
+        Ok(wants_remember)
     } else {
         Err("NATIVE_CONFIRMATION_DENIED".into())
     }

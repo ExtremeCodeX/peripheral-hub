@@ -14,10 +14,13 @@ beforeAll(() => {
 beforeEach(() => { vi.mocked(invoke).mockReset(); vi.spyOn(window, 'scrollTo').mockImplementation(() => {}); });
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllEnvs(); });
 
-function openMenu() { fireEvent.click(screen.getByRole('button', { name: 'Menu do aplicativo' })); }
+function openDevTools() {
+  const summary = screen.getByText('Ferramentas de desenvolvimento');
+  if (!summary.parentElement?.hasAttribute('open')) fireEvent.click(summary);
+}
 function renderExplore() {
   render(<App />);
-  openMenu();
+  openDevTools();
   fireEvent.click(screen.getByRole('button', { name: 'Exemplos para desenvolvedores' }));
 }
 function openDetails(name = 'NOVA AIR') { fireEvent.click(screen.getByRole('button', { name: `Ver detalhes de ${name}` })); }
@@ -72,7 +75,7 @@ describe('coleção simplificada', () => {
     vi.stubEnv('DEV', false);
     render(<App />);
     expect(screen.getByRole('heading', { name: 'Sua biblioteca está vazia' })).toBeTruthy();
-    openMenu();
+    expect(screen.queryByText('Ferramentas de desenvolvimento')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Exemplos para desenvolvedores' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Registrar starter local (DEV)' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Registrar X6 Control (DEV)' })).toBeNull();
@@ -80,7 +83,7 @@ describe('coleção simplificada', () => {
   });
   it('opens X6 as an isolated local workspace without loading code or hardware automatically', () => {
     render(<App software={[]} />);
-    openMenu();
+    openDevTools();
     fireEvent.click(screen.getByRole('button', { name: 'Registrar X6 Control (DEV)' }));
     fireEvent.click(screen.getByRole('button', { name: 'Abrir Attack Shark X6' }));
     expect(screen.getByRole('heading', { name: 'X6 / CONTROL' })).toBeTruthy();
@@ -92,7 +95,7 @@ describe('coleção simplificada', () => {
   });
   it('registers the starter locally without auto-start and returns focus to its library card', () => {
     render(<App software={[]} />);
-    openMenu();
+    openDevTools();
     fireEvent.click(screen.getByRole('button', { name: 'Registrar starter local (DEV)' }));
     const card = screen.getByRole('button', { name: 'Abrir Starter local — simulado' });
     fireEvent.click(card);
@@ -105,7 +108,7 @@ describe('coleção simplificada', () => {
     renderExplore();
     const heading = screen.getByRole('heading', { name: 'Peripheral Hub' });
     expect(heading.querySelector('img')).toBeNull();
-    expect(heading.querySelector('.wordmark__dot')?.getAttribute('aria-hidden')).toBe('true');
+    expect(heading.querySelector('.wordmark__dot')).toBeNull();
   });
 
   it('usa o cartão inteiro para abrir detalhes, com fabricante e estado no rodapé', () => {
@@ -157,20 +160,17 @@ describe('coleção simplificada', () => {
     expect(document.activeElement).toBe(screen.getByRole('searchbox'));
   });
 
-  it('fecha o menu com Escape e clique fora', () => {
-    renderExplore();
-    openMenu();
-    expect(document.activeElement).toBe(within(screen.getByRole('region', { name: 'Opções do aplicativo' })).getByRole('button', { name: 'Meus softwares' }));
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Menu do aplicativo' }));
-    openMenu();
-    fireEvent.pointerDown(screen.getByRole('heading', { name: 'Peripheral Hub' }));
-    expect(screen.queryByRole('region', { name: 'Opções do aplicativo' })).toBeNull();
+  it('substitui o menu pelo tema e mantém a navegação principal direta', () => {
+    render(<App />);
+    expect(screen.queryByRole('button', { name: 'Menu do aplicativo' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Verificar backend' })).toBeNull();
+    expect(screen.getByRole('button', { name: /Ativar modo/ })).toBeTruthy();
+    expect(within(screen.getByRole('navigation')).getByRole('button', { name: 'Meus softwares' })).toBeTruthy();
   });
 
   it('oferece página de exemplos com um caso por combinação relevante', () => {
     renderExplore();
-    openMenu();
+    openDevTools();
     fireEvent.click(screen.getByRole('button', { name: 'Exemplos para desenvolvedores' }));
     expect(screen.getByRole('heading', { name: 'Exemplos para desenvolvedores' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Software diferente por cor' })).toBeTruthy();
@@ -179,20 +179,31 @@ describe('coleção simplificada', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voltar aos exemplos' }));
     expect(screen.getByRole('heading', { name: 'Exemplos para desenvolvedores' })).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Ver detalhes de ARC PRO' }));
-    openMenu();
-    fireEvent.click(within(screen.getByRole('region', { name: 'Opções do aplicativo' })).getByRole('button', { name: 'Meus softwares' }));
+    fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Meus softwares' }));
     expect(screen.queryByRole('heading', { name: 'Software diferente por cor' })).toBeNull();
   });
 
-  it('preserva o diagnóstico Tauri e o tratamento de falha', async () => {
-    vi.mocked(invoke).mockResolvedValueOnce({ software: [] }).mockResolvedValueOnce('Backend Rust disponível.');
-    renderExplore();
-    openMenu();
-    fireEvent.click(screen.getByRole('button', { name: 'Verificar backend' }));
-    expect(await screen.findByText('Backend Rust disponível.')).toBeTruthy();
-    vi.mocked(invoke).mockRejectedValueOnce(new Error('IPC indisponível'));
-    fireEvent.click(screen.getByRole('button', { name: 'Verificar backend' }));
-    expect(await screen.findByText(/Abra o aplicativo desktop e tente novamente/)).toBeTruthy();
+  it('abre controles instalados diretamente pelo catálogo, sem etapa de detalhes', async () => {
+    vi.mocked(invoke).mockImplementation((command) => Promise.resolve(command === 'software_distribution'
+      ? { software: publicReleases.map((release) => ({ ...release, installed: true })) }
+      : { index: null, status: 'NOT_CONFIGURED' }) as never);
+    render(<App />);
+    await screen.findByRole('button', { name: 'Abrir Attack Shark X6' });
+    fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Explorar softwares' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Attack Shark X6' }));
+    expect(screen.getByRole('heading', { name: 'X6 / CONTROL' })).toBeTruthy();
+    expect(vi.mocked(invoke).mock.calls.some(([command]) => ['starter_local', 'plugin_public'].includes(command))).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar ao Hub' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Abrir Attack Shark X6' }));
+  });
+
+  it('mantém o resultado vazio correto para um plugin público instalado e filtrado', async () => {
+    vi.mocked(invoke).mockResolvedValue({ software: publicReleases.map((release) => ({ ...release, installed: true })) });
+    render(<App />);
+    await screen.findByRole('button', { name: 'Abrir Attack Shark X6' });
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'inexistente' } });
+    expect(screen.getByRole('heading', { name: 'Nenhum software encontrado.' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Sua biblioteca está vazia' })).toBeNull();
   });
 });
 

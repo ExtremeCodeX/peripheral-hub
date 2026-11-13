@@ -61,7 +61,7 @@ export function Catalog({ client, query, releases = [], installing = false, inst
     {!!releases.length && <section aria-label="Versões públicas instaláveis">
       {installationError && <p role="alert">{installationError}</p>}
       <div className="device-grid">{releases.filter((r) => normalize(`${r.name} ${r.manufacturer}`).includes(normalize(query))).map((release) =>
-        <DeviceCardFrame key={release.id} id={`public-release-${release.id}`} name={release.name} manufacturer={`${release.manufacturer} · Mouse`} visual={<X6CardArt/>} status={<CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/>} aria-label={`Ver detalhes de ${release.name}`} onClick={() => setSelectedReleaseId(release.id)}/>
+        <DeviceCardFrame key={release.id} id={`public-release-${release.id}`} data-software={release.installed ? release.id : undefined} name={release.name} manufacturer={`${release.manufacturer} · Mouse`} visual={<X6CardArt/>} status={<CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/>} actionLabel={release.installed ? 'Abrir controles' : 'Ver compatibilidade'} aria-label={`${release.installed ? 'Abrir' : 'Ver detalhes de'} ${release.name}`} onClick={() => release.installed ? onOpen?.() : setSelectedReleaseId(release.id)}/>
       )}</div>
     </section>}
     {(!releases.length || client.result.index || client.result.status !== 'NOT_CONFIGURED') && <><div className="collection-toolbar catalog-toolbar">

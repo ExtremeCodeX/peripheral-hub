@@ -1,5 +1,22 @@
 //! Native host-owned confirmation. No HTML, IPC approval endpoint or token.
 use crate::plugin_host::PhysicalConfirmation;
+use std::sync::Mutex;
+use tauri::Manager;
+static PERMISSIONS_LOCK: Mutex<()> = Mutex::new(());
+
+fn permissions_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    app.path()
+        .app_config_dir()
+        .map(|path| path.join("connection-permissions.json"))
+        .map_err(|_| "PERMISSION_STORAGE_FAILED".into())
+}
+
+pub fn forget(app: &tauri::AppHandle) -> Result<(), String> {
+    let _guard = PERMISSIONS_LOCK
+        .lock()
+        .map_err(|_| "PERMISSION_STORAGE_FAILED")?;
+    crate::remembered_permissions::clear(&permissions_path(app)?)
+}
 #[cfg(target_os = "linux")]
 #[path = "native_dialog.rs"]
 mod native_dialog;
@@ -41,6 +58,19 @@ pub fn confirm(
     window: tauri::WebviewWindow,
     operation: PhysicalConfirmation,
 ) -> Result<(), String> {
+    let scope = crate::remembered_permissions::scope(&operation);
+    let path = permissions_path(window.app_handle())?;
+    if let Some(ref scope) = scope {
+        let _guard = PERMISSIONS_LOCK
+            .lock()
+            .map_err(|_| "PERMISSION_STORAGE_FAILED")?;
+        if crate::remembered_permissions::contains(&path, scope) {
+            return Ok(());
+        }
+    }
+    let allow_remember = scope.is_some() && operation.method.starts_with("process.start.");
+    let remembered = Arc::new(AtomicBool::new(false));
+    let remember_choice = remembered.clone();
     // A fresh channel per operation prevents late responses from approving a
     // later request. The host mutex remains held on the blocking worker thread.
     let (sender, receiver) = mpsc::sync_channel(1);
@@ -69,13 +99,30 @@ pub fn confirm(
                 );
                 return;
             };
-            let result =
-                native_dialog::show(&parent, &operation.description(), deadline, active.clone());
+            let result = native_dialog::show(
+                &parent,
+                &operation.description(),
+                deadline,
+                active.clone(),
+                allow_remember,
+            )
+            .map(|remember| {
+                remember_choice.store(remember, Ordering::SeqCst);
+            });
             deliver_decision(&sender, &active, result);
         })
         .map_err(|_| "NATIVE_CONFIRMATION_UNAVAILABLE".to_string())?;
 
-    wait_for_decision(receiver, &pending, Duration::from_secs(125))
+    wait_for_decision(receiver, &pending, Duration::from_secs(125))?;
+    if remembered.load(Ordering::SeqCst) {
+        if let Some(scope) = scope {
+            let _guard = PERMISSIONS_LOCK
+                .lock()
+                .map_err(|_| "PERMISSION_STORAGE_FAILED")?;
+            crate::remembered_permissions::save(&path, scope)?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(not(target_os = "linux"))]

@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { X6Control } from './Control';
 import { starterClient, type Snapshot } from '../starter/client';
 import { fromHex, toHex } from './Lighting';
+import { invoke } from '@tauri-apps/api/core';
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 
 vi.mock('../starter/client', async (original) => {
   const actual = await original<typeof import('../starter/client')>();
@@ -31,9 +34,24 @@ beforeEach(() => {
 });
 async function connect() {
   fireEvent.click(screen.getByRole('button', { name: 'Conectar 2.4 GHz' }));
-  await screen.findByText('HARDWARE · CONECTADO');
+  await screen.findByText('CONECTADO');
 }
 describe('X6 Control physical UI', () => {
+  it('revoga autorizações pelo host sem conectar nem iniciar o plugin', async () => {
+    vi.mocked(invoke).mockResolvedValueOnce(undefined);
+    render(<X6Control onBack={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Esquecer autorizações' }));
+    expect(await screen.findByText(/Autorizações esquecidas/)).toBeTruthy();
+    expect(invoke).toHaveBeenCalledWith('forget_connection_permissions');
+    expect(starterClient.start).not.toHaveBeenCalled();
+  });
+  it('informa quando não consegue revogar autorizações', async () => {
+    vi.mocked(invoke).mockRejectedValueOnce(new Error('failed'));
+    render(<X6Control onBack={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Esquecer autorizações' }));
+    expect(await screen.findByText(/Não foi possível esquecer/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Esquecer autorizações' }).hasAttribute('disabled')).toBe(false);
+  });
   it('converts strict RGB hexadecimal values without accepting partial/invalid colors', () => {
     expect(toHex(0xa855f7)).toBe('#A855F7'); expect(toHex(0)).toBe('#000000');
     expect(fromHex('#a855f7')).toBe(0xa855f7);

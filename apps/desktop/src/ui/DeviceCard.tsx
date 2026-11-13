@@ -5,8 +5,8 @@ import { demoSoftware } from '../app/demo-software';
 import { SoftwareStatus } from './SoftwareStatus';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export function DeviceCardFrame({ name, manufacturer, visual, status, children, ...button }: ButtonHTMLAttributes<HTMLButtonElement> & { name: string; manufacturer: string; visual?: ReactNode; status: ReactNode; children?: ReactNode }) {
-  return <button {...button} className="device-card" type="button"><span className="device-card__header"><span className="device-card__name">{name}</span><span className="device-card__manufacturer">{manufacturer}</span></span><span className="device-card__visual">{visual}</span><span className="device-card__footer">{status}<span className="device-card__arrow" aria-hidden="true"><Icon name="arrow" /></span></span>{children}</button>;
+export function DeviceCardFrame({ name, manufacturer, visual, status, actionLabel, children, ...button }: ButtonHTMLAttributes<HTMLButtonElement> & { name: string; manufacturer: string; visual?: ReactNode; status: ReactNode; actionLabel?: string; children?: ReactNode }) {
+  return <button {...button} className="device-card" type="button"><span className="device-card__header"><span className="device-card__name">{name}</span><span className="device-card__manufacturer">{manufacturer}</span></span><span className="device-card__visual">{visual}</span><span className="device-card__footer">{status}<span className="device-card__action">{actionLabel}<span className="device-card__arrow" aria-hidden="true"><Icon name="arrow" /></span></span></span>{children}</button>;
 }
 
 export function DeviceCard({ mouse, onOpen }: { mouse: DemoMouse; onOpen: () => void }) {

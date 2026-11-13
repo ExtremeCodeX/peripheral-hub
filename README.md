@@ -1,5 +1,10 @@
 # Peripheral Hub
 
+Versão atual: **0.2.3** — temas claro/escuro, melhorias de contraste e acesso ao
+mouse, e autorização de conexão opcionalmente lembrada. Veja as
+[notas da versão](docs/public/RELEASE-0.2.3.md) e o
+[download Linux x86_64](https://github.com/ExtremeCodeX/peripheral-hub/releases/tag/v0.2.3).
+
 ## Attack Shark X6 · Parcial
 
 O Hub 0.2.0 inclui instalação pública do X6 em **Explorar softwares**. A release
@@ -41,7 +46,7 @@ python3 -I -B tools/install-local.py starter --source "$(realpath ../my-mouse)" 
 npm run dev
 ```
 
-No **Menu → Registrar starter local (DEV)**, abra o cartão, informe
+Em **Ferramentas de desenvolvimento → Registrar starter local (DEV)**, abra o cartão, informe
 `dev.my-mouse`, selecione a integração e clique **Iniciar processo**. Autorize
 somente código revisado no diálogo GTK nativo. Edite a cópia XDG instalada e
 pare/inicie o processo: **não é necessário recompilar o Hub**.
@@ -59,6 +64,10 @@ isso não promete configuração universal nem um SDK estável.
 - Exemplos fictícios e registro de código local somente em desenvolvimento.
 - Controles locais vêm das capacidades do processo; sem frontend remoto.
 - Execução DEV exige confirmação nativa por snapshot e validação de caminhos.
+  A opção **Lembrar minha escolha** guarda a autorização de execução, conexão e
+  leitura para a mesma identidade, SHA-256 e modo. Código modificado pede nova
+  autorização; escritas continuam exigindo confirmação. Revogue nos controles
+  do mouse em **Esquecer autorizações** (remove todas as escolhas salvas do Hub).
   **Processo separado e confirmação não são sandbox.** Código autorizado tem
   as permissões do seu usuário, inclusive arquivos, rede e hardware.
 - O port Attack Shark R1 e seu companion são projetos separados GPL-3.0-or-later,

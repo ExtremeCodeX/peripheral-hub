@@ -5,6 +5,8 @@ import './control.css';
 import catalogData from './key-catalog.json';
 import { Lighting } from './Lighting';
 import { MouseArt, X6CardArt } from './MouseArt';
+import { ThemeToggle } from '../../ui/ThemeToggle';
+import { invoke } from '@tauri-apps/api/core';
 
 const BUTTONS = ['Clique esquerdo', 'Clique direito', 'Clique da roda', 'Lateral dianteiro', 'Lateral traseiro', 'Botão superior 1 (frente)', 'Botão superior 2 (trás)'];
 type CatalogEntry = { id: string; label: string; category: string; disabled?: boolean };
@@ -35,6 +37,8 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
   const [draft, setDraft] = useState<Record<string, unknown>>({});
   const [dpi, setDpi] = useState(4);
   const [logs, setLogs] = useState<string[]>([]);
+  const [forgetting, setForgetting] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState('');
   const original = useRef<Record<string, unknown>>({});
   const generation = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -74,12 +78,23 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
   function apply(k: string, value: unknown, label: string) { if (state) void run(() => starterClient.set(state, value, k), label); }
   function read(label = 'Ler estado') { if (state) void run(() => starterClient.read(state.session), label); }
   const dpiKey = `dpi_stage_${dpi}`;
+  async function forgetPermissions() {
+    setForgetting(true);
+    try {
+      await invoke('forget_connection_permissions');
+      setPermissionStatus('Autorizações esquecidas. A próxima conexão pedirá sua escolha novamente.');
+    } catch {
+      setPermissionStatus('Não foi possível esquecer as autorizações. Tente novamente no aplicativo desktop.');
+    } finally { setForgetting(false); }
+  }
   return <section className="x6-control" aria-labelledby="x6-title">
-    <header className="x6-heading"><h2 id="x6-title" ref={heading} tabIndex={-1}>X6 / CONTROL</h2><span className={`x6-badge${connected ? ' is-live' : ''}`}>{busy ? 'AGUARDANDO GTK / HID' : connected ? 'HARDWARE · CONECTADO' : error ? 'SEM CONFIRMAÇÃO' : 'DESCONECTADO'}</span><button type="button" className="x6-back" onClick={onBack} disabled={busy}>Voltar ao Hub</button></header>
+    <header className="x6-heading"><h2 id="x6-title" ref={heading} tabIndex={-1}>X6 / CONTROL</h2><span className={`x6-badge${connected ? ' is-live' : ''}`}>{busy ? 'CONECTANDO…' : connected ? 'CONECTADO' : error ? 'SEM CONFIRMAÇÃO' : 'DESCONECTADO'}</span><button type="button" className="x6-back" onClick={onBack} disabled={busy}>Voltar ao Hub</button><ThemeToggle /></header>
     <div className="x6-toolbar"><div role="tablist" aria-label="Seções X6">{['Mouse', 'Macros', 'Diagnóstico', 'Iluminação'].map((name, i, tabs) => <button type="button" role="tab" key={name} id={`x6-tab-${i}`} aria-selected={tab === name} aria-controls={`x6-panel-${i}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={(e) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; setTab(tabs[next]); document.getElementById(`x6-tab-${next}`)?.focus(); } }}>{name}</button>)}</div>
       <div className="x6-connection"><button type="button" disabled={busy} onClick={() => connected ? void run(async () => { await starterClient.stop(); return null; }, 'Desconectar') : void run(() => starterClient.start(pluginId, true), 'Conectar 2.4 GHz', true)}>{connected ? 'Desconectar' : 'Conectar 2.4 GHz'}</button></div>
     </div>
     <p className={`x6-notice${error ? ' is-error' : ''}`} role={error ? 'alert' : 'status'}>{error || status}</p>
+    <div className="x6-permissions"><span>Na primeira autorização, marque “Lembrar minha escolha” para as próximas conexões. Escritas continuam pedindo confirmação.</span><button type="button" disabled={busy || forgetting} onClick={forgetPermissions}>{forgetting ? 'Esquecendo…' : 'Esquecer autorizações'}</button></div>
+    <p className="x6-permission-status" role="status">{permissionStatus}</p>
     <div role="tabpanel" id="x6-panel-0" aria-labelledby="x6-tab-0" hidden={tab !== 'Mouse'}>
       <div className="x6-columns">
         <aside className="x6-left">

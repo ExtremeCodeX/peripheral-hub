@@ -41,7 +41,7 @@ identidade `dev.starter`. `dev.fake` é reservado.
 
 ## 3. Abrir, editar e reiniciar
 
-Menu → Registrar starter local (DEV) → cartão Starter local — simulado.
+Ferramentas de desenvolvimento → Registrar starter local (DEV) → cartão Starter local — simulado.
 Informe `dev.my-mouse`, clique Selecionar integração e Iniciar processo.
 Cada início exige confirmação GTK host-local contendo a identidade e SHA-256
 do snapshot em memória. Sem provedor nativo ou se cancelar, nada é iniciado.

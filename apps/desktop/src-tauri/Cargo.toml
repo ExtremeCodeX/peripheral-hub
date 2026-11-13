@@ -1,6 +1,6 @@
 [package]
 name = "peripheral-hub"
-version = "0.2.2"
+version = "0.2.3"
 license = "Apache-2.0"
 description = "Base desktop Linux-first do Peripheral Hub"
 edition = "2021"

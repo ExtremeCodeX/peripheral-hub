@@ -1,8 +1,10 @@
 import type { CSSProperties } from 'react';
 
-type IconName = 'search' | 'menu' | 'close' | 'arrow' | 'check' | 'mouse' | 'chevron' | 'terminal' | 'back' | 'copy' | 'info' | 'partial' | 'review' | 'external';
+type IconName = 'search' | 'menu' | 'close' | 'arrow' | 'check' | 'mouse' | 'chevron' | 'terminal' | 'back' | 'copy' | 'info' | 'partial' | 'review' | 'external' | 'sun' | 'moon';
 
 const paths: Record<IconName, string> = {
+  sun: 'M12 3V1m0 22v-2M3 12H1m22 0h-2M5.6 5.6 4.2 4.2m15.6 15.6-1.4-1.4m0-12.8 1.4-1.4M4.2 19.8l1.4-1.4M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z',
+  moon: 'M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z',
   search: 'm21 21-4.5-4.5M19 10.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0Z',
   menu: 'M4 6h16M4 12h16M4 18h10',
   close: 'm6 6 12 12M6 18 18 6',

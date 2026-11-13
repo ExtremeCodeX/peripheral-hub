@@ -1,6 +1,6 @@
 #[tauri::command]
-fn check_backend() -> &'static str {
-    "Backend Rust disponível. Nenhum dispositivo foi acessado."
+fn forget_connection_permissions(app: tauri::AppHandle) -> Result<(), String> {
+    native_confirmation::forget(&app)
 }
 
 fn validate_external_url(value: &str) -> Result<String, String> {
@@ -48,7 +48,7 @@ fn main() {
             starter_host::StarterHost::default(),
         )))
         .invoke_handler(tauri::generate_handler![
-            check_backend,
+            forget_connection_permissions,
             catalog_sync,
             software_distribution,
             plugin_public,
@@ -59,7 +59,7 @@ fn main() {
         ]);
     #[cfg(not(debug_assertions))]
     let builder = builder.invoke_handler(tauri::generate_handler![
-        check_backend,
+        forget_connection_permissions,
         catalog_sync,
         software_distribution,
         plugin_public,
@@ -94,15 +94,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{check_backend, validate_external_url};
-
-    #[test]
-    fn reports_backend_without_claiming_device_access() {
-        assert_eq!(
-            check_backend(),
-            "Backend Rust disponível. Nenhum dispositivo foi acessado."
-        );
-    }
+    use super::validate_external_url;
 
     #[test]
     fn accepts_https_profile_and_release_links() {
@@ -134,6 +126,7 @@ mod catalog;
 mod distribution;
 
 mod native_confirmation;
+mod remembered_permissions;
 
 #[cfg(debug_assertions)]
 #[tauri::command]

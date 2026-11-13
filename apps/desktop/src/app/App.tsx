@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { DeviceCard, DeviceCardFrame } from '../ui/DeviceCard';
 import { WindowBar } from '../ui/WindowBar';
+import { ThemeToggle } from '../ui/ThemeToggle';
 import { CoverageBadge } from '../ui/SoftwareStatus';
 import { Icon } from '../ui/Icon';
 import { demoMice, filterMice, type DemoMouseId } from './demo-mice';
@@ -49,13 +50,7 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
   const galleryScrollRef = useRef(0);
   const returnFocusIdRef = useRef<DemoMouseId | null>(null);
   const focusCollectionRef = useRef(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [backendStatus, setBackendStatus] = useState('Verifique a comunicação com o aplicativo desktop.');
-  const searchRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const firstMenuActionRef = useRef<HTMLButtonElement>(null);
+   const searchRef = useRef<HTMLInputElement>(null);
   const visibleMice = filterMice(query);
   const activeMouse = demoMice.find((mouse) => mouse.id === detailsId);
   const visibleSoftware = filterSoftware(localSoftware, query);
@@ -79,7 +74,7 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
   useEffect(() => {
     if (!localView && localReturnRef.current) {
       const trigger = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-software]')).find((button) => button.dataset.software === localReturnRef.current);
-      (trigger ?? menuButtonRef.current)?.focus({ preventScroll: true });
+      (trigger ?? searchRef.current)?.focus({ preventScroll: true });
       window.scrollTo({ top: galleryScrollRef.current });
       localReturnRef.current = null;
     }
@@ -90,40 +85,14 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
       if (document.querySelector('dialog[open]')) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setMenuOpen(false);
         searchRef.current?.focus();
       }
-      if (event.key === 'Escape' && menuOpen) {
-        setMenuOpen(false);
-        menuButtonRef.current?.focus();
-      }
-    }
-    function onPointerDown(event: PointerEvent) {
-      if (event.target instanceof Node && !menuRef.current?.contains(event.target)) setMenuOpen(false);
     }
     document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('pointerdown', onPointerDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      document.removeEventListener('pointerdown', onPointerDown);
     };
-  }, [menuOpen]);
-
-  useEffect(() => {
-    if (menuOpen) firstMenuActionRef.current?.focus();
-  }, [menuOpen]);
-
-  async function checkBackend() {
-    setChecking(true);
-    setBackendStatus('Verificando comunicação com o backend…');
-    try {
-      setBackendStatus(await invoke<string>('check_backend'));
-    } catch {
-      setBackendStatus('Não foi possível acessar o backend. Abra o aplicativo desktop e tente novamente.');
-    } finally {
-      setChecking(false);
-    }
-  }
+  }, []);
 
   function clearSearch() {
     setQuery('');
@@ -141,7 +110,6 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
     returnFocusIdRef.current = null;
     localReturnRef.current = null;
     focusCollectionRef.current = true;
-    setMenuOpen(false);
     window.scrollTo({ top: 0 });
   }
 
@@ -152,7 +120,6 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
     localReturnRef.current = entry.id;
     setDetailsId(null);
     setLocalView(entry);
-    setMenuOpen(false);
     window.scrollTo({ top: 0 });
   }
 
@@ -172,7 +139,6 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
     galleryScrollRef.current = window.scrollY;
     returnFocusIdRef.current = id;
     setDetailsId(id);
-    setMenuOpen(false);
     window.scrollTo({ top: 0 });
   }
 
@@ -181,30 +147,14 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
       <a className="skip-link" href="#devices">Ir para o conteúdo</a>
       <div hidden={!!localView?.workspace}>
       <header className="app-header">
-        <h1 className="wordmark">Peripheral <span>Hub</span><span className="wordmark__dot" aria-hidden="true" /></h1>
+        <h1 className="wordmark">Peripheral <span>Hub</span></h1>
         <div className="header-tools">
           <div className="search-field" role="search">
             <Icon name="search" />
             <input ref={searchRef} type="search" aria-label={page === 'library' ? 'Pesquisar meus softwares' : page === 'explore' ? 'Pesquisar catálogo' : 'Pesquisar softwares fictícios'} placeholder={page === 'library' ? 'Pesquisar meus softwares' : page === 'explore' ? 'Pesquisar catálogo' : 'Pesquisar softwares fictícios'} value={query} onChange={(event) => { setQuery(event.target.value); returnFocusIdRef.current = null; localReturnRef.current = null; setDetailsId(null); setLocalView(null); }} onKeyDown={(event) => { if (event.key === 'Escape') clearSearch(); }} />
             {query ? <button className="search-clear" type="button" aria-label="Limpar pesquisa" onClick={clearSearch}><Icon name="close" /></button> : <kbd className="search-shortcut" aria-hidden="true">Ctrl K</kbd>}
           </div>
-          <div className="app-menu" ref={menuRef} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setMenuOpen(false); }}>
-            <button ref={menuButtonRef} className="icon-button menu-toggle" type="button" aria-label="Menu do aplicativo" aria-expanded={menuOpen} aria-controls="app-menu-panel" onClick={() => setMenuOpen(!menuOpen)}><Icon name={menuOpen ? 'close' : 'menu'} /></button>
-            {menuOpen && (
-              <div id="app-menu-panel" className="menu-panel" role="region" aria-label="Opções do aplicativo">
-                <span className="menu-panel__title">Sua área de trabalho</span>
-                 <button ref={firstMenuActionRef} className="menu-action" type="button" onClick={() => navigate('library')}><Icon name="mouse" />Meus softwares<Icon name="chevron" /></button>
-                 <button className="menu-action" type="button" onClick={() => navigate('explore')}><Icon name="search" />Explorar softwares<Icon name="chevron" /></button>
-                  {import.meta.env.DEV && <button className="menu-action" type="button" onClick={() => navigate('examples')}><Icon name="terminal" />Exemplos para desenvolvedores<Icon name="chevron" /></button>}
-                   {import.meta.env.DEV && <button className="menu-action" type="button" disabled={starterRegistered} onClick={() => { setStarterRegistered(true); setQueries((current) => ({ ...current, library: '' })); navigate('library'); }}><Icon name="terminal" />{starterRegistered ? 'Starter local registrado (DEV)' : 'Registrar starter local (DEV)'}<Icon name="chevron" /></button>}
-                   {import.meta.env.DEV && <button className="menu-action" type="button" disabled={x6Registered} onClick={() => { setX6Registered(true); setQueries((current) => ({ ...current, library: '' })); navigate('library'); }}><Icon name="mouse" />{x6Registered ? 'X6 Control registrado (DEV)' : 'Registrar X6 Control (DEV)'}<Icon name="chevron" /></button>}
-                <div className="menu-diagnostic">
-                  <button className="menu-action" type="button" disabled={checking} onClick={checkBackend}><Icon name="terminal" />{checking ? 'Verificando…' : 'Verificar backend'}</button>
-                  <p role="status">{backendStatus}</p>
-                </div>
-              </div>
-            )}
-          </div>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -226,9 +176,9 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
             {visibleSoftware.length ? <div className="device-grid" aria-label="Softwares registrados">{visibleSoftware.map((entry) => {
               const Visual = entry.Visual;
               const Presence = entry.Presence;
-              return <DeviceCardFrame key={entry.id} name={entry.name} manufacturer={`${entry.manufacturer}${entry.category && entry.showCategoryOnCard !== false ? ` · ${categoryLabels[entry.category]}` : ''}`} data-software={entry.id} disabled={!entry.available} onClick={() => openLocal(entry)} aria-label={`Abrir ${entry.name}`} visual={Visual && <Visual />} status={entry.available && entry.coverage ? <CoverageBadge coverage={entry.coverage} label={entry.status} title="Suporte no escopo documentado da integração. Consulte os limites nos detalhes." /> : <span className="software-card__status">{entry.available ? entry.status : 'Indisponível · abertura desativada'}</span>}>{Presence && <Presence />}</DeviceCardFrame>;
+              return <DeviceCardFrame key={entry.id} name={entry.name} manufacturer={`${entry.manufacturer}${entry.category && entry.showCategoryOnCard !== false ? ` · ${categoryLabels[entry.category]}` : ''}`} data-software={entry.id} disabled={!entry.available} onClick={() => openLocal(entry)} aria-label={`Abrir ${entry.name}`} actionLabel={entry.available ? 'Abrir controles' : undefined} visual={Visual && <Visual />} status={entry.available && entry.coverage ? <CoverageBadge coverage={entry.coverage} label={entry.status} title="Suporte no escopo documentado da integração. Consulte os limites nos detalhes." /> : <span className="software-card__status">{entry.available ? entry.status : 'Indisponível · abertura desativada'}</span>}>{Presence && <Presence />}</DeviceCardFrame>;
             })}</div> :
-              <div className="empty-state"><Icon name={software.length ? 'search' : 'mouse'} /><h3>{software.length ? 'Nenhum software encontrado.' : 'Sua biblioteca está vazia'}</h3>{software.length ? <><p>Nenhum software registrado corresponde a “{query}”.</p><button className="text-button" type="button" onClick={clearSearch}>Limpar pesquisa<Icon name="arrow" /></button></> : <><p>Você ainda não adicionou nenhum software ao Peripheral Hub. Explore os softwares disponíveis e comece a configurar seus periféricos.</p><button className="text-button" type="button" onClick={() => navigate('explore')}>Explorar softwares<Icon name="arrow" /></button></>}</div>}
+              <div className="empty-state"><Icon name={localSoftware.length ? 'search' : 'mouse'} /><h3>{localSoftware.length ? 'Nenhum software encontrado.' : 'Sua biblioteca está vazia'}</h3>{localSoftware.length ? <><p>Nenhum software registrado corresponde a “{query}”.</p><button className="text-button" type="button" onClick={clearSearch}>Limpar pesquisa<Icon name="arrow" /></button></> : <><p>Encontre a integração do seu mouse em Explorar softwares. Depois de instalada, ela aparece aqui.</p><button className="text-button" type="button" onClick={() => navigate('explore')}>Explorar softwares<Icon name="arrow" /></button></>}</div>}
           </> : page === 'explore' ? <Catalog client={catalog} query={query} releases={releases} installing={installing} installationError={installationError} onInstall={installPublic} onOpen={() => openLocal(publicX6Integration)} /> : <>
           <div className="collection-toolbar">
             <span className="collection-category"><Icon name="mouse" />Mouses<span className="count-badge">{visibleMice.length}</span></span>
@@ -248,6 +198,11 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
         </section>
         }
       </main>
+      {import.meta.env.DEV && !LocalView && <details className="dev-tools"><summary>Ferramentas de desenvolvimento</summary><div>
+        <button className="menu-action" type="button" onClick={() => navigate('examples')}>Exemplos para desenvolvedores</button>
+        <button className="menu-action" type="button" disabled={starterRegistered} onClick={() => { setStarterRegistered(true); setQueries((current) => ({ ...current, library: '' })); navigate('library'); }}>{starterRegistered ? 'Starter local registrado (DEV)' : 'Registrar starter local (DEV)'}</button>
+        <button className="menu-action" type="button" disabled={x6Registered} onClick={() => { setX6Registered(true); setQueries((current) => ({ ...current, library: '' })); navigate('library'); }}>{x6Registered ? 'X6 Control registrado (DEV)' : 'Registrar X6 Control (DEV)'}</button>
+      </div></details>}
     </div></>
   );
 }

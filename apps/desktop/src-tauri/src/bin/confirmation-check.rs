@@ -24,7 +24,7 @@ fn main() -> Result<(), String> {
     parent.add(&entry);
     parent.show_all();
     entry.grab_focus();
-    let cases = if automatic { 7 } else { 1 };
+    let cases = if automatic { 11 } else { 1 };
     for case in 0..cases {
         let pending = Arc::new(AtomicBool::new(true));
         let checked = std::rc::Rc::new(std::cell::Cell::new(false));
@@ -35,6 +35,7 @@ fn main() -> Result<(), String> {
             gtk::glib::timeout_add_local_once(Duration::from_millis(80), move || {
                 let dialog = gtk::Window::list_toplevels()
                     .into_iter()
+                    .filter(|window| window.is_visible())
                     .find_map(|w| w.downcast::<gtk::MessageDialog>().ok());
                 let Some(dialog) = dialog else {
                     return;
@@ -49,6 +50,20 @@ fn main() -> Result<(), String> {
                             && dialog.transient_for() == Some(parent.clone()),
                     );
                 }
+                let checkbox = dialog
+                    .content_area()
+                    .children()
+                    .into_iter()
+                    .find_map(|widget| widget.downcast::<gtk::CheckButton>().ok());
+                if let Some(checkbox) = &checkbox {
+                    assert!(!checkbox.is_active(), "Remember must default to unchecked");
+                    if case >= 8 {
+                        checkbox.set_active(true);
+                    }
+                }
+                if case >= 7 {
+                    assert!(checkbox.is_some());
+                }
                 match case {
                     0 => dialog.response(gtk::ResponseType::Accept),
                     1 => dialog.response(gtk::ResponseType::Cancel),
@@ -59,30 +74,32 @@ fn main() -> Result<(), String> {
                         dialog.response(gtk::ResponseType::Cancel);
                         dialog.response(gtk::ResponseType::Accept);
                     }
-                    6 => unsafe {
+                    10 => unsafe {
                         parent.destroy();
                     },
+                    6 | 7 | 8 => dialog.response(gtk::ResponseType::Accept),
+                    9 => dialog.response(gtk::ResponseType::Cancel),
                     _ => unreachable!(),
                 }
             });
         }
         let result = native_dialog::show(&parent,
             "TESTE ISOLADO — nenhum dispositivo será acessado.\nEsta decisão não concede autorização ao Hub.",
-            Instant::now() + Duration::from_millis(if automatic { 180 } else { 120000 }), pending);
+            Instant::now() + Duration::from_millis(if automatic { if case == 3 { 180 } else { 2000 } } else { 120000 }), pending, case >= 7 || !automatic);
         if automatic {
             assert!(
                 checked.get(),
                 "GTK logical Cancel focus/default/modal/parent check failed for case {case}"
             );
-            if case == 0 {
-                assert_eq!(result, Ok(()));
+            if matches!(case, 0 | 6 | 7 | 8) {
+                assert_eq!(result, Ok(case == 8));
             } else {
                 assert!(
                     result.is_err(),
                     "only an explicit first acceptance may succeed"
                 );
             }
-            if case != 6 {
+            if case != 10 {
                 assert_eq!(parent.focused_widget(), Some(entry.clone().upcast()));
             }
             println!("GTK case {case}: passed");
