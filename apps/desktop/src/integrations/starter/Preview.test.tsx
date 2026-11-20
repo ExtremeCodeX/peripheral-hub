@@ -52,7 +52,7 @@ describe('starter real transport UI', () => {
     fireEvent.click(screen.getByRole('checkbox',{name:/Backend físico/}));
     fireEvent.click(screen.getByRole('checkbox',{name:/Confirmei o modelo/}));
     fireEvent.click(screen.getByRole('button',{name:'Iniciar processo'}));
-    expect((await screen.findByRole('alert')).textContent).toContain('nenhuma simulação será usada');
+    expect((await screen.findByRole('alert')).textContent).toContain('Desconectado ou dispositivo não identificado. Confira conexão e modelo.');
     expect(vi.mocked(invoke).mock.calls.some(([,args])=>(args as {request:{action:string}}).request.action==='open')).toBe(false);
   });
   it('selects a named plugin and renders only its declared capabilities', async () => {

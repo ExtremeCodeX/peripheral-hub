@@ -106,6 +106,26 @@ def install(directory,entry,fetch=download):
     finally:os.close(fd)
 
 
+def uninstall(directory, entry):
+    package_id = entry['package']['id']
+    fd = os.open(package_id, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
+    try:
+        trusted(fd)
+        expected = {'plugin.py', 'manifest.json', 'LICENSE'}
+        if set(os.listdir(fd)) != expected:
+            raise ValueError('UNSAFE_INSTALLATION')
+        for name in expected:
+            info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid():
+                raise ValueError('UNSAFE_INSTALLATION')
+        for name in expected:
+            os.unlink(name, dir_fd=fd)
+    finally:
+        os.close(fd)
+    os.rmdir(package_id, dir_fd=directory)
+    os.fsync(directory)
+
+
 def run(request):
     entries=request['registry']
     for entry in entries:
@@ -116,6 +136,10 @@ def run(request):
             entry=next((e for e in entries if e['package']['id']==request['id']),None)
             if entry is None:raise ValueError('UNKNOWN_PACKAGE')
             install(fd,entry)
+        elif request['action']=='uninstall':
+            entry=next((e for e in entries if e['package']['id']==request['id']),None)
+            if entry is None:raise ValueError('UNKNOWN_PACKAGE')
+            uninstall(fd,entry)
         elif request['action']!='list':raise ValueError('INVALID_ACTION')
         return [dict(e['package'],installed=installed(fd,e)) for e in entries]
     finally:os.close(fd)

@@ -10,6 +10,8 @@ Comece pelo [starter e contrato](docs/public/STARTER.md). Mantenha sua integraç
 em repositório independente, com licença que permita alteração e redistribuição,
 origem e atribuições claras. Não copie material público sem permissão de uso.
 Não inclua dados privados, dumps, fotos ou ícones de direitos desconhecidos.
+Na interface de cada integração, inclua controles apenas para funções realmente
+oferecidas; não crie botões ou painéis para funcionalidades não implementadas.
 
 Para uma submissão ao catálogo:
 

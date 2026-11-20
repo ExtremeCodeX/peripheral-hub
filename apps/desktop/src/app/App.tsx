@@ -14,6 +14,12 @@ import { starterPreviewIntegration } from '../integrations/starter/Preview';
 import { x6Integration, publicX6Integration } from '../integrations/x6/Control';
 import { publicReleases, type PublicRelease } from './distribution';
 
+function DeleteDialog({ name, onCancel, onConfirm }: { name: string; onCancel: () => void; onConfirm: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const dialog = ref.current!; const opener = document.activeElement; dialog.showModal(); return () => { dialog.close(); if (opener instanceof HTMLElement && opener.isConnected) opener.focus(); }; }, []);
+  return <dialog ref={ref} className="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description" onCancel={(event) => { event.preventDefault(); onCancel(); }}><h2 id="delete-title">Excluir {name}?</h2><p id="delete-description">Os arquivos do software serão removidos. Você pode instalá-lo novamente pelo catálogo.</p><div className="delete-dialog-actions"><button type="button" autoFocus onClick={onCancel}>Cancelar</button><button type="button" className="delete-dialog-confirm" onClick={onConfirm}>Excluir software</button></div></dialog>;
+}
+
 type Page = 'library' | 'explore' | 'examples';
 
 export function App({ software = registeredSoftware }: { software?: readonly LocalSoftware[] }) {
@@ -27,6 +33,7 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
   const [releases, setReleases] = useState<PublicRelease[]>(publicReleases);
   const [installing, setInstalling] = useState(false);
   const [installationError, setInstallationError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   useEffect(() => {
     let active = true;
     Promise.resolve(invoke<{ software: PublicRelease[] }>('software_distribution', { request: { action: 'list' } }))
@@ -135,6 +142,17 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
     } finally { setInstalling(false); }
   }
 
+  async function uninstallPublic(id: string) {
+    setDeleteTarget(null);
+    setInstalling(true); setInstallationError('');
+    try {
+      const result = await invoke<{ software: PublicRelease[] }>('software_distribution', { request: { action: 'uninstall', plugin_id: id } });
+      if (!Array.isArray(result?.software)) throw new Error('INVALID_RESULT');
+      setReleases(result.software);
+    } catch { setInstallationError('Não foi possível excluir o software. Verifique as permissões e tente novamente.'); }
+    finally { setInstalling(false); }
+  }
+
   function openDetails(id: DemoMouseId) {
     galleryScrollRef.current = window.scrollY;
     returnFocusIdRef.current = id;
@@ -143,7 +161,7 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
   }
 
   return (
-    <><WindowBar /><div className={`app-shell${localView?.workspace ? ' app-shell--workspace' : ''}`}>
+    <>{deleteTarget && <DeleteDialog name={deleteTarget.name} onCancel={() => setDeleteTarget(null)} onConfirm={() => void uninstallPublic(deleteTarget.id)} />}<WindowBar /><div className={`app-shell${localView?.workspace ? ' app-shell--workspace' : ''}`}>
       <a className="skip-link" href="#devices">Ir para o conteúdo</a>
       <div hidden={!!localView?.workspace}>
       <header className="app-header">
@@ -171,12 +189,12 @@ function AppContent({ software }: { software: readonly LocalSoftware[] }) {
               <div><h2 id="collection-title" tabIndex={-1}>{examplesOpen ? 'Exemplos para desenvolvedores' : page === 'library' ? 'Meus softwares' : 'Explorar softwares'}</h2>{examplesOpen && <p>Casos de referência para integrações. Todos os dados são fictícios.</p>}</div>
             {examplesOpen && <span className="demo-label"><span aria-hidden="true" />Modo demonstração</span>}
           </div>
-          {page === 'library' ? <>
+          {page === 'library' ? <>{installationError && <p role="alert">{installationError}</p>}
             <div className="collection-toolbar"><span className="collection-category"><Icon name="mouse" />{visibleSoftware.some((entry) => entry.category && entry.category !== 'mouse') ? 'Softwares locais' : 'Mouses'}<span className="count-badge">{visibleSoftware.length}</span></span></div>
             {visibleSoftware.length ? <div className="device-grid" aria-label="Softwares registrados">{visibleSoftware.map((entry) => {
               const Visual = entry.Visual;
               const Presence = entry.Presence;
-              return <DeviceCardFrame key={entry.id} name={entry.name} manufacturer={`${entry.manufacturer}${entry.category && entry.showCategoryOnCard !== false ? ` · ${categoryLabels[entry.category]}` : ''}`} data-software={entry.id} disabled={!entry.available} onClick={() => openLocal(entry)} aria-label={`Abrir ${entry.name}`} actionLabel={entry.available ? 'Abrir controles' : undefined} visual={Visual && <Visual />} status={entry.available && entry.coverage ? <CoverageBadge coverage={entry.coverage} label={entry.status} title="Suporte no escopo documentado da integração. Consulte os limites nos detalhes." /> : <span className="software-card__status">{entry.available ? entry.status : 'Indisponível · abertura desativada'}</span>}>{Presence && <Presence />}</DeviceCardFrame>;
+              return <div className="gallery-item software-card-wrapper" key={entry.id}><DeviceCardFrame name={entry.name} manufacturer={`${entry.manufacturer}${entry.category && entry.showCategoryOnCard !== false ? ` · ${categoryLabels[entry.category]}` : ''}`} data-software={entry.id} disabled={!entry.available} onClick={() => openLocal(entry)} aria-label={`Abrir ${entry.name}`} actionLabel={entry.available ? 'Abrir controles' : undefined} visual={Visual && <Visual />} status={entry.available && entry.coverage ? <CoverageBadge coverage={entry.coverage} label={entry.status} title="Suporte no escopo documentado da integração. Consulte os limites nos detalhes." /> : <span className="software-card__status">{entry.available ? entry.status : 'Indisponível · abertura desativada'}</span>}>{Presence && <Presence />}</DeviceCardFrame>{releases.some((release) => release.id === entry.id && release.installed) && <button type="button" className="software-card-delete" aria-label={`Excluir ${entry.name}`} title="Excluir software" disabled={installing} onClick={() => setDeleteTarget({ id: entry.id, name: entry.name })}><Icon name="close" /></button>}</div>;
             })}</div> :
               <div className="empty-state"><Icon name={localSoftware.length ? 'search' : 'mouse'} /><h3>{localSoftware.length ? 'Nenhum software encontrado.' : 'Sua biblioteca está vazia'}</h3>{localSoftware.length ? <><p>Nenhum software registrado corresponde a “{query}”.</p><button className="text-button" type="button" onClick={clearSearch}>Limpar pesquisa<Icon name="arrow" /></button></> : <><p>Encontre a integração do seu mouse em Explorar softwares. Depois de instalada, ela aparece aqui.</p><button className="text-button" type="button" onClick={() => navigate('explore')}>Explorar softwares<Icon name="arrow" /></button></>}</div>}
           </> : page === 'explore' ? <Catalog client={catalog} query={query} releases={releases} installing={installing} installationError={installationError} onInstall={installPublic} onOpen={() => openLocal(publicX6Integration)} /> : <>

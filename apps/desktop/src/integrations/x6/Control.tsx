@@ -17,10 +17,10 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{Diacriti
 const POINTS = [[36, 22], [67, 22], [51, 25], [15, 42], [15, 54], [52, 36], [52, 44]];
 
 /** Original schematic, authored for this integration; no R1 or third-party asset. */
-function MouseDiagram({ selected, select }: { selected: number; select: (n: number) => void }) {
+function MouseDiagram({ selected, highlighted, setHighlighted, select }: { selected: number; highlighted: number | null; setHighlighted: (n: number | null) => void; select: (n: number) => void }) {
   return <div className="x6-mouse" aria-label="Seleção visual de botões">
     <MouseArt/>
-    {POINTS.map(([left, top], i) => <button type="button" key={i} className={`x6-hotspot${i >= 5 ? ' x6-hotspot--top' : ''}${selected === i + 1 ? ' is-selected' : ''}`} style={{ left: `${left}%`, top: `${top}%` }} aria-label={`Selecionar ${BUTTONS[i]} no mouse`} aria-pressed={selected === i + 1} onClick={() => select(i + 1)}>{i + 1}</button>)}
+    {POINTS.map(([left, top], i) => <button type="button" key={i} className={`x6-hotspot${i >= 5 ? ' x6-hotspot--top' : ''}${selected === i + 1 ? ' is-selected' : ''}${highlighted === i + 1 ? ' is-highlighted' : ''}`} style={{ left: `${left}%`, top: `${top}%` }} aria-label={`Selecionar ${BUTTONS[i]} no mouse`} aria-pressed={selected === i + 1} onMouseEnter={() => setHighlighted(i + 1)} onMouseLeave={() => setHighlighted(null)} onFocus={() => setHighlighted(i + 1)} onBlur={() => setHighlighted(null)} onClick={() => select(i + 1)}>{i + 1}</button>)}
   </div>;
 }
 
@@ -29,8 +29,11 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
   const [state, setState] = useState<Snapshot | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [permissionError, setPermissionError] = useState(false);
   const [status, setStatus] = useState('Conecte o X6 para ler configurações reais. Nenhuma alteração automática.');
   const [selected, setSelected] = useState(4);
+  const [highlighted, setHighlighted] = useState<number | null>(null);
+  const [editingButtons, setEditingButtons] = useState(false);
   const [action, setAction] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas');
@@ -42,7 +45,12 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
   const original = useRef<Record<string, unknown>>({});
   const generation = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { heading.current?.focus(); return () => { generation.current++; void starterClient.stop().catch(() => undefined); }; }, []);
+  useEffect(() => {
+    heading.current?.focus();
+    // Defer startup so React StrictMode's development-only remount does not open two sessions.
+    const timer = window.setTimeout(() => { void run(() => starterClient.start(pluginId, true), 'Conectar 2.4 GHz', true); }, 0);
+    return () => { window.clearTimeout(timer); generation.current++; void starterClient.stop().catch(() => undefined); };
+  }, [pluginId]);
   const connected = state?.mode === 'hardware' && state.hardwareAccess;
   const key = `button_${selected}`;
   const topMappingAvailable = !!state?.settings.some((s) => s.key === 'button_7') && state?.values.button_7 !== undefined;
@@ -56,7 +64,7 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
   async function run(task: () => Promise<Snapshot | null>, label: string, starting = false) {
     if (busy) return;
     const current = ++generation.current;
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setPermissionError(false);
     try {
       const result = await task();
       if (current !== generation.current) return;
@@ -68,6 +76,8 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
       setStatus(message); setLogs((old) => [message, ...old].slice(0, 16));
     } catch (failure) {
       if (current !== generation.current) return;
+      const kind = String(failure && typeof failure === 'object' && 'kind' in failure ? failure.kind : failure);
+      setPermissionError(kind.includes('PERMISSION_DENIED'));
       const message = starterError(failure);
       setState(null); setDraft({}); setError(message); setStatus('Sem confirmação — sessão descartada.');
       original.current = {};
@@ -88,45 +98,48 @@ export function X6Control({ onBack, pluginId = 'dev.attack-shark-x6' }: { onBack
     } finally { setForgetting(false); }
   }
   return <section className="x6-control" aria-labelledby="x6-title">
-    <header className="x6-heading"><h2 id="x6-title" ref={heading} tabIndex={-1}>X6 / CONTROL</h2><span className={`x6-badge${connected ? ' is-live' : ''}`}>{busy ? 'CONECTANDO…' : connected ? 'CONECTADO' : error ? 'SEM CONFIRMAÇÃO' : 'DESCONECTADO'}</span><button type="button" className="x6-back" onClick={onBack} disabled={busy}>Voltar ao Hub</button><ThemeToggle /></header>
-    <div className="x6-toolbar"><div role="tablist" aria-label="Seções X6">{['Mouse', 'Macros', 'Diagnóstico', 'Iluminação'].map((name, i, tabs) => <button type="button" role="tab" key={name} id={`x6-tab-${i}`} aria-selected={tab === name} aria-controls={`x6-panel-${i}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={(e) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; setTab(tabs[next]); document.getElementById(`x6-tab-${next}`)?.focus(); } }}>{name}</button>)}</div>
-      <div className="x6-connection"><button type="button" disabled={busy} onClick={() => connected ? void run(async () => { await starterClient.stop(); return null; }, 'Desconectar') : void run(() => starterClient.start(pluginId, true), 'Conectar 2.4 GHz', true)}>{connected ? 'Desconectar' : 'Conectar 2.4 GHz'}</button></div>
+    <header className="x6-heading"><h2 id="x6-title" ref={heading} tabIndex={-1}>X6 / CONTROL</h2><span className={`x6-badge${connected ? ' is-live' : ''}`}>{busy ? 'CONECTANDO…' : connected ? 'CONECTADO' : error ? 'SEM CONFIRMAÇÃO' : 'DESCONECTADO'}</span><button type="button" className="x6-back" onClick={onBack}>Voltar ao Hub</button><ThemeToggle /></header>
+    <div className="x6-toolbar"><div role="tablist" aria-label="Seções X6">{['Mouse', 'Diagnóstico', 'Iluminação'].map((name, i, tabs) => <button type="button" role="tab" key={name} id={`x6-tab-${i}`} aria-selected={tab === name} aria-controls={`x6-panel-${i}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={(e) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; setTab(tabs[next]); document.getElementById(`x6-tab-${next}`)?.focus(); } }}>{name}</button>)}</div>
+      {error && <div className="x6-connection"><button type="button" disabled={busy} onClick={() => void run(() => starterClient.start(pluginId, true), 'Conectar 2.4 GHz', true)}>Tentar novamente</button></div>}
     </div>
-    <p className={`x6-notice${error ? ' is-error' : ''}`} role={error ? 'alert' : 'status'}>{error || status}</p>
-    <div className="x6-permissions"><span>Na primeira autorização, marque “Lembrar minha escolha” para as próximas conexões. Escritas continuam pedindo confirmação.</span><button type="button" disabled={busy || forgetting} onClick={forgetPermissions}>{forgetting ? 'Esquecendo…' : 'Esquecer autorizações'}</button></div>
-    <p className="x6-permission-status" role="status">{permissionStatus}</p>
+    {(error || connected) && <p className={`x6-notice${error ? ' is-error' : ''}`} role={error ? 'alert' : 'status'}>{error || status}</p>}
+    {permissionError && <section className="x6-permission-help" aria-labelledby="x6-permission-help-title">
+      <h3 id="x6-permission-help-title">Permissão necessária para acessar o mouse</h3>
+      <p>O Linux detectou o receptor, mas não permitiu que o aplicativo o abrisse. Para liberar o acesso do usuário conectado:</p>
+      <ol><li>Abra o aplicativo Terminal.</li><li>Copie e execute o comando abaixo. Quando solicitado, digite a senha do seu computador; ela não aparece enquanto você digita.</li><li>Retire e conecte novamente o receptor USB e clique em <strong>Tentar novamente</strong>.</li></ol>
+      <pre><code>{`echo 'SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1d57", ATTRS{idProduct}=="fa60", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-peripheral-hub-x6.rules > /dev/null && sudo udevadm control --reload-rules`}</code></pre>
+      <p>Essa regra também pode atingir outros receptores com os mesmos identificadores USB. Ela usa o acesso da sessão local; se não funcionar, consulte o administrador ou a documentação da sua distribuição. Não execute o Peripheral Hub como administrador.</p>
+    </section>}
+    
     <div role="tabpanel" id="x6-panel-0" aria-labelledby="x6-tab-0" hidden={tab !== 'Mouse'}>
-      <div className="x6-columns">
-        <aside className="x6-left">
+      <div className={`x6-columns${editingButtons ? ' is-editing-buttons' : ''}`} onPointerLeave={() => { setHighlighted(null); setEditingButtons(false); }} onKeyDown={(event) => { if (event.key === 'Escape' && editingButtons) { setHighlighted(null); setEditingButtons(false); } }}>
+        <aside className="x6-left" onPointerEnter={() => setEditingButtons(true)} onPointerLeave={() => { setHighlighted(null); setEditingButtons(false); }} onFocusCapture={() => setEditingButtons(true)}>
           <section className="x6-panel"><div className="x6-panel-heading"><h3>Botões</h3><button type="button" disabled={!connected || busy} onClick={() => read('Ler botões')}>Ler botões</button></div>
-            <div className="x6-button-list">{BUTTONS.map((name, i) => <button type="button" key={name} aria-pressed={selected === i + 1} onClick={() => select(i + 1)}><span>{i + 1}</span><span>{name}<small>{state ? i >= 5 && !topMappingAvailable ? 'Snapshot antigo — atualize o plugin' : ACTIONS[String(state.values[`button_${i + 1}`])] ?? 'Indisponível — sem leitura' : 'Aguardando leitura…'}</small></span></button>)}</div>
-            <p className="x6-muted">Função atual lida: {currentAction === undefined ? 'Sem leitura' : ACTIONS[String(currentAction)] ?? 'Não decodificada — preservada'}</p>
-            <label className="x6-action">Pesquisar função<input aria-label="Pesquisar função" type="search" placeholder="F5, Ctrl, Espaço, Volume…" value={search} onChange={(e) => setSearch(e.target.value)}/></label>
+            <div className="x6-button-list" role="group" aria-label="Selecionar botão do mouse">{BUTTONS.map((name, i) => <button type="button" key={name} aria-label={`Botão ${i + 1}: ${name}`} title={name} aria-pressed={selected === i + 1} className={highlighted === i + 1 ? 'is-highlighted' : ''} onMouseEnter={() => setHighlighted(i + 1)} onMouseLeave={() => setHighlighted(null)} onFocus={() => setHighlighted(i + 1)} onBlur={() => setHighlighted(null)} onClick={() => select(i + 1)}>{i + 1}</button>)}</div>
+            
+            <label className="x6-action"><input aria-label="Pesquisar função" type="search" placeholder="Pesquisar função" value={search} onChange={(e) => setSearch(e.target.value)}/></label>
             <label className="x6-action">Categoria<select aria-label="Categoria de função" value={category} onChange={(e) => setCategory(e.target.value)}><option>Todas</option>{categories.map((name) => <option key={name}>{name}</option>)}</select></label>
-            <label className="x6-action">Nova ação de {BUTTONS[selected - 1]}<select aria-label="Nova ação do botão selecionado" value={action || (typeof currentAction === 'string' ? currentAction : '')} disabled={!writable || busy} onChange={(e) => setAction(e.target.value)}><option value="" disabled>{state ? 'Escolha uma função' : 'Aguardando leitura…'}</option>{typeof currentAction === 'string' && !filtered.some((entry) => entry.id === currentAction) && <option value={currentAction}>{ACTIONS[currentAction] ?? 'Ação não decodificada' } — atual</option>}{action && !filtered.some((entry) => entry.id === action) && action !== currentAction && <option value={action}>{ACTIONS[action]} — rascunho</option>}{categories.map((name) => { const entries = filtered.filter((entry) => entry.category === name); return entries.length ? <optgroup key={name} label={name}>{entries.map((entry) => <option key={entry.id} value={entry.id} disabled={entry.disabled}>{entry.label}</option>)}</optgroup> : null; })}<option disabled>Macro — não implementada</option></select></label>
+            <label className="x6-action" title={`Nova ação de ${BUTTONS[selected - 1]}`}><select aria-label={`Nova ação de ${BUTTONS[selected - 1]}`} title={`Nova ação de ${BUTTONS[selected - 1]}`} value={action || (typeof currentAction === 'string' ? currentAction : '')} disabled={!writable || busy} onChange={(e) => setAction(e.target.value)}><option value="" disabled>{state ? 'Escolha uma função' : 'Conectando…'}</option>{typeof currentAction === 'string' && !filtered.some((entry) => entry.id === currentAction) && <option value={currentAction}>{ACTIONS[currentAction] ?? 'Ação não decodificada' } — atual</option>}{action && !filtered.some((entry) => entry.id === action) && action !== currentAction && <option value={action}>{ACTIONS[action]} — rascunho</option>}{categories.map((name) => { const entries = filtered.filter((entry) => entry.category === name); return entries.length ? <optgroup key={name} label={name}>{entries.map((entry) => <option key={entry.id} value={entry.id} disabled={entry.disabled}>{entry.label}</option>)}</optgroup> : null; })}</select></label>
             {selected <= 3 && <p className="x6-muted">Botão protegido — somente leitura.</p>}
             <button type="button" className="x6-primary x6-wide" disabled={!writable || busy || !action || action === currentAction} onClick={() => apply(key, action, `Aplicar ${BUTTONS[selected - 1]}`)}>Aplicar botão selecionado</button>
-            <button type="button" className="x6-wide" disabled={!writable || busy || original.current[key] === currentAction || original.current[key] === undefined} onClick={() => apply(key, 'restore_session', `Restaurar ${BUTTONS[selected - 1]}`)}>Restaurar botão</button>
-            <small>Restaura a leitura inicial desta sessão, nunca um padrão de fábrica.</small>
+            <span className="x6-help-target" title="Restaura a leitura inicial desta sessão, nunca um padrão de fábrica."><button type="button" className="x6-wide" aria-describedby="x6-restore-help" title="Restaura a leitura inicial desta sessão, nunca um padrão de fábrica." disabled={!writable || busy || original.current[key] === currentAction || original.current[key] === undefined} onClick={() => apply(key, 'restore_session', `Restaurar ${BUTTONS[selected - 1]}`)}>Restaurar botão</button></span><span id="x6-restore-help" className="x6-visually-hidden">Restaura a leitura inicial desta sessão, nunca um padrão de fábrica.</span>
           </section>
-          <section className="x6-panel"><h3>Perfis</h3><div className="x6-profile-empty">Perfil físico: não implementado.<br/>Nenhum preset é aplicado automaticamente.</div><div className="x6-profile-actions">{['Salvar', 'Carregar', 'Importar', 'Exportar'].map((name) => <button key={name} type="button" disabled title="Presets locais pendentes">{name}</button>)}</div><button type="button" disabled className="x6-wide" title="Restauração arbitrária de arquivo não habilitada">Restaurar backup — pendente</button></section>
+
         </aside>
-        <div className="x6-center"><MouseDiagram selected={selected} select={select}/><span className="x6-diagram-caption">ATTACK SHARK X6 <span>2,4 GHz · esquema original</span></span></div>
+        <div className="x6-center"><MouseDiagram selected={selected} highlighted={highlighted} setHighlighted={setHighlighted} select={select}/><span className="x6-diagram-caption">ATTACK SHARK X6</span></div>
         <aside className="x6-right">
           <section className="x6-panel"><h3>Sensibilidade</h3><div className="x6-dpi-stages">{Array.from({ length: 6 }, (_, i) => i + 1).map((n) => <div key={n}><button type="button" aria-label={`Selecionar estágio ${n}`} aria-pressed={dpi === n} className={Number(state?.values.dpi_stage) === n ? 'is-active-stage' : ''} onClick={() => setDpi(n)}>{n}</button><input type="range" aria-label={`DPI estágio ${n} slider`} min="800" max="26000" step="50" disabled={!connected || busy} value={Number(draft[`dpi_stage_${n}`] ?? 800)} onChange={(e) => { setDpi(n); setDraft((d) => ({ ...d, [`dpi_stage_${n}`]: Number(e.target.value) })); }}/><input type="number" aria-label={`DPI estágio ${n}`} min="800" max="26000" step="50" placeholder="—" value={draft[`dpi_stage_${n}`] === undefined ? '' : Number(draft[`dpi_stage_${n}`])} disabled={!connected || busy} onChange={(e) => { setDpi(n); setDraft((d) => ({ ...d, [`dpi_stage_${n}`]: e.target.value === '' ? null : Number(e.target.value) })); }}/></div>)}</div>
             <p className="x6-muted">Ativo no mouse: {connected ? String(state?.values.dpi_stage) : 'sem leitura'} · aplica somente o estágio selecionado.</p>
-            <div className="x6-unavailable"><label><input type="checkbox" disabled/> Angle snapping — pendente</label><label><input type="checkbox" disabled/> Ripple control — pendente</label></div>
+            
             <button type="button" className="x6-primary x6-wide" disabled={!connected || busy || typeof draft[dpiKey] !== 'number' || Number(draft[dpiKey]) < 800 || Number(draft[dpiKey]) > 26000 || Number(draft[dpiKey]) % 50 !== 0 || draft[dpiKey] === state?.values[dpiKey]} onClick={() => apply(dpiKey, draft[dpiKey], `Aplicar DPI estágio ${dpi}`)}>Aplicar DPI selecionado</button>
             <button type="button" className="x6-wide" disabled={!connected || busy || state?.values.dpi_stage === dpi} onClick={() => apply('dpi_stage', dpi, `Ativar estágio ${dpi}`)}>Ativar estágio {dpi}</button>
           </section>
-          <section className="x6-panel"><div className="x6-panel-heading"><h3>Polling rate</h3><button type="button" disabled={!connected || busy || draft.polling_rate_hz === state?.values.polling_rate_hz} onClick={() => apply('polling_rate_hz', draft.polling_rate_hz, 'Aplicar polling')}>Aplicar polling</button></div><div className="x6-polling">{[125, 250, 500, 1000].map((hz) => <button key={hz} type="button" aria-pressed={draft.polling_rate_hz === hz} disabled={!connected || busy} onClick={() => setDraft((d) => ({ ...d, polling_rate_hz: hz }))}>{hz} Hz</button>)}</div><small>Lido: {connected ? `${state?.values.polling_rate_hz} Hz` : 'aguardando dispositivo'}</small></section>
-          <section className="x6-panel"><h3>Resposta e energia</h3><div className="x6-energy"><span>Debounce</span><span>Não disponibilizado</span></div><input aria-label="Debounce indisponível" type="range" disabled/><p className="x6-muted">Suspensão e debounce: escrita não habilitada.</p><div className="x6-energy"><span>Bateria bruta</span><strong>{!connected || state?.values.battery_raw === -1 ? 'Não observada' : String(state?.values.battery_raw)}</strong></div><small>Escala de porcentagem não comprovada.</small><button type="button" className="x6-wide" disabled>Aplicar resposta e energia — pendente</button></section>
+          <section className="x6-panel"><div className="x6-panel-heading"><h3>Polling rate</h3><button type="button" disabled={!connected || busy || draft.polling_rate_hz === state?.values.polling_rate_hz} onClick={() => apply('polling_rate_hz', draft.polling_rate_hz, 'Aplicar polling')}>Aplicar polling</button></div><div className="x6-polling-choices" role="group" aria-label="Polling rate">{[125, 250, 500, 1000].map((hz) => <button key={hz} type="button" aria-pressed={draft.polling_rate_hz === hz} disabled={!connected || busy} onClick={() => setDraft((d) => ({ ...d, polling_rate_hz: hz }))}>{hz} Hz</button>)}</div><p className="x6-polling-current">Atual no mouse <strong>{connected ? `${state?.values.polling_rate_hz} Hz` : '—'}</strong></p></section>
         </aside>
       </div>
     </div>
-    <section role="tabpanel" id="x6-panel-1" aria-labelledby="x6-tab-1" hidden={tab !== 'Macros'} className="x6-panel x6-tab-content"><h3>Macros</h3><p>Não implementadas. Nenhum report de macro é enviado pelo plugin.</p><button type="button" disabled>Criar macro — indisponível</button></section>
-    <section role="tabpanel" id="x6-panel-2" aria-labelledby="x6-tab-2" hidden={tab !== 'Diagnóstico'} className="x6-panel x6-tab-content"><h3>Diagnóstico físico</h3><dl>{Object.entries({ Plugin: 'dev.attack-shark-x6', Backend: connected ? 'Hardware real — sem fallback' : 'Desconectado / não confirmado', USB: state?.device ? `${state.device.vid}:${state.device.pid}` : 'Sem leitura', Interface: state?.device?.interface ?? 'Sem leitura', HID: state?.device?.hidraw ?? 'Sem leitura', Transporte: state?.device?.transport ?? 'Sem leitura', 'Endpoint esperado pelo plugin X6': 'IN 0x83 (validado na descoberta)', 'Report de botões': connected && state?.settings.some((s) => s.key === 'button_4') ? '0x08 · checksum/readback exigidos' : 'Sem leitura', 'Bateria bruta': connected ? state?.values.battery_raw : 'Sem leitura' }).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{String(v)}</dd></div>)}</dl><button type="button" disabled={!connected || busy} onClick={() => read('Diagnóstico: leitura física')}>Ler estado físico</button><h4>Operações desta sessão</h4><ol>{logs.map((line, i) => <li key={i}>{line}</li>)}</ol><p>Backups duráveis: ~/.local/state/attack-shark-x6-plugin/backups/. Nenhum reset ou firmware.</p></section>
-    <section role="tabpanel" id="x6-panel-3" aria-labelledby="x6-tab-3" hidden={tab !== 'Iluminação'}>{tab === 'Iluminação' && <Lighting state={state} busy={busy} original={original.current} apply={apply}/>}</section>
+    <section role="tabpanel" id="x6-panel-1" aria-labelledby="x6-tab-1" hidden={tab !== 'Diagnóstico'} className="x6-panel x6-tab-content"><h3>Diagnóstico físico</h3><div className="x6-permissions"><span>Você pode lembrar sua escolha na primeira autorização. Alterações continuam pedindo confirmação.</span><button type="button" disabled={busy || forgetting} onClick={forgetPermissions}>{forgetting ? 'Esquecendo…' : 'Esquecer autorizações'}</button></div><p className="x6-permission-status" role="status">{permissionStatus}</p><dl>{Object.entries({ Plugin: 'dev.attack-shark-x6', Backend: connected ? 'Hardware real — sem fallback' : 'Desconectado / não confirmado', USB: state?.device ? `${state.device.vid}:${state.device.pid}` : 'Sem leitura', Interface: state?.device?.interface ?? 'Sem leitura', HID: state?.device?.hidraw ?? 'Sem leitura', Transporte: state?.device?.transport ?? 'Sem leitura', 'Endpoint esperado pelo plugin X6': 'IN 0x83 (validado na descoberta)', 'Report de botões': connected && state?.settings.some((s) => s.key === 'button_4') ? '0x08 · checksum/readback exigidos' : 'Sem leitura', 'Bateria bruta': connected ? state?.values.battery_raw : 'Sem leitura' }).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{String(v)}</dd></div>)}</dl><button type="button" disabled={!connected || busy} onClick={() => read('Diagnóstico: leitura física')}>Ler estado físico</button><h4>Operações desta sessão</h4><ol>{logs.map((line, i) => <li key={i}>{line}</li>)}</ol><p>Backups duráveis: ~/.local/state/attack-shark-x6-plugin/backups/. Nenhum reset ou firmware.</p></section>
+    <section role="tabpanel" id="x6-panel-2" aria-labelledby="x6-tab-2" hidden={tab !== 'Iluminação'}>{tab === 'Iluminação' && <Lighting state={state} busy={busy} original={original.current} apply={apply}/>}</section>
     <footer className="x6-footer"><span>Configuração local · nenhuma alteração automática</span><span>Projeto independente · Linux{pluginId.startsWith('dev.') ? ' · DEV' : ''}</span></footer>
   </section>;
 }

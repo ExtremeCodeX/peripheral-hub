@@ -185,3 +185,39 @@ main:focus { outline: none; }
 .window-bar__controls svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 .window-bar__error { position: absolute; top: 100%; right: 8px; max-width: min(440px, calc(100vw - 16px)); padding: 12px; background: var(--hub-panel); color: var(--hub-warning); border: 1px solid var(--hub-border); font-size: 12px; }
 .window-bar + .app-shell { --hub-window-chrome: 40px; }
+
+
+/* Catalog cards: make the device and its primary action easier to discover. */
+.collection-heading h2 { font-size: 28px; }
+.page-navigation button { font-size: 14px; font-weight: 550; border-bottom-width: 2px; }
+.device-grid { grid-template-columns: repeat(auto-fill, minmax(270px, 360px)); }
+.device-card { min-height: 345px; padding: 26px; border-color: var(--hub-border); transition: background .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+.device-card__name { font-family: var(--hub-font-heading); font-size: 22px; }
+.device-card__manufacturer { font-size: 13px; }
+.device-card__visual { flex: 1; min-height: 200px; margin: 18px 0; }
+.device-card__visual .x6-card-art svg { max-height: 220px; transition: transform .25s var(--hub-ease-out); }
+.device-card__action { min-height: 36px; padding: 0 11px; border-radius: 7px; background: var(--hub-input); font-size: 13px; transition: background .2s ease, color .2s ease; }
+.device-card:focus-visible { outline: 2px solid var(--hub-selection); outline-offset: 4px; }
+@media (hover: hover) and (pointer: fine) {
+  .device-card:hover:not(:disabled) { transform: translateY(-4px); border-color: var(--hub-selection); box-shadow: 0 10px 24px rgba(0,0,0,.14); }
+  .device-card:hover:not(:disabled) .device-card__visual .x6-card-art svg { transform: scale(1.06); }
+  .device-card:hover:not(:disabled) .device-card__action { background: var(--hub-selection); color: var(--hub-selection-ink); }
+  .device-card:hover:not(:disabled) .device-card__arrow { transform: translateX(3px); color: inherit; }
+}
+@media (max-width: 560px) { .device-grid { grid-template-columns: 1fr; } .device-card { min-height: 320px; } }
+@media (prefers-reduced-motion: reduce) { .device-card, .device-card__visual .x6-card-art svg, .device-card__action { transition: none; } .device-card:hover:not(:disabled), .device-card:hover:not(:disabled) .device-card__visual .x6-card-art svg, .device-card:hover:not(:disabled) .device-card__arrow { transform: none; } }
+.software-card-wrapper { position: relative; }
+.software-card-delete { position: absolute; z-index: 2; top: 14px; right: 14px; display: grid; place-items: center; width: 36px; height: 36px; padding: 8px; border: 1px solid #d97070; border-radius: 8px; background: #862f35; color: #fff; opacity: 0; pointer-events: none; transition: opacity .16s ease, background .16s ease; }
+.software-card-delete svg { width: 18px; height: 18px; }
+.software-card-wrapper:hover .software-card-delete, .software-card-wrapper:focus-within .software-card-delete, .software-card-delete:focus-visible { opacity: 1; pointer-events: auto; }
+.software-card-delete:hover { background: #aa353c; }
+@media (hover: none) { .software-card-delete { opacity: 1; pointer-events: auto; } }
+@media (prefers-reduced-motion: reduce) { .software-card-delete { transition: none; } }
+.delete-dialog { width: min(440px, calc(100vw - 40px)); padding: 28px; border: 1px solid var(--hub-border); border-radius: 14px; background: var(--hub-panel); color: var(--hub-text); box-shadow: 0 20px 70px rgba(0,0,0,.35); }
+.delete-dialog::backdrop { background: rgba(0,0,0,.65); }
+.delete-dialog h2 { font-family: var(--hub-font-heading); font-size: 24px; line-height: 1.2; }
+.delete-dialog p { margin-top: 12px; color: var(--hub-muted); line-height: 1.6; }
+.delete-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 26px; }
+.delete-dialog-actions button { min-height: 42px; padding: 8px 16px; border: 1px solid var(--hub-border); border-radius: 8px; background: var(--hub-surface); color: var(--hub-text); }
+.delete-dialog-actions .delete-dialog-confirm { background: #b3373e; border-color: #b3373e; color: #fff; font-weight: 600; }
+.delete-dialog-actions .delete-dialog-confirm:hover { background: #902b31; }

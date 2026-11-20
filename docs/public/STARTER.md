@@ -51,6 +51,12 @@ Os controles são renderizados das capacidades: enum, intervalo, booleano e
 editor JSON para estruturas. A validação autoritativa está no host e no plugin.
 Resultados são sempre lidos do processo; rascunhos não são sucesso de hardware.
 
+**Regra para interfaces de integrações:** apresente somente funções que o software
+e o dispositivo realmente oferecem. Não inclua botões, abas, seletores ou painéis
+para funções não implementadas ou não suportadas, nem como placeholders desativados.
+Controles temporariamente indisponíveis podem aparecer desativados quando a função
+é suportada, por exemplo durante uma conexão ou operação em andamento.
+
 Edite **a cópia XDG registrada**, pare e inicie: o loader relê a fonte e pede novo
 consentimento, sem recompilar o Hub. Editar a fonte original não atualiza a cópia.
 Mantenha a identidade negociada igual ao ID registrado. O registro visual dura

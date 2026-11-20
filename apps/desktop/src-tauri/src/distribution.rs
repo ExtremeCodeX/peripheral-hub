@@ -11,6 +11,7 @@ pub fn registry() -> Value {
 pub enum Request {
     List {},
     Install { plugin_id: String },
+    Uninstall { plugin_id: String },
 }
 
 pub fn execute(request: Request) -> Result<Value, String> {
@@ -28,6 +29,7 @@ pub fn execute(request: Request) -> Result<Value, String> {
     let (action, id) = match request {
         Request::List {} => ("list", String::new()),
         Request::Install { plugin_id } => ("install", plugin_id),
+        Request::Uninstall { plugin_id } => ("uninstall", plugin_id),
     };
     let input = serde_json::to_vec(
         &json!({"action": action, "id": id, "base": base, "registry": registry()}),

@@ -58,9 +58,9 @@ export const starterClient = {
 
 export function starterError(error: unknown): string {
   const kind = String(error && typeof error === 'object' && 'kind' in error ? error.kind : error);
-  if (kind.includes('DEVICE_NOT_FOUND')) return 'Desconectado ou dispositivo não identificado. Confira conexão e modelo; nenhuma simulação será usada.';
+  if (kind.includes('DEVICE_NOT_FOUND')) return 'Desconectado ou dispositivo não identificado. Confira conexão e modelo.';
   if (kind.includes('IDENTITY_UNCONFIRMED')) return 'Dispositivo não identificado inequivocamente ou múltiplos candidatos. Operação recusada.';
-  if (kind.includes('PERMISSION_DENIED')) return 'Erro de permissão HID. Nenhuma regra udev ou permissão foi alterada.';
+  if (kind.includes('PERMISSION_DENIED')) return 'O Linux não permitiu o acesso ao dispositivo. Verifique as permissões do receptor.';
   if (kind.includes('DEVICE_DISCONNECTED')) return 'Dispositivo desconectado. Sessão descartada; reconecte e inicie novamente, sem replay.';
   if (kind.includes('READ_PREPARATION_FAILED')) return 'Falha de comunicação: grant de leitura recusado. Acorde o mouse e inicie uma nova sessão.';
   if (kind.includes('ACK_FAILED')) return 'ACK ausente ou rejeitado. A escrita pode ter ocorrido; não repita automaticamente. Confira o backup e faça uma nova leitura autorizada.';

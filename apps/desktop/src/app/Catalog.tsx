@@ -36,11 +36,11 @@ export function Catalog({ client, query, releases = [], installing = false, inst
   const message = catalogMessages[client.result.status] ?? catalogMessages.WORKER_ERROR;
   if (currentRelease) return <div className="catalog"><article className="catalog-details release-details" aria-labelledby="public-release-title">
     <button type="button" className="text-button release-back" onClick={() => { setSelectedReleaseId(null); requestAnimationFrame(() => document.getElementById(`public-release-${currentRelease.id}`)?.focus()); }}>Voltar aos softwares</button>
-    <header className="release-header">
+    <header className="release-header"><div className="release-hero-art" aria-hidden="true"><X6CardArt/></div><div className="release-hero-copy">
       <div className="release-title"><h3 id="public-release-title" ref={detailRef} tabIndex={-1}>{currentRelease.name}</h3><CoverageBadge coverage="partial" label="Parcial" title="Recursos físicos reais; cobertura e validação parciais."/></div>
       <p className="release-manufacturer">{currentRelease.manufacturer} · Mouse</p>
       <p className="release-description">{currentRelease.description}</p>
-    </header>
+    </div></header>
     <dl className="release-facts">
       <div><dt>Plataforma</dt><dd>Linux</dd></div>
       <div><dt>Versão</dt><dd>{currentRelease.version}</dd></div>
